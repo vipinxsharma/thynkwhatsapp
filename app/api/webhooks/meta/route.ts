@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifyMetaWebhookSignature } from "@/lib/meta/signature";
 import { MetaWebhookPayload, WebhookChangeValue } from "@/types/meta-webhook";
 import { StrapiClient } from "@/lib/strapi/client";
+import { emitMessageStatusUpdate, emitNewInboundMessage } from "@/lib/events/emitter";
 
 const META_VERIFY_TOKEN = process.env.META_WEBHOOK_VERIFY_TOKEN || "thynkwise_meta_verify_token_secure_2026";
 const strapiClient = new StrapiClient();
@@ -94,6 +95,7 @@ async function processWebhookEntries(entries: MetaWebhookPayload["entry"]) {
         if (value.statuses && Array.isArray(value.statuses)) {
           for (const statusUpdate of value.statuses) {
             await strapiClient.updateMessageStatus(statusUpdate.id, statusUpdate.status);
+            emitMessageStatusUpdate(statusUpdate.id, statusUpdate.status);
             console.log(
               `[Webhook Status] Message ${statusUpdate.id} status updated to: ${statusUpdate.status}`
             );
@@ -125,7 +127,7 @@ async function processWebhookEntries(entries: MetaWebhookPayload["entry"]) {
               conversations.find((c) => c.contact.waId === msg.from) || conversations[0];
 
             if (matchedConv) {
-              await strapiClient.recordMessage(matchedConv.id, {
+              const recorded = await strapiClient.recordMessage(matchedConv.id, {
                 wamId: msg.id,
                 direction: "inbound",
                 type: msg.type as any,
@@ -134,6 +136,7 @@ async function processWebhookEntries(entries: MetaWebhookPayload["entry"]) {
                 status: "received",
                 timestamp: new Date(parseInt(msg.timestamp, 10) * 1000).toISOString(),
               });
+              emitNewInboundMessage(matchedConv.id, recorded);
               console.log(
                 `[Webhook Inbound Message] Ingested message ${msg.id} from ${msg.from} to conversation ${matchedConv.id}`
               );

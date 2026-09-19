@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Conversation, Message, MessageTemplate } from "@/types/strapi";
 import { ConversationList } from "./ConversationList";
 import { MessageThread } from "./MessageThread";
 import { MessageInput } from "./MessageInput";
 import { ContactDetailsSidebar } from "./ContactDetailsSidebar";
 import { TemplateSelectorModal } from "./TemplateSelectorModal";
-import { Sparkles, Phone, Video, MoreVertical, Play } from "lucide-react";
+import { Sparkles, Phone, Video, MoreVertical, Play, Wifi } from "lucide-react";
 import { formatPhoneNumber } from "@/lib/utils";
 
 interface UnifiedInboxProps {
@@ -28,6 +28,68 @@ export function UnifiedInbox({
   );
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
   const [isSimulatingInbound, setIsSimulatingInbound] = useState(false);
+  const [isLiveConnected, setIsLiveConnected] = useState(false);
+
+  // Real-Time Server-Sent Events (SSE) Listener
+  useEffect(() => {
+    const eventSource = new EventSource("/api/inbox/stream");
+
+    eventSource.addEventListener("connected", () => {
+      setIsLiveConnected(true);
+    });
+
+    eventSource.addEventListener("message", (event) => {
+      try {
+        const payload = JSON.parse(event.data);
+        const { conversationId, message } = payload;
+
+        if (message) {
+          setMessagesMap((prev) => ({
+            ...prev,
+            [conversationId]: [...(prev[conversationId] || []), message],
+          }));
+
+          setConversations((prev) =>
+            prev.map((c) =>
+              String(c.id) === String(conversationId)
+                ? {
+                    ...c,
+                    lastMessage: message,
+                    lastMessageAt: message.timestamp,
+                    windowExpiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+                  }
+                : c
+            )
+          );
+        }
+      } catch (err) {
+        console.error("SSE message parse error:", err);
+      }
+    });
+
+    eventSource.addEventListener("status", (event) => {
+      try {
+        const { wamId, status } = JSON.parse(event.data);
+        setMessagesMap((prev) => {
+          const updated = { ...prev };
+          for (const key of Object.keys(updated)) {
+            updated[key] = updated[key].map((m) => (m.wamId === wamId ? { ...m, status } : m));
+          }
+          return updated;
+        });
+      } catch (err) {
+        console.error("SSE status parse error:", err);
+      }
+    });
+
+    eventSource.onerror = () => {
+      setIsLiveConnected(false);
+    };
+
+    return () => {
+      eventSource.close();
+    };
+  }, []);
 
   const activeConversation = conversations.find((c) => String(c.id) === String(activeId));
   const activeMessages = messagesMap[String(activeId)] || [];
@@ -275,7 +337,23 @@ export function UnifiedInbox({
             </div>
 
             {/* Quick Webhook Simulator & Actions */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2.5">
+              <div
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium border ${
+                  isLiveConnected
+                    ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                    : "bg-amber-500/10 text-amber-400 border-amber-500/20"
+                }`}
+                title={isLiveConnected ? "Connected to real-time event stream" : "Reconnecting to stream"}
+              >
+                <span
+                  className={`w-1.5 h-1.5 rounded-full ${
+                    isLiveConnected ? "bg-emerald-400 animate-pulse" : "bg-amber-400"
+                  }`}
+                />
+                <span>{isLiveConnected ? "Live SSE" : "Connecting..."}</span>
+              </div>
+
               <button
                 onClick={handleSimulateInbound}
                 disabled={isSimulatingInbound}
