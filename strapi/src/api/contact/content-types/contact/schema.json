@@ -1,0 +1,49 @@
+{
+  "kind": "collectionType",
+  "collectionName": "contacts",
+  "info": {
+    "singularName": "contact",
+    "pluralName": "contacts",
+    "displayName": "Contact"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "attributes": {
+    "waId": {
+      "type": "string",
+      "required": true,
+      "index": true
+    },
+    "phoneNumber": {
+      "type": "string",
+      "required": true
+    },
+    "name": {
+      "type": "string"
+    },
+    "tags": {
+      "type": "json",
+      "default": []
+    },
+    "customAttributes": {
+      "type": "json",
+      "default": {}
+    },
+    "lastSeenAt": {
+      "type": "datetime"
+    },
+    "tenant": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::tenant.tenant",
+      "inversedBy": "contacts"
+    },
+    "conversations": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::conversation.conversation",
+      "mappedBy": "contact"
+    }
+  }
+}

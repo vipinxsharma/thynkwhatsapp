@@ -1,0 +1,48 @@
+{
+  "kind": "collectionType",
+  "collectionName": "phone_numbers",
+  "info": {
+    "singularName": "phone-number",
+    "pluralName": "phone-numbers",
+    "displayName": "Phone Number"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "attributes": {
+    "phoneNumberId": {
+      "type": "string",
+      "unique": true,
+      "required": true,
+      "index": true
+    },
+    "displayPhoneNumber": {
+      "type": "string",
+      "required": true
+    },
+    "verifiedName": {
+      "type": "string"
+    },
+    "qualityRating": {
+      "type": "enumeration",
+      "enum": ["GREEN", "YELLOW", "RED", "UNKNOWN"],
+      "default": "UNKNOWN"
+    },
+    "codeVerificationStatus": {
+      "type": "enumeration",
+      "enum": ["VERIFIED", "NOT_VERIFIED"],
+      "default": "NOT_VERIFIED"
+    },
+    "waba": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::waba.waba",
+      "inversedBy": "phoneNumbers"
+    },
+    "tenant": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::tenant.tenant"
+    }
+  }
+}

@@ -1,0 +1,73 @@
+{
+  "kind": "collectionType",
+  "collectionName": "wabas",
+  "info": {
+    "singularName": "waba",
+    "pluralName": "wabas",
+    "displayName": "WhatsApp Business Account"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "attributes": {
+    "wabaId": {
+      "type": "string",
+      "unique": true,
+      "required": true,
+      "index": true
+    },
+    "name": {
+      "type": "string"
+    },
+    "currency": {
+      "type": "string",
+      "default": "USD"
+    },
+    "timezoneId": {
+      "type": "string",
+      "default": "UTC"
+    },
+    "accountReviewStatus": {
+      "type": "enumeration",
+      "enum": ["APPROVED", "PENDING", "REJECTED", "SUSPENDED"],
+      "default": "PENDING"
+    },
+    "encryptedAccessToken": {
+      "type": "text",
+      "private": true,
+      "required": true
+    },
+    "accessTokenIv": {
+      "type": "string",
+      "private": true,
+      "required": true
+    },
+    "accessTokenTag": {
+      "type": "string",
+      "private": true,
+      "required": true
+    },
+    "webhookSubscribed": {
+      "type": "boolean",
+      "default": false
+    },
+    "tenant": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::tenant.tenant",
+      "inversedBy": "wabas"
+    },
+    "phoneNumbers": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::phone-number.phone-number",
+      "mappedBy": "waba"
+    },
+    "templates": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::message-template.message-template",
+      "mappedBy": "waba"
+    }
+  }
+}

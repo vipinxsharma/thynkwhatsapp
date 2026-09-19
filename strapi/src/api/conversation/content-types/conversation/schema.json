@@ -1,0 +1,58 @@
+{
+  "kind": "collectionType",
+  "collectionName": "conversations",
+  "info": {
+    "singularName": "conversation",
+    "pluralName": "conversations",
+    "displayName": "Conversation"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "attributes": {
+    "status": {
+      "type": "enumeration",
+      "enum": ["open", "pending", "closed"],
+      "default": "open"
+    },
+    "windowExpiresAt": {
+      "type": "datetime",
+      "description": "Timestamp when the 24-hour freeform reply window closes"
+    },
+    "lastMessageAt": {
+      "type": "datetime"
+    },
+    "unreadCount": {
+      "type": "integer",
+      "default": 0
+    },
+    "tenant": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::tenant.tenant",
+      "inversedBy": "conversations"
+    },
+    "contact": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::contact.contact",
+      "inversedBy": "conversations"
+    },
+    "phoneNumber": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::phone-number.phone-number"
+    },
+    "assignedAgent": {
+      "type": "relation",
+      "relation": "oneToOne",
+      "target": "plugin::users-permissions.user"
+    },
+    "messages": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::message.message",
+      "mappedBy": "conversation"
+    }
+  }
+}

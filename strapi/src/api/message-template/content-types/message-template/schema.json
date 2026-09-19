@@ -1,0 +1,52 @@
+{
+  "kind": "collectionType",
+  "collectionName": "message_templates",
+  "info": {
+    "singularName": "message-template",
+    "pluralName": "message-templates",
+    "displayName": "Message Template"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "attributes": {
+    "metaTemplateId": {
+      "type": "string",
+      "required": true,
+      "index": true
+    },
+    "name": {
+      "type": "string",
+      "required": true
+    },
+    "language": {
+      "type": "string",
+      "required": true
+    },
+    "category": {
+      "type": "enumeration",
+      "enum": ["AUTHENTICATION", "MARKETING", "UTILITY"],
+      "required": true
+    },
+    "status": {
+      "type": "enumeration",
+      "enum": ["APPROVED", "IN_APPEAL", "PENDING", "REJECTED", "PAUSED", "DISABLED"],
+      "default": "PENDING"
+    },
+    "components": {
+      "type": "json",
+      "required": true
+    },
+    "waba": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::waba.waba",
+      "inversedBy": "templates"
+    },
+    "tenant": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::tenant.tenant"
+    }
+  }
+}

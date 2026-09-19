@@ -1,0 +1,73 @@
+{
+  "kind": "collectionType",
+  "collectionName": "messages",
+  "info": {
+    "singularName": "message",
+    "pluralName": "messages",
+    "displayName": "Message"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "attributes": {
+    "wamId": {
+      "type": "string",
+      "unique": true,
+      "required": true,
+      "index": true
+    },
+    "direction": {
+      "type": "enumeration",
+      "enum": ["inbound", "outbound"],
+      "required": true
+    },
+    "type": {
+      "type": "enumeration",
+      "enum": [
+        "text",
+        "image",
+        "audio",
+        "video",
+        "document",
+        "location",
+        "interactive",
+        "template",
+        "reaction",
+        "unsupported"
+      ],
+      "default": "text"
+    },
+    "body": {
+      "type": "text"
+    },
+    "rawPayload": {
+      "type": "json"
+    },
+    "status": {
+      "type": "enumeration",
+      "enum": ["received", "queued", "sent", "delivered", "read", "failed"],
+      "default": "received"
+    },
+    "errorCode": {
+      "type": "string"
+    },
+    "errorMessage": {
+      "type": "string"
+    },
+    "timestamp": {
+      "type": "datetime",
+      "required": true
+    },
+    "conversation": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::conversation.conversation",
+      "inversedBy": "messages"
+    },
+    "tenant": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::tenant.tenant"
+    }
+  }
+}
