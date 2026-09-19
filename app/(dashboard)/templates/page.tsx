@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { StrapiClient } from "@/lib/strapi/client";
 import { MessageTemplate } from "@/types/strapi";
 import { CheckCircle2, Clock, XCircle, Plus, Sparkles, Smartphone } from "lucide-react";
@@ -55,10 +56,13 @@ export default async function TemplatesPage() {
           </p>
         </div>
 
-        <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-whatsapp-light hover:brightness-110 active:scale-95 text-black font-semibold text-xs transition-all shadow-glow">
+        <Link
+          href="/templates/new"
+          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-whatsapp-light hover:brightness-110 active:scale-95 text-black font-semibold text-xs transition-all shadow-glow"
+        >
           <Plus className="w-4 h-4" />
           <span>Submit New Template</span>
-        </button>
+        </Link>
       </div>
 
       {/* Grid of Templates & Live Preview */}

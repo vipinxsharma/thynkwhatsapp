@@ -12,11 +12,13 @@ import {
   PhoneCall,
   Activity,
   Send,
+  Users,
 } from "lucide-react";
 
 const navigation = [
   { name: "Overview", href: "/", icon: LayoutDashboard },
   { name: "CRM Inbox", href: "/inbox", icon: MessageSquare, badge: "3" },
+  { name: "Contacts", href: "/contacts", icon: Users },
   { name: "Broadcasts", href: "/campaigns", icon: Send },
   { name: "HSM Templates", href: "/templates", icon: FileText },
   { name: "WABA Settings", href: "/settings/waba", icon: Settings },
