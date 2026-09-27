@@ -13,14 +13,18 @@ import {
   Activity,
   Send,
   Users,
+  Bot,
+  BarChart3,
 } from "lucide-react";
 
 const navigation = [
   { name: "Overview", href: "/", icon: LayoutDashboard },
   { name: "CRM Inbox", href: "/inbox", icon: MessageSquare, badge: "3" },
   { name: "Contacts", href: "/contacts", icon: Users },
+  { name: "Automations", href: "/automations", icon: Bot },
   { name: "Broadcasts", href: "/campaigns", icon: Send },
   { name: "HSM Templates", href: "/templates", icon: FileText },
+  { name: "Analytics", href: "/analytics", icon: BarChart3 },
   { name: "WABA Settings", href: "/settings/waba", icon: Settings },
 ];
 

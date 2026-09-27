@@ -17,6 +17,10 @@ export async function POST(request: NextRequest) {
       templateName,
       templateLanguage = "en_US",
       templateVariables = [],
+      mediaUrl,
+      caption,
+      filename,
+      interactiveButtons = [],
     } = body;
 
     if (!conversationId || !recipientPhone || !phoneNumberId) {
@@ -52,8 +56,10 @@ export async function POST(request: NextRequest) {
     // 2. Build Meta Cloud API payload
     const normalizedPhone = recipientPhone.replace(/\D/g, "");
     let metaPayload: MetaSendMessagePayload;
+    let savedBody = text || "";
 
     if (messageType === "template") {
+      savedBody = `[Template: ${templateName}]`;
       metaPayload = {
         messaging_product: "whatsapp",
         to: normalizedPhone,
@@ -75,6 +81,57 @@ export async function POST(request: NextRequest) {
               : undefined,
         },
       };
+    } else if (messageType === "image") {
+      savedBody = caption ? `${caption}` : "[Image Attachment]";
+      metaPayload = {
+        messaging_product: "whatsapp",
+        to: normalizedPhone,
+        type: "image",
+        image: {
+          link: mediaUrl,
+          caption: caption || undefined,
+        },
+      };
+    } else if (messageType === "document") {
+      savedBody = filename ? `[Document: ${filename}] ${caption || ""}` : (caption || "[Document Attachment]");
+      metaPayload = {
+        messaging_product: "whatsapp",
+        to: normalizedPhone,
+        type: "document",
+        document: {
+          link: mediaUrl,
+          filename: filename || "document.pdf",
+          caption: caption || undefined,
+        },
+      };
+    } else if (messageType === "interactive") {
+      savedBody = text || "Choose an option:";
+      metaPayload = {
+        messaging_product: "whatsapp",
+        to: normalizedPhone,
+        type: "interactive",
+        interactive: {
+          type: "button",
+          body: {
+            text: savedBody,
+          },
+          action: {
+            buttons: (interactiveButtons.length > 0
+              ? interactiveButtons
+              : [
+                  { id: "opt_1", title: "Interested" },
+                  { id: "opt_2", title: "Schedule Demo" },
+                ]
+            ).map((btn: any) => ({
+              type: "reply",
+              reply: {
+                id: btn.id || `btn_${Date.now()}`,
+                title: btn.title || btn.text || "Option",
+              },
+            })),
+          },
+        },
+      };
     } else {
       metaPayload = {
         messaging_product: "whatsapp",
@@ -94,11 +151,12 @@ export async function POST(request: NextRequest) {
       wamId,
       direction: "outbound",
       type: messageType,
-      body:
-        messageType === "template"
-          ? `[Template: ${templateName}]`
-          : text || "[Outbound Message]",
-      rawPayload: metaPayload,
+      body: savedBody,
+      rawPayload: {
+        ...metaPayload,
+        mediaUrl,
+        filename,
+      },
       status: "sent",
       timestamp: new Date().toISOString(),
     });

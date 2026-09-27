@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Send,
   Users,
@@ -12,12 +12,17 @@ import {
   Play,
   RotateCcw,
   Sparkles,
+  History,
+  TrendingUp,
+  Clock,
 } from "lucide-react";
 import { sampleTemplates } from "@/lib/strapi/mock-data";
+import { CampaignRun } from "@/lib/campaigns/store";
 
 export default function CampaignsPage() {
   const [selectedTemplate, setSelectedTemplate] = useState(sampleTemplates[0].name);
   const [selectedSegment, setSelectedSegment] = useState("all");
+  const [campaignName, setCampaignName] = useState("Q4 Product Re-Engagement");
   const [isSending, setIsSending] = useState(false);
   const [progress, setProgress] = useState(0);
   const [stats, setStats] = useState({
@@ -27,6 +32,23 @@ export default function CampaignsPage() {
     read: 0,
     failed: 0,
   });
+  const [history, setHistory] = useState<CampaignRun[]>([]);
+
+  const fetchCampaigns = async () => {
+    try {
+      const res = await fetch("/api/campaigns");
+      if (res.ok) {
+        const json = await res.json();
+        setHistory(json.data || []);
+      }
+    } catch (err) {
+      console.error("Failed to load campaigns:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchCampaigns();
+  }, []);
 
   const currentTemplate =
     sampleTemplates.find((t) => t.name === selectedTemplate) || sampleTemplates[0];
@@ -35,34 +57,56 @@ export default function CampaignsPage() {
   const estimatedCostPerMsg = currentTemplate.category === "MARKETING" ? 0.075 : 0.015; // in USD approx
   const totalCost = (stats.total * estimatedCostPerMsg).toFixed(2);
 
-  const handleLaunchCampaign = () => {
+  const handleLaunchCampaign = async () => {
     setIsSending(true);
-    setProgress(0);
+    setProgress(15);
     setStats({ total: 250, sent: 0, delivered: 0, read: 0, failed: 0 });
 
-    let sentCount = 0;
-    const interval = setInterval(() => {
-      sentCount += 25;
-      const currentProgress = Math.min(100, Math.round((sentCount / 250) * 100));
-      setProgress(currentProgress);
+    try {
+      const interval = setInterval(() => {
+        setProgress((prev) => {
+          if (prev >= 90) {
+            clearInterval(interval);
+            return 90;
+          }
+          return prev + 15;
+        });
+      }, 200);
 
-      setStats({
-        total: 250,
-        sent: Math.min(250, sentCount),
-        delivered: Math.min(248, Math.round(sentCount * 0.98)),
-        read: Math.min(210, Math.round(sentCount * 0.84)),
-        failed: Math.min(2, Math.round(sentCount * 0.008)),
+      const res = await fetch("/api/campaigns/broadcast", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: campaignName.trim(),
+          templateName: selectedTemplate,
+          segment: selectedSegment,
+        }),
       });
 
-      if (sentCount >= 250) {
-        clearInterval(interval);
-        setIsSending(false);
+      clearInterval(interval);
+      setProgress(100);
+
+      if (res.ok) {
+        const json = await res.json();
+        const run: CampaignRun = json.data;
+        setStats({
+          total: run.totalRecipients || 250,
+          sent: run.sentCount || 250,
+          delivered: run.deliveredCount || 248,
+          read: run.readCount || 210,
+          failed: run.failedCount || 2,
+        });
+        await fetchCampaigns();
       }
-    }, 400);
+    } catch (err) {
+      console.error("Campaign broadcast error:", err);
+    } finally {
+      setIsSending(false);
+    }
   };
 
   return (
-    <div className="flex-1 overflow-y-auto p-8 space-y-6 max-w-5xl">
+    <div className="flex-1 overflow-y-auto p-8 space-y-6 max-w-6xl">
       {/* Header */}
       <div className="pb-6 border-b border-white/5 flex items-center justify-between">
         <div>
@@ -84,6 +128,20 @@ export default function CampaignsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Campaign Configuration Form */}
         <div className="lg:col-span-2 space-y-5">
+          {/* Step 0: Campaign Name */}
+          <div className="p-5 rounded-xl bg-surface-100/60 border border-white/5 space-y-2">
+            <label className="text-xs font-bold uppercase tracking-wider text-gray-300">
+              Campaign Name
+            </label>
+            <input
+              type="text"
+              value={campaignName}
+              onChange={(e) => setCampaignName(e.target.value)}
+              placeholder="e.g. Q4 Festive Offer or Product Launch"
+              className="w-full px-3.5 py-2.5 rounded-lg bg-black/40 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-whatsapp-light text-xs font-medium"
+            />
+          </div>
+
           {/* Step 1: Select Template */}
           <div className="p-5 rounded-xl bg-surface-100/60 border border-white/5 space-y-3">
             <label className="text-xs font-bold uppercase tracking-wider text-gray-300 flex items-center gap-2">
@@ -235,6 +293,52 @@ export default function CampaignsPage() {
               </div>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Broadcast History Table */}
+      <div className="p-6 rounded-2xl bg-surface-100/60 border border-white/5 space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <History className="w-4 h-4 text-whatsapp-light" />
+            <h3 className="text-base font-bold text-white">Broadcast History & Meta Receipts</h3>
+          </div>
+          <span className="text-xs text-gray-400">{history.length} Past Broadcasts</span>
+        </div>
+
+        <div className="overflow-hidden rounded-xl border border-white/5">
+          <table className="w-full text-left text-xs">
+            <thead className="bg-[#0b0e14]/60 text-gray-400 uppercase tracking-wider border-b border-white/5 font-semibold">
+              <tr>
+                <th className="p-3">Campaign</th>
+                <th className="p-3">Template</th>
+                <th className="p-3">Segment</th>
+                <th className="p-3">Delivered / Read</th>
+                <th className="p-3">Cost (USD)</th>
+                <th className="p-3">Date</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/5">
+              {history.map((c) => (
+                <tr key={c.id} className="hover:bg-white/[0.02]">
+                  <td className="p-3 font-semibold text-white">{c.name}</td>
+                  <td className="p-3 font-mono text-gray-300">{c.templateName}</td>
+                  <td className="p-3 capitalize text-gray-400">{c.segment}</td>
+                  <td className="p-3">
+                    <span className="text-emerald-400 font-bold">{c.deliveredCount}</span>
+                    <span className="text-gray-500"> / </span>
+                    <span className="text-blue-400 font-semibold">{c.readCount} read</span>
+                  </td>
+                  <td className="p-3 font-mono text-whatsapp-light font-bold">
+                    ${c.estimatedCostUSD}
+                  </td>
+                  <td className="p-3 text-gray-500 text-[11px]">
+                    {new Date(c.createdAt).toLocaleDateString()}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>

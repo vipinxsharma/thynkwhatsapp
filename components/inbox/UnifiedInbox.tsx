@@ -7,6 +7,7 @@ import { MessageThread } from "./MessageThread";
 import { MessageInput } from "./MessageInput";
 import { ContactDetailsSidebar } from "./ContactDetailsSidebar";
 import { TemplateSelectorModal } from "./TemplateSelectorModal";
+import { MediaAttachmentModal } from "./MediaAttachmentModal";
 import { Sparkles, Phone, Video, MoreVertical, Play, Wifi } from "lucide-react";
 import { formatPhoneNumber } from "@/lib/utils";
 
@@ -27,6 +28,7 @@ export function UnifiedInbox({
     initialConversations[0]?.id || "1"
   );
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
+  const [isMediaModalOpen, setIsMediaModalOpen] = useState(false);
   const [isSimulatingInbound, setIsSimulatingInbound] = useState(false);
   const [isLiveConnected, setIsLiveConnected] = useState(false);
 
@@ -192,7 +194,58 @@ export function UnifiedInbox({
     }
   };
 
-  // 3. Simulate Incoming WhatsApp Webhook (for live local testing)
+  // 3. Send Rich Media (Image, Document/PDF, Interactive buttons)
+  const handleSendMedia = async (payload: {
+    messageType: "image" | "document" | "interactive";
+    mediaUrl?: string;
+    caption?: string;
+    filename?: string;
+    interactiveButtons?: Array<{ id: string; title: string }>;
+    text?: string;
+  }) => {
+    if (!activeConversation) return;
+
+    try {
+      const res = await fetch("/api/whatsapp/messages/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          conversationId: activeConversation.id,
+          recipientPhone: activeConversation.contact.phoneNumber,
+          phoneNumberId: activeConversation.phoneNumber.phoneNumberId,
+          ...payload,
+        }),
+      });
+
+      const json = await res.json();
+      if (!res.ok) {
+        alert(`Failed to send rich media: ${json.message || json.error}`);
+        return;
+      }
+
+      const newMsg: Message = json.data;
+      setMessagesMap((prev) => ({
+        ...prev,
+        [String(activeId)]: [...(prev[String(activeId)] || []), newMsg],
+      }));
+
+      setConversations((prev) =>
+        prev.map((c) =>
+          String(c.id) === String(activeId)
+            ? {
+                ...c,
+                lastMessage: newMsg,
+                lastMessageAt: newMsg.timestamp,
+              }
+            : c
+        )
+      );
+    } catch (err: any) {
+      alert(`Error sending rich media: ${err.message}`);
+    }
+  };
+
+  // 4. Simulate Incoming WhatsApp Webhook (for live local testing)
   const handleSimulateInbound = async () => {
     if (!activeConversation || isSimulatingInbound) return;
     setIsSimulatingInbound(true);
@@ -377,6 +430,7 @@ export function UnifiedInbox({
             windowExpiresAt={activeConversation.windowExpiresAt}
             onSendMessage={handleSendMessage}
             onOpenTemplateModal={() => setIsTemplateModalOpen(true)}
+            onOpenMediaModal={() => setIsMediaModalOpen(true)}
           />
         </div>
       ) : (
@@ -402,6 +456,15 @@ export function UnifiedInbox({
           templates={templates}
           recipientName={activeConversation.contact.name}
           onSendTemplate={handleSendTemplate}
+        />
+      )}
+
+      {/* Rich Media & Interactive Buttons Modal */}
+      {activeConversation && (
+        <MediaAttachmentModal
+          isOpen={isMediaModalOpen}
+          onClose={() => setIsMediaModalOpen(false)}
+          onSendMedia={handleSendMedia}
         />
       )}
     </div>

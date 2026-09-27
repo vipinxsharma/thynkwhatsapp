@@ -1,13 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { Send, FileText, Clock, AlertTriangle, Sparkles } from "lucide-react";
+import { Send, FileText, Clock, AlertTriangle, Sparkles, Paperclip } from "lucide-react";
 import { calculateWindowRemaining } from "@/lib/utils";
 
 interface MessageInputProps {
   windowExpiresAt: string;
   onSendMessage: (text: string) => Promise<void>;
   onOpenTemplateModal: () => void;
+  onOpenMediaModal?: () => void;
   disabled?: boolean;
 }
 
@@ -15,6 +16,7 @@ export function MessageInput({
   windowExpiresAt,
   onSendMessage,
   onOpenTemplateModal,
+  onOpenMediaModal,
   disabled,
 }: MessageInputProps) {
   const [text, setText] = useState("");
@@ -81,7 +83,19 @@ export function MessageInput({
       </div>
 
       {/* Input Form */}
-      <form onSubmit={handleSubmit} className="p-3 flex items-end gap-2.5">
+      <form onSubmit={handleSubmit} className="p-3 flex items-end gap-2">
+        {onOpenMediaModal && (
+          <button
+            type="button"
+            onClick={onOpenMediaModal}
+            disabled={windowStatus.isExpired || sending || disabled}
+            className="p-2.5 rounded-xl bg-surface-100/80 hover:bg-surface-50 text-gray-400 hover:text-white border border-white/5 disabled:opacity-40 transition-all flex-shrink-0"
+            title="Attach Image, Document, or CTA Buttons"
+          >
+            <Paperclip className="w-4 h-4" />
+          </button>
+        )}
+
         <div className="flex-1 relative rounded-xl bg-surface-100/90 border border-white/5 focus-within:border-whatsapp-light/40 transition-all">
           <textarea
             rows={1}

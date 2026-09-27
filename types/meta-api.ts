@@ -34,6 +34,32 @@ export interface MetaSendMessagePayload {
     preview_url?: boolean;
     body: string;
   };
+  image?: {
+    link?: string;
+    id?: string;
+    caption?: string;
+  };
+  document?: {
+    link?: string;
+    id?: string;
+    caption?: string;
+    filename?: string;
+  };
+  interactive?: {
+    type: "button";
+    body: {
+      text: string;
+    };
+    action: {
+      buttons: Array<{
+        type: "reply";
+        reply: {
+          id: string;
+          title: string;
+        };
+      }>;
+    };
+  };
   template?: {
     name: string;
     language: {

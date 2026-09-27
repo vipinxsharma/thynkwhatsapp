@@ -2,10 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifyMetaWebhookSignature } from "@/lib/meta/signature";
 import { MetaWebhookPayload, WebhookChangeValue } from "@/types/meta-webhook";
 import { StrapiClient } from "@/lib/strapi/client";
+import { MetaGraphClient } from "@/lib/meta/client";
 import { emitMessageStatusUpdate, emitNewInboundMessage } from "@/lib/events/emitter";
+import { AutomationEngine } from "@/lib/automations/rules";
 
 const META_VERIFY_TOKEN = process.env.META_WEBHOOK_VERIFY_TOKEN || "thynkwise_meta_verify_token_secure_2026";
 const strapiClient = new StrapiClient();
+const metaClient = new MetaGraphClient();
 
 /**
  * 1. GET: Webhook Challenge Verification
@@ -140,6 +143,44 @@ async function processWebhookEntries(entries: MetaWebhookPayload["entry"]) {
               console.log(
                 `[Webhook Inbound Message] Ingested message ${msg.id} from ${msg.from} to conversation ${matchedConv.id}`
               );
+
+              // 3. Automated Bot & Keyword Triggers Engine
+              const autoRule = AutomationEngine.matchRule(bodyText);
+              if (autoRule) {
+                console.log(`[Auto-Responder Bot] Triggered rule "${autoRule.name}" for message: "${bodyText}"`);
+
+                // Auto-assign tags
+                if (autoRule.assignTags && autoRule.assignTags.length > 0) {
+                  const currentTags = matchedConv.contact.tags || [];
+                  const mergedTags = Array.from(new Set([...currentTags, ...autoRule.assignTags]));
+                  await strapiClient.updateContactTags(matchedConv.contact.id, mergedTags);
+                }
+
+                // Send auto-reply
+                const botWamId = `wamid.BOT_${Date.now()}`;
+                let replyRaw: any = {};
+                let replyBody = autoRule.replyText;
+
+                if (autoRule.responseType === "interactive" && autoRule.interactiveButtons?.length) {
+                  replyRaw = {
+                    buttons: autoRule.interactiveButtons,
+                  };
+                }
+
+                // Record and emit bot reply
+                const botMessage = await strapiClient.recordMessage(matchedConv.id, {
+                  wamId: botWamId,
+                  direction: "outbound",
+                  type: autoRule.responseType === "interactive" ? "interactive" : "text",
+                  body: replyBody,
+                  rawPayload: replyRaw,
+                  status: "sent",
+                  timestamp: new Date().toISOString(),
+                });
+
+                emitNewInboundMessage(matchedConv.id, botMessage);
+                console.log(`[Auto-Responder Bot] Sent automated reply to conversation ${matchedConv.id}`);
+              }
             }
           }
         }
