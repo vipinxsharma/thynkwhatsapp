@@ -63,8 +63,8 @@ export default function DashboardLayout({
                 <Building2 className="w-4 h-4 text-gray-400" />
               </div>
               <div className="truncate">
-                <p className="text-xs font-semibold text-gray-200 truncate">Acme Global</p>
-                <p className="text-[10px] text-gray-400 font-mono">WABA: 109823485</p>
+                <p className="text-xs font-semibold text-gray-200 truncate">thynk.WISE.Ai</p>
+                <p className="text-[10px] text-gray-400 font-mono">App: 1400121938327205</p>
               </div>
             </div>
             <span className="w-2 h-2 rounded-full bg-whatsapp-light animate-pulse" title="Connected" />

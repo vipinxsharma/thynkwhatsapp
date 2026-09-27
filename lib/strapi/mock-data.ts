@@ -2,8 +2,8 @@ import { Conversation, Message, MessageTemplate, PhoneNumber, WABAAccount } from
 
 export const initialWABA: WABAAccount = {
   id: 1,
-  wabaId: "109823485723910",
-  name: "thynkWISE Enterprise Solutions",
+  wabaId: "718550427356660",
+  name: "thynk.WISE.Ai",
   currency: "INR",
   timezoneId: "Asia/Kolkata",
   accountReviewStatus: "APPROVED",
@@ -11,9 +11,9 @@ export const initialWABA: WABAAccount = {
   phoneNumbers: [
     {
       id: 1,
-      phoneNumberId: "105678234901234",
+      phoneNumberId: "888125694377892",
       displayPhoneNumber: "+91 98765 43210",
-      verifiedName: "thynkWISE Sales & Support",
+      verifiedName: "thynk.WISE.Ai",
       qualityRating: "GREEN",
       codeVerificationStatus: "VERIFIED",
     },
@@ -21,7 +21,7 @@ export const initialWABA: WABAAccount = {
       id: 2,
       phoneNumberId: "105678234901235",
       displayPhoneNumber: "+1 (415) 555-0199",
-      verifiedName: "thynkWISE Global",
+      verifiedName: "thynk.WISE.Ai Global",
       qualityRating: "GREEN",
       codeVerificationStatus: "VERIFIED",
     },
