@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 
 export default async function TeamSettingsPage() {
   const session = await requirePageSession();
-  if (!['owner', 'admin'].includes(session.role)) redirect("/");
+  if (!['owner', 'admin'].includes(session.role)) redirect("/dashboard");
   const team = await listWorkspaceTeam(session.tenantId);
   return (
     <main className="flex-1 overflow-y-auto p-8">

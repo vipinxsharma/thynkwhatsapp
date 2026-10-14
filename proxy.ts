@@ -3,6 +3,7 @@ import { SESSION_COOKIE_NAME, verifySessionToken } from "@/lib/auth/token";
 
 function isPublicPath(pathname: string): boolean {
   return (
+    pathname === "/" ||
     pathname === "/login" ||
     pathname === "/invite" ||
     pathname.startsWith("/auth/") ||
