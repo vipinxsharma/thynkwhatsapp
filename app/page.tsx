@@ -193,7 +193,7 @@ export default function HomePage() {
             <div className="max-w-3xl">
               <p className="text-xs font-bold uppercase tracking-[.2em] text-[var(--accent)]">A glimpse of the vision</p>
               <h2 id="vision-film-title" className="mt-4 text-3xl font-bold tracking-tight text-[var(--heading)] sm:text-4xl">Meet Xeccel in motion.</h2>
-              <p className="mt-5 text-sm leading-7 text-[var(--muted)]">A voiced introduction and a silent concept film show the service experience we&apos;re working toward. These are creative previews, not a demonstration of a live product.</p>
+              <p className="mt-5 text-sm leading-7 text-[var(--muted)]">A voiced introduction and two silent concept films show the service experience we&apos;re working toward. These are creative previews, not a demonstration of a live product.</p>
             </div>
             <div className="mt-10 grid gap-6 lg:grid-cols-2">
               <article className={`${styles.filmFrame} lg:col-span-2`}>
@@ -213,12 +213,19 @@ export default function HomePage() {
                   </video>
                 </div>
               </article>
-              <figure className={`${styles.filmFrame} lg:col-span-2 lg:w-full lg:max-w-[50rem] lg:justify-self-center`}>
+              <figure className={styles.filmFrame}>
                 <video controls playsInline preload="none" poster="/media/xeccel-video-poster.jpg" aria-label="Silent Xeccel prelaunch concept film">
                   <source src="/media/xeccel-heygen-explainer-silent.mp4" type="video/mp4" />
                   Your browser does not support video playback.
                 </video>
                 <figcaption className="px-5 py-4 text-xs leading-6 text-[var(--muted)]"><strong className="text-[var(--heading)]">The vision · Silent, 20 seconds.</strong> Concept animation, not footage of a live product.</figcaption>
+              </figure>
+              <figure className={styles.filmFrame}>
+                <video controls playsInline muted preload="none" poster="/media/xeccel-flow-hero.webp" aria-label="Silent Google Flow Xeccel motion concept">
+                  <source src="/media/xeccel-google-flow-loop.mp4" type="video/mp4" />
+                  Your browser does not support video playback.
+                </video>
+                <figcaption className="px-5 py-4 text-xs leading-6 text-[var(--muted)]"><strong className="text-[var(--heading)]">The energy · Silent, 8 seconds.</strong> A Google Flow concept loop inspired by the Xeccel visual identity.</figcaption>
               </figure>
             </div>
             <p className="mt-5 text-xs leading-6 text-[var(--muted)]">All films depict concepts. Customer onboarding is not open yet.</p>
