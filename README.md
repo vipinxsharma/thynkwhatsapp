@@ -8,6 +8,7 @@ Enterprise Multi-Tenant WhatsApp Business API & Unified CRM Inbox built for **th
 
 - **Frontend & Edge**: Next.js 15 (App Router, React Server Components), Tailwind CSS, TypeScript.
 - **Backend CMS & RLS**: Strapi (Headless CMS) with Document Service tenant isolation middleware and atomic ingestion controller.
+- **Identity & tenancy**: Neon Managed Better Auth with Lakebase Postgres workspace membership and audit tables.
 - **APIs**: Meta WhatsApp Cloud API (`v21.0`), Meta Embedded Signup (Facebook JavaScript SDK).
 - **Security**:
   - Signed server sessions with role checks and server-derived tenant context.
@@ -86,6 +87,11 @@ Generate unique secrets for `AUTH_SESSION_SECRET`, `META_WEBHOOK_VERIFY_TOKEN`, 
 `ENCRYPTION_KEY`. The server intentionally fails closed when they are absent. The current
 webhook implementation also requires `META_WEBHOOK_TENANT_ID` as a temporary single-tenant
 route; durable WABA-to-tenant routing is required before production use.
+
+Self-service identity additionally requires a dedicated Neon project with Managed Better Auth,
+`NEON_AUTH_BASE_URL`, `NEON_AUTH_COOKIE_SECRET`, and `DATABASE_URL`. Apply
+`db/migrations/0001_self_service_identity.sql` using the direct `DATABASE_URL_UNPOOLED`; normal
+application queries use the pooled URL. Do not point this application at an unrelated tenant DB.
 
 Meta Embedded Signup currently returns `501` before exchanging the one-time code. This is
 intentional: durable, encrypted, tenant-owned credential persistence and ownership verification

@@ -1,23 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 import { SESSION_COOKIE_NAME, verifySessionToken } from "@/lib/auth/token";
 
-const PUBLIC_PATHS = new Set(["/login", "/api/webhooks/meta"]);
+function isPublicPath(pathname: string): boolean {
+  return (
+    pathname === "/login" ||
+    pathname.startsWith("/auth/") ||
+    pathname.startsWith("/api/auth/") ||
+    pathname === "/api/webhooks/meta"
+  );
+}
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
-  if (PUBLIC_PATHS.has(pathname)) return NextResponse.next();
+  if (isPublicPath(pathname)) return NextResponse.next();
 
   const authorization = request.headers.get("authorization");
   const bearerToken = authorization?.startsWith("Bearer ") ? authorization.slice(7) : undefined;
   const cookieToken = request.cookies.get(SESSION_COOKIE_NAME)?.value;
   const session = await verifySessionToken(bearerToken || cookieToken);
 
-  if (session) {
-    const response = NextResponse.next();
-    response.headers.set("x-thynkwise-tenant", session.tenantId);
-    return response;
-  }
-
+  if (session) return NextResponse.next();
   if (pathname.startsWith("/api/")) {
     return NextResponse.json({ error: "Authentication required" }, { status: 401 });
   }

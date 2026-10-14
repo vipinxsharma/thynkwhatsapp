@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { AppSession } from "@/lib/auth/session";
+import { signOutAction } from "@/app/auth/actions";
 import {
   Activity,
   BarChart3,
@@ -108,6 +109,9 @@ export function DashboardShell({
             <Activity className="w-3.5 h-3.5 text-blue-400" />
             <span className="capitalize">Role: {session.role}</span>
           </div>
+          <form action={signOutAction}>
+            <button className="text-[11px] text-gray-400 hover:text-white">Sign out</button>
+          </form>
         </div>
       </aside>
 
