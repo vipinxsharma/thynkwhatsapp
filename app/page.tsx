@@ -89,6 +89,13 @@ const questions = [
   },
 ];
 
+const policyHighlights = [
+  { title: "Privacy & data", detail: "See what Xeccel handles and how to request access, correction, or deletion.", href: "/legal/privacy" },
+  { title: "Payments & terms", detail: "Understand how plan prices, taxes, billing periods, and renewals will be disclosed.", href: "/legal/terms" },
+  { title: "Refunds & cancellation", detail: "Know how to stop a future renewal or raise an incorrect or duplicate charge.", href: "/legal/refunds-cancellations" },
+  { title: "Service delivery", detail: "See the difference between workspace access and provider-approved live messaging.", href: "/legal/service-delivery" },
+];
+
 export default function HomePage() {
   return (
     <main id="top" className={`${styles.home} min-h-screen bg-[var(--background)] text-[var(--foreground)]`}>
@@ -104,6 +111,7 @@ export default function HomePage() {
             <a className="hover:text-[var(--heading)]" href="#how-it-works">How it works</a>
             <a className="hover:text-[var(--heading)]" href="#roadmap">Roadmap</a>
             <a className="hover:text-[var(--heading)]" href="#questions">Questions</a>
+            <a className="hover:text-[var(--heading)]" href="#policies">Policies</a>
           </nav>
           <div className="order-2 flex items-center gap-3 md:order-3">
             <a href="https://www.thynkwise.ai/" className={`${styles.poweredUnit} hidden items-center gap-2 rounded-2xl border border-[var(--border)] bg-white px-3 py-1.5 lg:inline-flex`} aria-label="Powered by thynkWISE">
@@ -292,6 +300,24 @@ export default function HomePage() {
             </div>
           </section>
 
+          <section id="policies" aria-labelledby="policies-title" className={`${styles.scrollReveal} scroll-mt-8 border-t border-[var(--border)] py-16 md:py-20`}>
+            <div className="max-w-3xl">
+              <p className="text-xs font-bold uppercase tracking-[.2em] text-[var(--accent)]">Clear before you commit</p>
+              <h2 id="policies-title" className="mt-4 text-3xl font-bold tracking-tight text-[var(--heading)] sm:text-4xl">Your data, payments, and service terms — in plain sight.</h2>
+              <p className="mt-5 text-sm leading-7 text-[var(--muted)]">Public checkout is not active yet. Before paid access opens, you can review the policies and contact the business behind Xeccel. The exact plan and any usage charges will be disclosed before a purchase.</p>
+            </div>
+            <div className="mt-10 grid gap-4 sm:grid-cols-2">
+              {policyHighlights.map((item) => (
+                <a key={item.href} href={item.href} className={`${styles.card} rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-7 hover:border-[var(--accent)]`}>
+                  <h3 className="text-lg font-semibold text-[var(--heading)]">{item.title}</h3>
+                  <p className="mt-3 text-sm leading-7 text-[var(--muted)]">{item.detail}</p>
+                  <span className="mt-5 inline-block text-sm font-semibold text-[var(--accent)]">Read the policy →</span>
+                </a>
+              ))}
+            </div>
+            <a href="/legal" className="mt-7 inline-flex text-sm font-semibold text-[var(--accent)] underline underline-offset-4">View all policies and support details</a>
+          </section>
+
           <section className={`${styles.scrollReveal} mb-16 rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-8 md:p-12`}>
             <p className="text-xs font-bold uppercase tracking-[.2em] text-[var(--accent)]">Xeccel is on its way</p>
             <h2 className="mt-4 max-w-3xl text-3xl font-bold tracking-tight text-[var(--heading)] sm:text-4xl">A better home for your customer messaging is taking shape.</h2>
@@ -300,15 +326,25 @@ export default function HomePage() {
           </section>
         </div>
 
-        <footer className="flex flex-col gap-5 border-t border-[var(--border)] py-8 text-xs text-[var(--muted)] sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex flex-wrap items-center gap-5">
-            <p>© {new Date().getFullYear()} Xeccel.</p>
+        <footer className="grid gap-8 border-t border-[var(--border)] py-10 text-xs text-[var(--muted)] md:grid-cols-[1fr_1.5fr]">
+          <div className="space-y-4">
+            <p>© {new Date().getFullYear()} Xeccel · Operated by ThynkWISE Advisors Private Limited.</p>
             <a href="https://www.thynkwise.ai/" className={`${styles.poweredUnit} inline-flex items-center gap-2 rounded-2xl border border-[var(--border)] bg-white px-3 py-1.5`} aria-label="Powered by thynkWISE">
               <span className="w-10 text-[9px] font-semibold uppercase leading-tight tracking-wide text-[#142142]">Powered by</span>
               <Image src="/brand/thynkwise-logo.png" alt="thynkWISE" width={100} height={38} className="h-auto w-[100px]" />
             </a>
+            <p>Public website live · Customer access in preparation</p>
           </div>
-          <p>Public website live · Customer access in preparation</p>
+          <nav aria-label="Policies and support" className="grid gap-x-5 gap-y-3 sm:grid-cols-3">
+            <a href="/legal/privacy" className="hover:text-[var(--heading)]">Privacy Policy</a>
+            <a href="/legal/terms" className="hover:text-[var(--heading)]">Terms of Service</a>
+            <a href="/legal/refunds-cancellations" className="hover:text-[var(--heading)]">Refunds & Cancellations</a>
+            <a href="/legal/service-delivery" className="hover:text-[var(--heading)]">Service Delivery</a>
+            <a href="/legal/cookies" className="hover:text-[var(--heading)]">Cookie Policy</a>
+            <a href="/legal/messaging-use" className="hover:text-[var(--heading)]">Messaging Use</a>
+            <a href="/legal" className="font-semibold text-[var(--accent)] hover:underline">Legal & Support Center</a>
+            <a href="mailto:partner@thynkwise.co.in" className="hover:text-[var(--heading)]">Contact support</a>
+          </nav>
         </footer>
       </div>
     </main>
