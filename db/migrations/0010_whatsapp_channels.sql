@@ -54,3 +54,7 @@ WHERE c.workspace_id = d.workspace_id AND c.phone_number_id = ''
       AND existing.contact_id = c.contact_id
       AND existing.phone_number_id = d.phone_number_id
   );
+
+-- Bounded, tenant-scoped keyset reads of the newest messages per conversation.
+CREATE INDEX IF NOT EXISTS app_inbox_messages_recent_page_idx
+  ON app_inbox_messages (workspace_id, conversation_id, timestamp DESC, id DESC);

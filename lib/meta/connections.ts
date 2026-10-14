@@ -39,6 +39,7 @@ export async function saveMetaConnection(input: {
   authUserId: string;
   ownership: MetaPhoneOwnership;
   encryptedToken: EncryptedData;
+  channelName: string;
 }): Promise<void> {
   const sql = database();
   const { ownership, encryptedToken } = input;
@@ -74,17 +75,18 @@ export async function saveMetaConnection(input: {
   if (!account.length) throw new Error("This WABA is already connected to another workspace");
   const channel = await sql.query(
     `INSERT INTO app_whatsapp_channels (
-       phone_number_id, workspace_id, waba_id, display_phone_number, verified_name
-     ) VALUES ($1, $2::uuid, $3, $4, $5)
+       phone_number_id, workspace_id, waba_id, display_phone_number, verified_name, channel_name
+     ) VALUES ($1, $2::uuid, $3, $4, $5, $6)
      ON CONFLICT (phone_number_id) DO UPDATE SET
        display_phone_number = EXCLUDED.display_phone_number,
        verified_name = EXCLUDED.verified_name,
+       channel_name = EXCLUDED.channel_name,
        enabled = true, updated_at = now()
      WHERE app_whatsapp_channels.workspace_id = EXCLUDED.workspace_id
        AND app_whatsapp_channels.waba_id = EXCLUDED.waba_id
      RETURNING phone_number_id`,
     [ownership.phoneNumberId, input.workspaceId, ownership.wabaId,
-      ownership.displayPhoneNumber || null, ownership.verifiedName || null]
+      ownership.displayPhoneNumber || null, ownership.verifiedName || null, input.channelName]
   );
   if (!channel.length) throw new Error("This phone number is already connected to another workspace or WABA");
   await sql.query(

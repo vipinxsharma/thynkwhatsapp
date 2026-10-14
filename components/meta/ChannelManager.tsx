@@ -14,6 +14,7 @@ export function ChannelManager({ initialChannels, durable, canManage }: {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [names, setNames] = useState<Record<string, string>>({});
+  const [newChannelName, setNewChannelName] = useState("");
   useEffect(() => setChannels(initialChannels), [initialChannels]);
 
   async function act(phoneNumberId: string, action: "rename" | "make_default" | "refresh") {
@@ -58,7 +59,15 @@ export function ChannelManager({ initialChannels, durable, canManage }: {
             <h2 className="text-lg font-semibold text-white">Add a WhatsApp number</h2>
             <p className="mt-1 max-w-xl text-sm text-gray-400">An owner or admin connects a number through Meta Embedded Signup. Meta must confirm WABA ownership before Xeccel stores it.</p>
           </div>
-          {durable && canManage && <EmbeddedSignupButton onSuccess={() => router.refresh()} />}
+          {durable && canManage && <div className="space-y-3">
+            <label htmlFor="new-channel-name" className="block text-xs text-gray-300">Channel name</label>
+            <input id="new-channel-name" maxLength={60} value={newChannelName}
+              onChange={(event) => setNewChannelName(event.target.value)} placeholder="e.g. Customer support"
+              className="w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-white" />
+            <EmbeddedSignupButton channelName={newChannelName.trim()} onSuccess={() => {
+              setNewChannelName(""); router.refresh();
+            }} />
+          </div>}
         </div>
       </section>
       <section className="space-y-4" aria-label="Connected WhatsApp numbers">

@@ -46,7 +46,7 @@ export function ConversationList({
         <div className="flex items-center justify-between">
           <h2 className="text-base font-bold text-white tracking-tight">Conversations</h2>
           <span className="text-xs text-gray-400 font-medium">
-            {filteredConversations.length} total
+            {filteredConversations.length} loaded
           </span>
         </div>
 
@@ -54,7 +54,7 @@ export function ConversationList({
           <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
-            placeholder="Search by name, number, or text..."
+            placeholder="Search loaded chats..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full pl-9 pr-3 py-1.5 rounded-lg bg-white/5 border border-white/5 text-xs text-gray-200 placeholder-gray-500 focus:outline-none focus:border-whatsapp-light/50 focus:bg-white/[0.07] transition-all"

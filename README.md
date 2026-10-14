@@ -117,12 +117,16 @@ considering a release.
 Migration 0010 adds a separate record for each WhatsApp number, backfills existing
 connections, and stores one default sender per workspace. Apply and verify this
 migration before deploying channel-management code. Settings → WhatsApp channels
-can add a number through Meta Embedded Signup, rename it locally, select a default,
+can name and add a number through Meta Embedded Signup, rename it locally, select a default,
 and refresh its Meta phone inventory and quality fields. A Meta inventory match is
 not proof of registration, display-name approval, webhook delivery, or successful
 messaging. Existing conversations retain their original sender number when the
 default changes. Provider-side number release, ownership migration, and live
 cutover are not automated.
+
+The inbox loads only the selected conversation's latest 50 messages and pages
+older history with a tenant-scoped cursor. See the [data-scale plan](docs/architecture/saas-data-scale.md)
+for the remaining conversation-paging, worker, retention, and recovery gates.
 
 Meta Embedded Signup exchanges the code only after durable storage is configured, verifies that
 the phone number belongs to the selected WABA, subscribes the WABA to webhooks, encrypts the

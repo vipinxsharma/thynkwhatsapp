@@ -104,14 +104,26 @@ export async function getConversation(workspaceId: string, conversationId: strin
 }
 
 export async function getMessages(workspaceId: string, conversationId: string): Promise<Message[]> {
+  return (await getMessagePage(workspaceId, conversationId)).messages;
+}
+
+export async function getMessagePage(
+  workspaceId: string,
+  conversationId: string,
+  before?: { timestamp: string; id: string },
+): Promise<{ messages: Message[]; hasMore: boolean }> {
+  const cursorClause = before ? "AND (timestamp, id) < ($3::timestamptz, $4::uuid)" : "";
   const rows = await database().query(
     `SELECT id, wam_id AS "wamId", direction, type, body, raw_payload AS "rawPayload",
-      status, timestamp, conversation_id AS "conversationId"
-     FROM app_inbox_messages WHERE workspace_id = $1::uuid AND conversation_id = $2::uuid
-     ORDER BY timestamp ASC LIMIT 500`,
-    [workspaceId, conversationId]
+      status, to_char(timestamp AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS timestamp,
+      conversation_id AS "conversationId"
+     FROM app_inbox_messages
+     WHERE workspace_id = $1::uuid AND conversation_id = $2::uuid
+       ${cursorClause}
+     ORDER BY timestamp DESC, id DESC LIMIT 51`,
+    before ? [workspaceId, conversationId, before.timestamp, before.id] : [workspaceId, conversationId]
   );
-  return rows as Message[];
+  return { messages: (rows.slice(0, 50) as Message[]).reverse(), hasMore: rows.length > 50 };
 }
 
 export async function ensureContactConversation(input: {

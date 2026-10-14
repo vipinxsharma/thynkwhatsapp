@@ -13,6 +13,27 @@ Observed read-only in the user's WATI workspace on 14 October 2026. This is a pr
 | Connectors: API, integrations, webhooks | Internal routes and Meta webhook exist | Add Integrations section; customer credentials and outbound customer webhooks are not yet available |
 | Settings: channels, users, account | WABA and team settings exist | Preserve accurate provider-status labels and self-serve account controls |
 
+## Multi-number workflow benchmark
+
+WATI's published path is Settings → Channels → Channel Status → Add → name the
+number → Meta Embedded Signup. Its inbox filters by channel, and the channel
+page can rename a number, inspect status, and change the default. These are
+workflow patterns to match with Xeccel's own UI and copy, not WATI assets or code.
+Sources: [multiple-number flow](https://support.wati.io/en/articles/11561205-manage-multiple-whatsapp-numbers-in-a-single-wati-account),
+[channel-based team access](https://support.wati.io/en/articles/13867076-how-to-manage-user-access-with-multiple-whatsapp-numbers-connected-in-wati).
+
+| Journey | Xeccel state | Next better-than-baseline gate |
+| --- | --- | --- |
+| Name → Embedded Signup → channel record | Implemented in PR #28; ownership and webhook subscription checked before save | Resume/retry onboarding with a durable, auditable attempt ID and precise failure reason |
+| Channel inventory, quality, default, rename | Implemented in PR #28; inventory is only a Meta listing observation | Distinguish registration, display-name, webhook receipt, real send, and real receive with timestamps |
+| Inbox channel switch | Implemented as a sender filter; message history now loads on selection | Server-side conversation paging and search; per-channel unread counts |
+| Agent access by channel | Not yet enforced | Workspace teams, channel grants, and deny-by-default API checks |
+| Per-channel templates, campaigns, automations | Not production-enabled | Explicit sender binding, opt-in and entitlement checks, durable jobs, receipts |
+| Replace/disconnect number | Not automated | Safe cutover wizard with ownership confirmation, no implicit history move, rollback |
+
+Do not treat WATI's “Connected” label as proof that Xeccel can send from the same
+number; WABA and Phone Number ID ownership must be confirmed independently.
+
 ## Phase 2: SMS gateway for India
 
 SMS is a separate channel, not a fallback that can reuse WhatsApp consent or Meta credentials. TRAI describes registration as a Principal Entity, header assignment, content-template registration, and applicable consent-template/consumer-consent requirements before bulk commercial messages are sent. The PE ID, header, content-template ID and route must be checked before dispatch. See [TRAI's advice to senders](https://www.trai.gov.in/advice-to-senders) and the [TCCCPR framework](https://www.trai.gov.in/tcccpr).

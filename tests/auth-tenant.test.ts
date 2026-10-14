@@ -134,6 +134,7 @@ describe("signed tenant sessions", () => {
           code: "one-time-code",
           wabaId: "109823485723910",
           phoneNumberId: "105678234901234",
+          channelName: "Support",
         }),
       },
       "owner"
@@ -141,6 +142,19 @@ describe("signed tenant sessions", () => {
 
     const response = await startEmbeddedSignup(request);
     expect(response.status).toBe(503);
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it("requires a channel name before consuming an Embedded Signup code", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch");
+    const request = await authenticatedRequest(
+      "http://localhost:3000/api/meta/embedded-signup", "tenant-meta", {
+        method: "POST",
+        body: JSON.stringify({ code: "one-time-code", wabaId: "109823485723910", phoneNumberId: "105678234901234", channelName: " " }),
+      }, "owner",
+    );
+    const response = await startEmbeddedSignup(request);
+    expect(response.status).toBe(400);
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 });
