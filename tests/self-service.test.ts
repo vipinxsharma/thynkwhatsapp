@@ -4,6 +4,7 @@ import { createWorkspaceSlug } from "../lib/workspaces/store";
 import { validMetaIdentifier } from "../lib/meta/connections";
 import { extractWorkspaceSlug } from "../lib/support/store";
 import { applyResolutionGate, redactSensitiveText } from "../lib/support/ai";
+import { hashInvitationToken, isInviteRole } from "../lib/workspaces/team";
 
 afterEach(() => vi.unstubAllEnvs());
 
@@ -72,5 +73,15 @@ describe("self-service identity configuration", () => {
     );
     expect(result.status).toBe("escalated");
     expect(result.resolution.answer).toContain("human review");
+  });
+
+  it("limits invitations to non-owner workspace roles and stores only token hashes", () => {
+    expect(isInviteRole("admin")).toBe(true);
+    expect(isInviteRole("agent")).toBe(true);
+    expect(isInviteRole("viewer")).toBe(true);
+    expect(isInviteRole("owner")).toBe(false);
+    const token = "example-secret-invitation-token";
+    expect(hashInvitationToken(token)).not.toContain(token);
+    expect(hashInvitationToken(token)).toHaveLength(64);
   });
 });

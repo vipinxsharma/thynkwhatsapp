@@ -3,6 +3,20 @@ import { NextRequest } from "next/server";
 import { createSessionToken, verifySessionToken, type AppSession } from "../lib/auth/session";
 import { GET as getContacts, POST as createContact } from "../app/api/contacts/route";
 import { POST as startEmbeddedSignup } from "../app/api/meta/embedded-signup/route";
+import { validateWorkspaceMembership } from "../lib/workspaces/store";
+
+vi.mock("../lib/workspaces/store", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../lib/workspaces/store")>();
+  return {
+    ...actual,
+    validateWorkspaceMembership: vi.fn(async (_userId: string, workspaceId: string) => ({
+      workspaceId,
+      workspaceName: `Tenant ${workspaceId}`,
+      workspaceSlug: workspaceId,
+      role: workspaceId === "tenant-viewer" ? "viewer" : "admin",
+    })),
+  };
+});
 
 const secret = "test-auth-session-secret-that-is-at-least-32-characters";
 
@@ -37,6 +51,12 @@ async function authenticatedRequest(
 describe("signed tenant sessions", () => {
   beforeEach(() => {
     vi.stubEnv("AUTH_SESSION_SECRET", secret);
+    vi.mocked(validateWorkspaceMembership).mockImplementation(async (_userId, workspaceId) => ({
+      workspaceId,
+      workspaceName: `Tenant ${workspaceId}`,
+      workspaceSlug: workspaceId,
+      role: workspaceId === "tenant-viewer" ? "viewer" : "admin",
+    }));
   });
 
   afterEach(() => {
@@ -52,6 +72,14 @@ describe("signed tenant sessions", () => {
 
   it("rejects unauthenticated API requests", async () => {
     const response = await getContacts(new NextRequest("http://localhost:3000/api/contacts"));
+    expect(response.status).toBe(401);
+  });
+
+  it("rejects a signed session after workspace access is revoked", async () => {
+    vi.mocked(validateWorkspaceMembership).mockResolvedValueOnce(null);
+    const response = await getContacts(
+      await authenticatedRequest("http://localhost:3000/api/contacts", "tenant-revoked")
+    );
     expect(response.status).toBe(401);
   });
 
