@@ -200,7 +200,7 @@ export default function HomePage() {
               <article className={`${styles.filmFrame} lg:col-span-2`}>
                 <div className="grid lg:grid-cols-[.36fr_.64fr] lg:items-center">
                   <div className="p-6 sm:p-8">
-                    <p className="text-xs font-bold uppercase tracking-[.18em] text-[var(--accent)]">With voice · 29 seconds</p>
+                    <p className="text-xs font-bold uppercase tracking-[.18em] text-[var(--accent)]">With voice · 30 seconds</p>
                     <h3 className="mt-3 text-2xl font-bold text-[var(--heading)]">The Xeccel introduction</h3>
                     <p className="mt-3 text-sm leading-7 text-[var(--muted)]">A fictional presenter introduces the planned workspace against a modern service-team backdrop. Play to hear the English narration. The brand name is pronounced like “Excel.”</p>
                     <details className={`${styles.transcript} mt-5 text-xs leading-6 text-[var(--muted)]`}>
@@ -209,7 +209,7 @@ export default function HomePage() {
                     </details>
                   </div>
                   <video controls playsInline preload="none" poster="/media/xeccel-presenter-poster.jpg" aria-label="Xeccel introduction with a fictional presenter and English narration">
-                    <source src="/media/xeccel-heygen-presenter.mp4" type="video/mp4" />
+                    <source src="/media/xeccel-heygen-presenter-corrected.mp4" type="video/mp4" />
                     Your browser does not support video playback.
                   </video>
                 </div>
