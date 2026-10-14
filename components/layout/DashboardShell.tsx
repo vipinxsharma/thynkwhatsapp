@@ -6,6 +6,7 @@ import type { AppSession } from "@/lib/auth/session";
 import { signOutAction } from "@/app/auth/actions";
 import type { WorkspaceMembership } from "@/lib/workspaces/store";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
+import { XeccelLogo } from "@/components/brand/XeccelLogo";
 import {
   Activity,
   BarChart3,
@@ -76,12 +77,9 @@ export function DashboardShell({
       <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:m-3 focus:rounded-lg focus:bg-[var(--surface)] focus:p-3">Skip to content</a>
       <aside className="flex w-64 flex-shrink-0 flex-col border-r border-[var(--border)] bg-[var(--surface)]">
         <div className="flex h-16 items-center gap-3 border-b border-[var(--border)] px-6">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-whatsapp shadow-glow">
-            <MessageSquare className="w-5 h-5 text-[#0b132a]" />
-          </div>
+          <XeccelLogo size="sidebar" priority />
           <div>
             <div className="flex items-center gap-1.5">
-              <span className="text-base font-bold tracking-tight text-[var(--heading)]">Xeccel</span>
               <span className="text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded bg-whatsapp/20 text-[var(--foreground)] border border-whatsapp/30">
                 SaaS
               </span>
