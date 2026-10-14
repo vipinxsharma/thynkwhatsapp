@@ -103,7 +103,9 @@ the numbered SQL files in `db/migrations/` in order using the direct
 `DATABASE_URL_UNPOOLED`; normal application queries use the pooled URL. Run
 `db/verify_schema.sql` afterward. CI applies the same migrations to a disposable
 PostgreSQL 17 database on every PR. Migration 0006 provides the durable inbox;
-migration 0007 provides the outbound request ledger. Do not point this
+migration 0007 provides the outbound request ledger; migration 0008 stores one
+unverified SMS/DLT readiness draft per workspace. The SMS page does not submit
+registrations or send messages. Do not point this
 application at an unrelated tenant DB.
 
 Meta Embedded Signup exchanges the code only after durable storage is configured, verifies that
