@@ -127,6 +127,7 @@ export default function HomePage() {
               <p className={`${styles.subhead} mt-8 max-w-2xl text-base leading-8 text-[var(--muted)] sm:text-lg`}>
                 We&apos;re building Xeccel for service teams that want to manage WhatsApp conversations, messaging workflows, and customer support themselves — without stitching together separate tools.
               </p>
+              <p className="mt-3 text-sm font-medium text-[var(--muted)]">Xeccel is pronounced like “Excel.”</p>
               <div className={`${styles.actions} mt-10 flex flex-wrap items-center gap-4`}>
                 <a href="#platform" className={`${styles.primaryLink} inline-flex min-h-12 items-center gap-3 rounded-full bg-[var(--accent)] px-6 py-3 text-sm font-bold text-[#0b132a] hover:bg-[var(--accent-hover)]`}>
                   Explore the platform <ArrowDownRight className="size-4" aria-hidden="true" />
@@ -201,7 +202,7 @@ export default function HomePage() {
                   <div className="p-6 sm:p-8">
                     <p className="text-xs font-bold uppercase tracking-[.18em] text-[var(--accent)]">With voice · 29 seconds</p>
                     <h3 className="mt-3 text-2xl font-bold text-[var(--heading)]">The Xeccel introduction</h3>
-                    <p className="mt-3 text-sm leading-7 text-[var(--muted)]">A fictional presenter introduces the planned workspace against a modern service-team backdrop. Play to hear the English narration.</p>
+                    <p className="mt-3 text-sm leading-7 text-[var(--muted)]">A fictional presenter introduces the planned workspace against a modern service-team backdrop. Play to hear the English narration. The brand name is pronounced like “Excel.”</p>
                     <details className={`${styles.transcript} mt-5 text-xs leading-6 text-[var(--muted)]`}>
                       <summary className="cursor-pointer font-semibold text-[var(--heading)]">Read the transcript</summary>
                       <p className="mt-2">Every customer message matters. Xeccel is being built to give service teams one place for conversations, workflows, and AI-assisted support. Our goal is simple: make it easier to stay in the loop and resolve routine questions faster. We&apos;re preparing customer access now. Xeccel, powered by thynkWISE.</p>
