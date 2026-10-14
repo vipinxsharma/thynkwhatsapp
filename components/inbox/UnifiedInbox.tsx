@@ -8,7 +8,7 @@ import { MessageInput } from "./MessageInput";
 import { ContactDetailsSidebar } from "./ContactDetailsSidebar";
 import { TemplateSelectorModal } from "./TemplateSelectorModal";
 import { MediaAttachmentModal } from "./MediaAttachmentModal";
-import { Sparkles, Phone, Video, MoreVertical, Play, Wifi } from "lucide-react";
+import { Sparkles, Phone, Video, MoreVertical } from "lucide-react";
 import { formatPhoneNumber } from "@/lib/utils";
 
 interface UnifiedInboxProps {
@@ -29,7 +29,6 @@ export function UnifiedInbox({
   );
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
   const [isMediaModalOpen, setIsMediaModalOpen] = useState(false);
-  const [isSimulatingInbound, setIsSimulatingInbound] = useState(false);
   const [isLiveConnected, setIsLiveConnected] = useState(false);
   const pendingSendKeys = useRef(new Map<string, string>());
   const sendInFlight = useRef(false);
@@ -243,101 +242,6 @@ export function UnifiedInbox({
     }
   };
 
-  // 4. Simulate Incoming WhatsApp Webhook (for live local testing)
-  const handleSimulateInbound = async () => {
-    if (!activeConversation || isSimulatingInbound) return;
-    setIsSimulatingInbound(true);
-
-    try {
-      const simulatedWamid = `wamid.HBgL${Date.now()}`;
-      const responses = [
-        "Sounds great! Please send over the proposal document.",
-        "Yes, I would like to proceed with the enterprise setup.",
-        "Can you clarify your SLA for webhook message delivery?",
-        "Thank you! We received the template update.",
-      ];
-      const randomText = responses[Math.floor(Math.random() * responses.length)];
-
-      const webhookPayload = {
-        object: "whatsapp_business_account",
-        entry: [
-          {
-            id: "109823485723910",
-            changes: [
-              {
-                field: "messages",
-                value: {
-                  messaging_product: "whatsapp",
-                  metadata: {
-                    display_phone_number: activeConversation.phoneNumber.displayPhoneNumber,
-                    phone_number_id: activeConversation.phoneNumber.phoneNumberId,
-                  },
-                  contacts: [
-                    {
-                      profile: { name: activeConversation.contact.name },
-                      wa_id: activeConversation.contact.waId,
-                    },
-                  ],
-                  messages: [
-                    {
-                      from: activeConversation.contact.waId,
-                      id: simulatedWamid,
-                      timestamp: Math.floor(Date.now() / 1000).toString(),
-                      type: "text",
-                      text: { body: randomText },
-                    },
-                  ],
-                },
-              },
-            ],
-          },
-        ],
-      };
-
-      const res = await fetch("/api/webhooks/meta", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(webhookPayload),
-      });
-
-      if (res.ok) {
-        // Optimistically update thread and 24h window
-        const inboundMessage: Message = {
-          id: Date.now(),
-          wamId: simulatedWamid,
-          direction: "inbound",
-          type: "text",
-          body: randomText,
-          status: "received",
-          timestamp: new Date().toISOString(),
-        };
-
-        setMessagesMap((prev) => ({
-          ...prev,
-          [String(activeId)]: [...(prev[String(activeId)] || []), inboundMessage],
-        }));
-
-        setConversations((prev) =>
-          prev.map((c) =>
-            String(c.id) === String(activeId)
-              ? {
-                  ...c,
-                  lastMessage: inboundMessage,
-                  lastMessageAt: inboundMessage.timestamp,
-                  // Renew the 24-hour window!
-                  windowExpiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-                }
-              : c
-          )
-        );
-      }
-    } catch (err: any) {
-      console.error("Simulation error:", err);
-    } finally {
-      setIsSimulatingInbound(false);
-    }
-  };
-
   // 4. Update tags
   const handleUpdateTags = (newTags: string[]) => {
     setConversations((prev) =>
@@ -387,7 +291,7 @@ export function UnifiedInbox({
               </div>
             </div>
 
-            {/* Quick Webhook Simulator & Actions */}
+            {/* This connection reflects only the current app instance. */}
             <div className="flex items-center gap-2.5">
               <div
                 className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium border ${
@@ -395,25 +299,15 @@ export function UnifiedInbox({
                     ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
                     : "bg-amber-500/10 text-amber-400 border-amber-500/20"
                 }`}
-                title={isLiveConnected ? "Connected to real-time event stream" : "Reconnecting to stream"}
+                title={isLiveConnected ? "Connected to this app instance's event stream; refresh to confirm stored messages" : "Reconnecting to event stream"}
               >
                 <span
                   className={`w-1.5 h-1.5 rounded-full ${
                     isLiveConnected ? "bg-emerald-400 animate-pulse" : "bg-amber-400"
                   }`}
                 />
-                <span>{isLiveConnected ? "Live SSE" : "Connecting..."}</span>
+                <span>{isLiveConnected ? "Updates connected" : "Connecting..."}</span>
               </div>
-
-              <button
-                onClick={handleSimulateInbound}
-                disabled={isSimulatingInbound}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-950/60 border border-emerald-500/30 text-emerald-300 hover:bg-emerald-900/50 text-xs font-semibold transition-all shadow-sm disabled:opacity-50"
-                title="Trigger simulated Meta inbound webhook"
-              >
-                <Play className="w-3 h-3 text-emerald-400 fill-emerald-400" />
-                <span>{isSimulatingInbound ? "Simulating..." : "Test Inbound Webhook"}</span>
-              </button>
             </div>
           </div>
 
