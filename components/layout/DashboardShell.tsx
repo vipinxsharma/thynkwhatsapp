@@ -35,7 +35,7 @@ const navigation = [
   { name: "Broadcasts", href: "/campaigns", icon: Send },
   { name: "HSM Templates", href: "/templates", icon: FileText },
   { name: "Analytics", href: "/analytics", icon: BarChart3 },
-  { name: "WABA Settings", href: "/settings/waba", icon: Settings },
+  { name: "Channels", href: "/settings/waba", icon: Settings },
   { name: "Support", href: "/support", icon: LifeBuoy },
 ];
 

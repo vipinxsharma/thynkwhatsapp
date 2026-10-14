@@ -18,8 +18,13 @@ export function ConversationList({
 }: ConversationListProps) {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | "unread" | "expired">("all");
+  const [channelId, setChannelId] = useState("all");
+  const channels = Array.from(new Map(conversations
+    .filter((conversation) => conversation.phoneNumber.phoneNumberId)
+    .map((conversation) => [conversation.phoneNumber.phoneNumberId, conversation.phoneNumber])).values());
 
   const filteredConversations = conversations.filter((conv) => {
+    if (channelId !== "all" && conv.phoneNumber.phoneNumberId !== channelId) return false;
     const matchesSearch =
       conv.contact.name.toLowerCase().includes(search.toLowerCase()) ||
       conv.contact.phoneNumber.includes(search) ||
@@ -41,7 +46,7 @@ export function ConversationList({
         <div className="flex items-center justify-between">
           <h2 className="text-base font-bold text-white tracking-tight">Conversations</h2>
           <span className="text-xs text-gray-400 font-medium">
-            {filteredConversations.length} total
+            {filteredConversations.length} loaded
           </span>
         </div>
 
@@ -49,12 +54,29 @@ export function ConversationList({
           <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
-            placeholder="Search by name, number, or text..."
+            placeholder="Search loaded chats..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full pl-9 pr-3 py-1.5 rounded-lg bg-white/5 border border-white/5 text-xs text-gray-200 placeholder-gray-500 focus:outline-none focus:border-whatsapp-light/50 focus:bg-white/[0.07] transition-all"
           />
         </div>
+
+        {channels.length > 1 && <>
+          <label htmlFor="inbox-channel-filter" className="sr-only">Filter by WhatsApp number</label>
+          <select id="inbox-channel-filter" value={channelId}
+            onChange={(event) => {
+              const next = event.target.value;
+              setChannelId(next);
+              const first = conversations.find((conversation) => next === "all" || conversation.phoneNumber.phoneNumberId === next);
+              if (first) onSelectConversation(first.id);
+            }}
+            className="w-full rounded-lg border border-white/10 bg-[#17212c] px-3 py-2 text-xs text-white">
+            <option value="all">All WhatsApp numbers</option>
+            {channels.map((channel) => <option key={channel.phoneNumberId} value={channel.phoneNumberId}>
+              {channel.displayPhoneNumber || channel.phoneNumberId}
+            </option>)}
+          </select>
+        </>}
 
         {/* Filters */}
         <div className="flex gap-1">
@@ -107,6 +129,9 @@ export function ConversationList({
                       <p className="text-[11px] text-gray-400">
                         {formatPhoneNumber(conv.contact.phoneNumber)}
                       </p>
+                      {channels.length > 1 && <p className="text-[10px] text-orange-200/80">
+                        via {conv.phoneNumber.displayPhoneNumber || conv.phoneNumber.phoneNumberId}
+                      </p>}
                     </div>
                   </div>
 

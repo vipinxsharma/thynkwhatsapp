@@ -24,6 +24,9 @@ export function UnifiedInbox({
 }: UnifiedInboxProps) {
   const [conversations, setConversations] = useState<Conversation[]>(initialConversations);
   const [messagesMap, setMessagesMap] = useState<Record<string, Message[]>>(initialMessages);
+  const [hasOlderMap, setHasOlderMap] = useState<Record<string, boolean>>({});
+  const [threadLoading, setThreadLoading] = useState(false);
+  const [threadError, setThreadError] = useState<string | null>(null);
   const [activeId, setActiveId] = useState<number | string>(
     initialConversations[0]?.id || "1"
   );
@@ -32,6 +35,38 @@ export function UnifiedInbox({
   const [isLiveConnected, setIsLiveConnected] = useState(false);
   const pendingSendKeys = useRef(new Map<string, string>());
   const sendInFlight = useRef(false);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    const conversationId = String(activeId);
+    if (!conversations.some((item) => String(item.id) === conversationId)) return;
+    setThreadLoading(true);
+    setThreadError(null);
+    void fetch(`/api/inbox/messages?conversationId=${encodeURIComponent(conversationId)}`, { signal: controller.signal })
+      .then(async (response) => {
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || "Could not load messages");
+        return result.data as { messages: Message[]; hasMore: boolean };
+      })
+      .then((page) => {
+        setMessagesMap((current) => {
+          const byId = new Map<string, Message>();
+          for (const message of [...page.messages, ...(current[conversationId] || [])]) {
+            byId.set(String(message.id), message);
+          }
+          return { ...current, [conversationId]: [...byId.values()].sort((a, b) =>
+            new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()) };
+        });
+        setHasOlderMap((current) => ({ ...current, [conversationId]: page.hasMore }));
+      })
+      .catch((error) => {
+        if (!controller.signal.aborted) setThreadError(error instanceof Error ? error.message : "Could not load messages");
+      })
+      .finally(() => { if (!controller.signal.aborted) setThreadLoading(false); });
+    return () => controller.abort();
+  // Conversations are scoped on the server; selection is the only fetch trigger.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeId]);
 
   // Real-Time Server-Sent Events (SSE) Listener
   useEffect(() => {
@@ -96,6 +131,33 @@ export function UnifiedInbox({
 
   const activeConversation = conversations.find((c) => String(c.id) === String(activeId));
   const activeMessages = messagesMap[String(activeId)] || [];
+
+  async function loadOlder() {
+    const conversationId = String(activeId);
+    const oldest = messagesMap[conversationId]?.[0];
+    if (!oldest || threadLoading) return;
+    setThreadLoading(true);
+    setThreadError(null);
+    try {
+      const params = new URLSearchParams({
+        conversationId, beforeTimestamp: String(oldest.timestamp), beforeId: String(oldest.id),
+      });
+      const response = await fetch(`/api/inbox/messages?${params}`);
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Could not load older messages");
+      const page = result.data as { messages: Message[]; hasMore: boolean };
+      setMessagesMap((current) => {
+        const byId = new Map<string, Message>();
+        for (const message of [...page.messages, ...(current[conversationId] || [])]) byId.set(String(message.id), message);
+        return { ...current, [conversationId]: [...byId.values()] };
+      });
+      setHasOlderMap((current) => ({ ...current, [conversationId]: page.hasMore }));
+    } catch (error) {
+      setThreadError(error instanceof Error ? error.message : "Could not load older messages");
+    } finally {
+      setThreadLoading(false);
+    }
+  }
 
   async function sendToMeta(payload: Record<string, unknown>): Promise<Message> {
     if (sendInFlight.current) throw new Error("Another message is still being submitted");
@@ -312,9 +374,15 @@ export function UnifiedInbox({
           </div>
 
           {/* Messages Stream */}
+          {threadError && <p role="alert" className="px-4 py-2 text-xs text-red-300">{threadError}</p>}
+          {hasOlderMap[String(activeId)] && <button type="button" onClick={loadOlder} disabled={threadLoading}
+            className="mx-auto mt-2 rounded-lg border border-white/10 px-3 py-1 text-xs text-gray-200 disabled:opacity-50">
+            {threadLoading ? "Loading..." : "Load older messages"}
+          </button>}
           <MessageThread
             messages={activeMessages}
             customerName={activeConversation.contact.name}
+            loading={threadLoading}
           />
 
           {/* Bottom Message Input Bar with 24h Protection */}

@@ -80,7 +80,7 @@ const conversationSelect = `
     ) END AS "lastMessage"
   FROM app_inbox_conversations c
   JOIN app_inbox_contacts contact ON contact.id = c.contact_id AND contact.workspace_id = c.workspace_id
-  LEFT JOIN app_waba_connections w ON w.workspace_id = c.workspace_id AND w.phone_number_id = c.phone_number_id
+  LEFT JOIN app_whatsapp_channels w ON w.workspace_id = c.workspace_id AND w.phone_number_id = c.phone_number_id
   LEFT JOIN LATERAL (
     SELECT * FROM app_inbox_messages m
     WHERE m.workspace_id = c.workspace_id AND m.conversation_id = c.id
@@ -103,15 +103,38 @@ export async function getConversation(workspaceId: string, conversationId: strin
   return rows[0] ? conversationFromRow(rows[0] as ConversationRow) : null;
 }
 
+export async function getConversationForSender(
+  workspaceId: string, waId: string, phoneNumberId: string,
+): Promise<Conversation | null> {
+  const rows = await database().query(
+    `${conversationSelect} WHERE c.workspace_id = $1::uuid
+      AND contact.wa_id = $2 AND c.phone_number_id = $3 LIMIT 1`,
+    [workspaceId, waId, phoneNumberId]
+  );
+  return rows[0] ? conversationFromRow(rows[0] as ConversationRow) : null;
+}
+
 export async function getMessages(workspaceId: string, conversationId: string): Promise<Message[]> {
+  return (await getMessagePage(workspaceId, conversationId)).messages;
+}
+
+export async function getMessagePage(
+  workspaceId: string,
+  conversationId: string,
+  before?: { timestamp: string; id: string },
+): Promise<{ messages: Message[]; hasMore: boolean }> {
+  const cursorClause = before ? "AND (timestamp, id) < ($3::timestamptz, $4::uuid)" : "";
   const rows = await database().query(
     `SELECT id, wam_id AS "wamId", direction, type, body, raw_payload AS "rawPayload",
-      status, timestamp, conversation_id AS "conversationId"
-     FROM app_inbox_messages WHERE workspace_id = $1::uuid AND conversation_id = $2::uuid
-     ORDER BY timestamp ASC LIMIT 500`,
-    [workspaceId, conversationId]
+      status, to_char(timestamp AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS timestamp,
+      conversation_id AS "conversationId"
+     FROM app_inbox_messages
+     WHERE workspace_id = $1::uuid AND conversation_id = $2::uuid
+       ${cursorClause}
+     ORDER BY timestamp DESC, id DESC LIMIT 51`,
+    before ? [workspaceId, conversationId, before.timestamp, before.id] : [workspaceId, conversationId]
   );
-  return rows as Message[];
+  return { messages: (rows.slice(0, 50) as Message[]).reverse(), hasMore: rows.length > 50 };
 }
 
 export async function ensureContactConversation(input: {
@@ -144,7 +167,12 @@ export async function ensureContactConversation(input: {
   );
   const contactRow = contactRows[0] as { id: string; created: boolean } | undefined;
   if (!contactRow) throw new Error("Unable to create or find contact");
-  const phoneNumberId = input.phoneNumberId || "";
+  const defaultRows = input.phoneNumberId ? [] : await database().query(
+    `SELECT phone_number_id AS "phoneNumberId" FROM app_workspace_channel_defaults
+     WHERE workspace_id = $1::uuid LIMIT 1`,
+    [input.workspaceId]
+  );
+  const phoneNumberId = input.phoneNumberId || (defaultRows[0] as { phoneNumberId?: string } | undefined)?.phoneNumberId || "";
   const conversationRows = await database().query(
     `INSERT INTO app_inbox_conversations (id, workspace_id, contact_id, phone_number_id)
      VALUES ($1::uuid, $2::uuid, $3::uuid, $4)
@@ -243,16 +271,31 @@ export async function deleteContact(workspaceId: string, contactId: string): Pro
 
 export async function getWABA(workspaceId: string): Promise<WABAAccount> {
   const rows = await database().query(
-    `SELECT waba_id AS "wabaId", phone_number_id AS "phoneNumberId",
-      display_phone_number AS "displayPhoneNumber", verified_name AS "verifiedName",
-      webhook_subscribed AS "webhookSubscribed", status
-     FROM app_waba_connections WHERE workspace_id = $1::uuid AND status = 'connected' LIMIT 1`,
+    `SELECT a.waba_id AS "wabaId", a.webhook_subscribed AS "webhookSubscribed",
+      c.verified_name AS "verifiedName"
+     FROM app_workspace_channel_defaults d
+     JOIN app_whatsapp_channels c ON c.workspace_id = d.workspace_id
+       AND c.phone_number_id = d.phone_number_id
+     JOIN app_waba_connections a ON a.workspace_id = c.workspace_id AND a.waba_id = c.waba_id
+     WHERE d.workspace_id = $1::uuid AND c.enabled AND a.status = 'connected' LIMIT 1`,
     [workspaceId]
   );
   const row = rows[0] as {
-    wabaId: string; phoneNumberId: string; displayPhoneNumber: string | null;
-    verifiedName: string | null; webhookSubscribed: boolean; status: string;
+    wabaId: string; verifiedName: string | null; webhookSubscribed: boolean;
   } | undefined;
+  const numbers = await database().query(
+    `SELECT c.phone_number_id AS "phoneNumberId", c.display_phone_number AS "displayPhoneNumber",
+      c.verified_name AS "verifiedName", c.quality_rating AS "qualityRating",
+      c.code_verification_status AS "codeVerificationStatus"
+     FROM app_whatsapp_channels c
+     JOIN app_waba_connections a ON a.workspace_id = c.workspace_id AND a.waba_id = c.waba_id
+     WHERE c.workspace_id = $1::uuid AND c.enabled AND a.status = 'connected'
+     ORDER BY c.connected_at, c.phone_number_id`,
+    [workspaceId]
+  ) as Array<{
+    phoneNumberId: string; displayPhoneNumber: string | null; verifiedName: string | null;
+    qualityRating: string | null; codeVerificationStatus: string | null;
+  }>;
   return {
     id: row?.wabaId || "",
     wabaId: row?.wabaId || "",
@@ -262,13 +305,15 @@ export async function getWABA(workspaceId: string): Promise<WABAAccount> {
     // A connected binding is not evidence that Meta approved the WABA.
     accountReviewStatus: "PENDING",
     webhookSubscribed: row?.webhookSubscribed || false,
-    phoneNumbers: row ? [{
-      id: row.phoneNumberId,
-      phoneNumberId: row.phoneNumberId,
-      displayPhoneNumber: row.displayPhoneNumber || "",
-      verifiedName: row.verifiedName || "",
-      qualityRating: "UNKNOWN",
-      codeVerificationStatus: "NOT_VERIFIED",
-    }] : [],
+    phoneNumbers: numbers.map((number) => ({
+      id: number.phoneNumberId,
+      phoneNumberId: number.phoneNumberId,
+      displayPhoneNumber: number.displayPhoneNumber || "",
+      verifiedName: number.verifiedName || "",
+      qualityRating: (["GREEN", "YELLOW", "RED"].includes(number.qualityRating || "")
+        ? number.qualityRating : "UNKNOWN") as PhoneNumber["qualityRating"],
+      codeVerificationStatus: (number.codeVerificationStatus === "VERIFIED" || number.codeVerificationStatus === "NOT_VERIFIED"
+        ? number.codeVerificationStatus : "UNKNOWN") as PhoneNumber["codeVerificationStatus"],
+    })),
   };
 }
