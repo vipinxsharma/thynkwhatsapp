@@ -23,13 +23,14 @@ async function authenticatedRequest(
   role: AppSession["role"] = "admin"
 ) {
   const token = await createSessionToken(session(tenantId, role));
+  const headers = new Headers(init.headers);
+  headers.set("authorization", `Bearer ${token}`);
+  headers.set("content-type", "application/json");
   return new NextRequest(url, {
-    ...init,
-    headers: {
-      ...(init.headers || {}),
-      authorization: `Bearer ${token}`,
-      "content-type": "application/json",
-    },
+    method: init.method,
+    body: init.body,
+    headers,
+    signal: init.signal || undefined,
   });
 }
 
