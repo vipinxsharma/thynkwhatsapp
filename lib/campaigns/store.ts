@@ -44,20 +44,29 @@ export const initialCampaignRuns: CampaignRun[] = [
   },
 ];
 
-let localCampaigns: CampaignRun[] = [...initialCampaignRuns];
+const localCampaignsByTenant = new Map<string, CampaignRun[]>();
+
+function campaignsForTenant(tenantId: string): CampaignRun[] {
+  let campaigns = localCampaignsByTenant.get(tenantId);
+  if (!campaigns) {
+    campaigns = structuredClone(initialCampaignRuns);
+    localCampaignsByTenant.set(tenantId, campaigns);
+  }
+  return campaigns;
+}
 
 export class CampaignStore {
-  public static getAll(): CampaignRun[] {
-    return localCampaigns;
+  public static getAll(tenantId: string): CampaignRun[] {
+    return campaignsForTenant(tenantId);
   }
 
-  public static add(run: Omit<CampaignRun, "id" | "createdAt">): CampaignRun {
+  public static add(tenantId: string, run: Omit<CampaignRun, "id" | "createdAt">): CampaignRun {
     const newRun: CampaignRun = {
       ...run,
       id: `camp_${Date.now()}`,
       createdAt: new Date().toISOString(),
     };
-    localCampaigns.unshift(newRun);
+    campaignsForTenant(tenantId).unshift(newRun);
     return newRun;
   }
 }

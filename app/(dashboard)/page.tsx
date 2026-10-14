@@ -11,11 +11,13 @@ import {
   ShieldAlert,
 } from "lucide-react";
 import { calculateWindowRemaining, formatPhoneNumber, getRelativeTime } from "@/lib/utils";
+import { requirePageSession } from "@/lib/auth/session";
 
 export const dynamic = "force-dynamic";
 
 export default async function OverviewPage() {
-  const strapi = new StrapiClient();
+  const session = await requirePageSession();
+  const strapi = new StrapiClient(session.tenantId);
   const conversations = await strapi.getConversations();
   const waba = await strapi.getWABA();
 

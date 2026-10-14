@@ -81,51 +81,71 @@ export const defaultAutomationRules: AutomationRule[] = [
   },
 ];
 
-let localRules: AutomationRule[] = [...defaultAutomationRules];
+const localRulesByTenant = new Map<string, AutomationRule[]>();
+
+function rulesForTenant(tenantId: string): AutomationRule[] {
+  let rules = localRulesByTenant.get(tenantId);
+  if (!rules) {
+    rules = structuredClone(defaultAutomationRules);
+    localRulesByTenant.set(tenantId, rules);
+  }
+  return rules;
+}
 
 export class AutomationEngine {
-  public static getRules(): AutomationRule[] {
-    return localRules;
+  public static getRules(tenantId: string): AutomationRule[] {
+    return rulesForTenant(tenantId);
   }
 
-  public static addRule(rule: Omit<AutomationRule, "id" | "triggerCount">): AutomationRule {
+  public static addRule(
+    tenantId: string,
+    rule: Omit<AutomationRule, "id" | "triggerCount">
+  ): AutomationRule {
     const newRule: AutomationRule = {
       ...rule,
       id: `rule_${Date.now()}`,
       triggerCount: 0,
     };
-    localRules.unshift(newRule);
+    rulesForTenant(tenantId).unshift(newRule);
     return newRule;
   }
 
-  public static updateRule(id: string, updates: Partial<AutomationRule>): AutomationRule | null {
-    const idx = localRules.findIndex((r) => r.id === id);
+  public static updateRule(
+    tenantId: string,
+    id: string,
+    updates: Partial<AutomationRule>
+  ): AutomationRule | null {
+    const rules = rulesForTenant(tenantId);
+    const idx = rules.findIndex((r) => r.id === id);
     if (idx === -1) return null;
-    localRules[idx] = { ...localRules[idx], ...updates };
-    return localRules[idx];
+    rules[idx] = { ...rules[idx], ...updates };
+    return rules[idx];
   }
 
-  public static deleteRule(id: string): boolean {
-    const len = localRules.length;
-    localRules = localRules.filter((r) => r.id !== id);
-    return localRules.length < len;
+  public static deleteRule(tenantId: string, id: string): boolean {
+    const rules = rulesForTenant(tenantId);
+    const len = rules.length;
+    const remaining = rules.filter((r) => r.id !== id);
+    localRulesByTenant.set(tenantId, remaining);
+    return remaining.length < len;
   }
 
-  public static toggleRule(id: string): AutomationRule | null {
-    const idx = localRules.findIndex((r) => r.id === id);
+  public static toggleRule(tenantId: string, id: string): AutomationRule | null {
+    const rules = rulesForTenant(tenantId);
+    const idx = rules.findIndex((r) => r.id === id);
     if (idx === -1) return null;
-    localRules[idx].enabled = !localRules[idx].enabled;
-    return localRules[idx];
+    rules[idx].enabled = !rules[idx].enabled;
+    return rules[idx];
   }
 
   /**
    * Matches an incoming user text message against enabled automation rules
    */
-  public static matchRule(messageText: string): AutomationRule | null {
+  public static matchRule(tenantId: string, messageText: string): AutomationRule | null {
     if (!messageText) return null;
     const cleanText = messageText.toLowerCase().trim();
 
-    for (const rule of localRules) {
+    for (const rule of rulesForTenant(tenantId)) {
       if (!rule.enabled) continue;
 
       if (rule.triggerType === "exact_match") {

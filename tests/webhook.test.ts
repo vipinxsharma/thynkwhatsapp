@@ -1,12 +1,26 @@
-import { describe, it, expect } from "vitest";
+import { afterEach, beforeEach, describe, it, expect, vi } from "vitest";
 import crypto from "crypto";
 import { verifyMetaWebhookSignature } from "../lib/meta/signature";
 import { encryptToken, decryptToken } from "../lib/meta/encryption";
 import { GET, POST } from "../app/api/webhooks/meta/route";
 import { NextRequest } from "next/server";
 
+const TEST_META_SECRET = "my_meta_app_secret_test_123";
+const TEST_VERIFY_TOKEN = "test_webhook_verify_token";
+
+beforeEach(() => {
+  vi.stubEnv("META_APP_SECRET", TEST_META_SECRET);
+  vi.stubEnv("META_WEBHOOK_VERIFY_TOKEN", TEST_VERIFY_TOKEN);
+  vi.stubEnv("META_WEBHOOK_TENANT_ID", "webhook-test-tenant");
+  vi.stubEnv("ENCRYPTION_KEY", "test-encryption-key-with-at-least-32-characters");
+});
+
+afterEach(() => {
+  vi.unstubAllEnvs();
+});
+
 describe("Meta Webhook Cryptographic Verification", () => {
-  const secret = "my_meta_app_secret_test_123";
+  const secret = TEST_META_SECRET;
   const rawBody = JSON.stringify({ object: "whatsapp_business_account", entry: [] });
 
   it("should validate a authentic HMAC-SHA256 signature", () => {
@@ -46,13 +60,19 @@ describe("AES-256-GCM Token Encryption", () => {
     const decrypted = decryptToken(encrypted);
     expect(decrypted).toBe(rawToken);
   });
+
+  it("fails closed when the encryption key is not configured", () => {
+    vi.stubEnv("ENCRYPTION_KEY", "");
+    expect(() => encryptToken("sensitive-token")).toThrow(
+      "ENCRYPTION_KEY must contain at least 32 characters"
+    );
+  });
 });
 
 describe("GET /api/webhooks/meta (Challenge Verification)", () => {
   it("should return challenge string with 200 OK when tokens match", async () => {
     const challenge = "1158201444";
-    const verifyToken = "thynkwise_meta_verify_token_secure_2026";
-    const url = `http://localhost:3000/api/webhooks/meta?hub.mode=subscribe&hub.verify_token=${verifyToken}&hub.challenge=${challenge}`;
+    const url = `http://localhost:3000/api/webhooks/meta?hub.mode=subscribe&hub.verify_token=${TEST_VERIFY_TOKEN}&hub.challenge=${challenge}`;
 
     const req = new NextRequest(url);
     const res = await GET(req);
@@ -69,9 +89,19 @@ describe("GET /api/webhooks/meta (Challenge Verification)", () => {
 
     expect(res.status).toBe(403);
   });
+
+  it("should fail closed when the verification token is not configured", async () => {
+    vi.stubEnv("META_WEBHOOK_VERIFY_TOKEN", "");
+    const url = "http://localhost:3000/api/webhooks/meta?hub.mode=subscribe&hub.verify_token=anything&hub.challenge=12345";
+    const res = await GET(new NextRequest(url));
+
+    expect(res.status).toBe(503);
+  });
 });
 
 describe("POST /api/webhooks/meta (Incoming Message Ingestion)", () => {
+  const emptyWebhookBody = JSON.stringify({ object: "whatsapp_business_account", entry: [] });
+
   it("should accept valid WhatsApp webhook payload and return 200", async () => {
     const payload = {
       object: "whatsapp_business_account",
@@ -109,11 +139,17 @@ describe("POST /api/webhooks/meta (Incoming Message Ingestion)", () => {
       ],
     };
 
+    const rawBody = JSON.stringify(payload);
+    const signature = crypto
+      .createHmac("sha256", TEST_META_SECRET)
+      .update(rawBody, "utf8")
+      .digest("hex");
     const req = new NextRequest("http://localhost:3000/api/webhooks/meta", {
       method: "POST",
-      body: JSON.stringify(payload),
+      body: rawBody,
       headers: {
         "Content-Type": "application/json",
+        "x-hub-signature-256": `sha256=${signature}`,
       },
     });
 
@@ -121,5 +157,28 @@ describe("POST /api/webhooks/meta (Incoming Message Ingestion)", () => {
     expect(res.status).toBe(200);
     const json = await res.json();
     expect(json.success).toBe(true);
+  });
+
+  it("should reject a webhook without a valid signature", async () => {
+    const req = new NextRequest("http://localhost:3000/api/webhooks/meta", {
+      method: "POST",
+      body: emptyWebhookBody,
+      headers: { "Content-Type": "application/json" },
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(401);
+  });
+
+  it("should fail closed when webhook signing is not configured", async () => {
+    vi.stubEnv("META_APP_SECRET", "");
+    const req = new NextRequest("http://localhost:3000/api/webhooks/meta", {
+      method: "POST",
+      body: emptyWebhookBody,
+      headers: { "Content-Type": "application/json" },
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(503);
   });
 });

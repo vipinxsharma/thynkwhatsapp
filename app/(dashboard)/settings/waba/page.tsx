@@ -10,11 +10,13 @@ import {
   Lock,
 } from "lucide-react";
 import { formatPhoneNumber } from "@/lib/utils";
+import { requirePageSession } from "@/lib/auth/session";
 
 export const dynamic = "force-dynamic";
 
 export default async function WabaSettingsPage() {
-  const strapi = new StrapiClient();
+  const session = await requirePageSession();
+  const strapi = new StrapiClient(session.tenantId);
   const waba = await strapi.getWABA();
 
   return (
@@ -52,7 +54,7 @@ export default async function WabaSettingsPage() {
             </p>
           </div>
 
-          <EmbeddedSignupButton tenantId="1" />
+          <EmbeddedSignupButton />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-3 border-t border-white/5 text-xs text-gray-400">

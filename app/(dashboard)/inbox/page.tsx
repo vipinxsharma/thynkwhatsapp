@@ -1,11 +1,13 @@
 import { StrapiClient } from "@/lib/strapi/client";
 import { UnifiedInbox } from "@/components/inbox/UnifiedInbox";
 import { Message } from "@/types/strapi";
+import { requirePageSession } from "@/lib/auth/session";
 
 export const dynamic = "force-dynamic";
 
 export default async function InboxPage() {
-  const strapi = new StrapiClient();
+  const session = await requirePageSession();
+  const strapi = new StrapiClient(session.tenantId);
 
   // Pre-fetch conversations and templates on the server
   const conversations = await strapi.getConversations();

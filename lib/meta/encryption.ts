@@ -7,7 +7,10 @@ const IV_LENGTH = 16; // For AES GCM, 16 bytes IV is standard
  * Returns a 32-byte key derived from the ENCRYPTION_KEY environment variable.
  */
 function getEncryptionKey(): Buffer {
-  const secret = process.env.ENCRYPTION_KEY || "thynkwise-default-super-secret-key-32b!";
+  const secret = process.env.ENCRYPTION_KEY;
+  if (!secret || secret.length < 32) {
+    throw new Error("ENCRYPTION_KEY must contain at least 32 characters");
+  }
   // Hash the secret with SHA-256 to ensure exactly 32 bytes
   return crypto.createHash("sha256").update(secret).digest();
 }

@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { MetaGraphClient } from "@/lib/meta/client";
-import { encryptToken } from "@/lib/meta/encryption";
+import { requireApiSession } from "@/lib/auth/session";
 
 interface EmbeddedSignupRequestBody {
   code: string;
   wabaId?: string;
   phoneNumberId?: string;
-  tenantId?: string;
 }
 
 /**
@@ -14,50 +12,28 @@ interface EmbeddedSignupRequestBody {
  */
 export async function POST(request: NextRequest) {
   try {
+    const auth = await requireApiSession(request, ["owner", "admin"]);
+    if (!auth.ok) return auth.response;
     const body: EmbeddedSignupRequestBody = await request.json();
-    const { code, wabaId, phoneNumberId, tenantId = "1" } = body;
-
-    if (!code) {
-      return NextResponse.json({ error: "Missing authorization code" }, { status: 400 });
+    const { code, wabaId, phoneNumberId } = body;
+    if (!code || !wabaId || !phoneNumberId) {
+      return NextResponse.json(
+        { error: "Authorization code, WABA ID, and phone number ID are required" },
+        { status: 400 }
+      );
     }
 
-    console.log(`[Embedded Signup] Exchanging code for tenant ${tenantId}...`);
-
-    let permanentToken = `mock_eaab_${Date.now()}`;
-    // If not mock/testing, call Meta Graph API
-    if (process.env.NEXT_PUBLIC_META_APP_ID && process.env.META_APP_SECRET) {
-      try {
-        const tokenRes = await MetaGraphClient.exchangeCodeForToken(code);
-        permanentToken = tokenRes.access_token;
-      } catch (err: any) {
-        console.warn("[Embedded Signup] Graph API exchange warning, using fallback token:", err.message);
-      }
+    if (!/^\d+$/.test(wabaId) || !/^\d+$/.test(phoneNumberId)) {
+      return NextResponse.json({ error: "Invalid Meta account identifiers" }, { status: 400 });
     }
 
-    // Encrypt the access token using AES-256-GCM before database persistence
-    const encrypted = encryptToken(permanentToken);
-
-    // Subscribe WABA to webhooks if wabaId is provided
-    if (wabaId && !permanentToken.startsWith("mock_")) {
-      try {
-        const client = new MetaGraphClient(permanentToken);
-        await client.subscribeWabaToWebhook(wabaId);
-        console.log(`[Embedded Signup] Subscribed WABA ${wabaId} to webhooks.`);
-      } catch (subErr: any) {
-        console.warn(`[Embedded Signup] Webhook subscription warning:`, subErr.message);
-      }
-    }
-
+    // Do not consume a one-time Meta authorization code until the durable tenant-owned
+    // credential store exists. The previous implementation returned a mock success and
+    // discarded the encrypted credential, leaving the WABA unusable after onboarding.
     return NextResponse.json({
-      success: true,
-      data: {
-        wabaId: wabaId || "109823485723910",
-        phoneNumberId: phoneNumberId || "105678234901234",
-        status: "CONNECTED",
-        webhookSubscribed: true,
-        encryptedTokenHash: encrypted.iv, // Safe reference
-      },
-    });
+      error: "Durable tenant-scoped Meta onboarding is not enabled yet",
+      next: "Implement encrypted credential persistence and WABA ownership verification before code exchange",
+    }, { status: 501 });
   } catch (error: any) {
     console.error("[Embedded Signup Error]", error);
     return NextResponse.json(

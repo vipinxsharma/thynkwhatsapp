@@ -5,7 +5,6 @@ import { CheckCircle2, Loader2, Sparkles } from "lucide-react";
 
 interface EmbeddedSignupButtonProps {
   onSuccess?: (data: { wabaId: string; phoneNumberId: string }) => void;
-  tenantId?: string;
 }
 
 declare global {
@@ -15,7 +14,7 @@ declare global {
   }
 }
 
-export function EmbeddedSignupButton({ onSuccess, tenantId = "1" }: EmbeddedSignupButtonProps) {
+export function EmbeddedSignupButton({ onSuccess }: EmbeddedSignupButtonProps) {
   const [loading, setLoading] = useState(false);
   const [connected, setConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -109,7 +108,6 @@ export function EmbeddedSignupButton({ onSuccess, tenantId = "1" }: EmbeddedSign
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           code,
-          tenantId,
           wabaId: "109823485723910",
           phoneNumberId: "105678234901234",
         }),

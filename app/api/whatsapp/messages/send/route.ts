@@ -2,11 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { MetaGraphClient } from "@/lib/meta/client";
 import { StrapiClient } from "@/lib/strapi/client";
 import { MetaSendMessagePayload } from "@/types/meta-api";
-
-const strapiClient = new StrapiClient();
+import { requireApiSession } from "@/lib/auth/session";
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = await requireApiSession(request, ["owner", "admin", "agent"]);
+    if (!auth.ok) return auth.response;
+    const strapiClient = new StrapiClient(auth.session.tenantId);
+
     const body = await request.json();
     const {
       conversationId,
