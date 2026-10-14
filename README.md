@@ -1,5 +1,7 @@
 # thynkWISE WhatsApp Business Platform
 
+[![Application CI](https://github.com/vipinxsharma/thynkwhatsapp/actions/workflows/ci.yml/badge.svg)](https://github.com/vipinxsharma/thynkwhatsapp/actions/workflows/ci.yml)
+
 Enterprise Multi-Tenant WhatsApp Business API & Unified CRM Inbox built for **thynkWISE** as a Meta Tech Provider.
 
 ---
