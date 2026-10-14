@@ -2,10 +2,18 @@ import { NextRequest, NextResponse } from "next/server";
 import { AutomationEngine } from "@/lib/automations/rules";
 import { requireApiSession } from "@/lib/auth/session";
 
+function unavailableInProduction(): NextResponse | null {
+  return process.env.NODE_ENV === "production"
+    ? NextResponse.json({ error: "Automations are not available yet" }, { status: 503 })
+    : null;
+}
+
 export async function GET(request: NextRequest) {
   try {
     const auth = await requireApiSession(request);
     if (!auth.ok) return auth.response;
+    const unavailable = unavailableInProduction();
+    if (unavailable) return unavailable;
     const rules = AutomationEngine.getRules(auth.session.tenantId);
     return NextResponse.json({ success: true, data: rules });
   } catch (error: any) {
@@ -20,6 +28,8 @@ export async function POST(request: NextRequest) {
   try {
     const auth = await requireApiSession(request, ["owner", "admin"]);
     if (!auth.ok) return auth.response;
+    const unavailable = unavailableInProduction();
+    if (unavailable) return unavailable;
     const body = await request.json();
 
     // Check if test simulation action
@@ -78,6 +88,8 @@ export async function PUT(request: NextRequest) {
   try {
     const auth = await requireApiSession(request, ["owner", "admin"]);
     if (!auth.ok) return auth.response;
+    const unavailable = unavailableInProduction();
+    if (unavailable) return unavailable;
     const body = await request.json();
     const { id, toggle, updates } = body;
 
@@ -109,6 +121,8 @@ export async function DELETE(request: NextRequest) {
   try {
     const auth = await requireApiSession(request, ["owner", "admin"]);
     if (!auth.ok) return auth.response;
+    const unavailable = unavailableInProduction();
+    if (unavailable) return unavailable;
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
 
