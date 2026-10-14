@@ -1,0 +1,232 @@
+.home {
+  position: relative;
+  overflow: clip;
+  background-image:
+    radial-gradient(circle at 78% 6%, rgba(243, 139, 38, 0.11), transparent 27rem),
+    radial-gradient(circle at 2% 34%, rgba(243, 139, 38, 0.06), transparent 32rem);
+}
+
+:global(html.dark) .home {
+  background-image:
+    radial-gradient(circle at 78% 6%, rgba(243, 139, 38, 0.15), transparent 30rem),
+    radial-gradient(circle at 2% 34%, rgba(243, 139, 38, 0.07), transparent 32rem);
+}
+
+.hero {
+  position: relative;
+  isolation: isolate;
+}
+
+.hero::before {
+  position: absolute;
+  z-index: -1;
+  top: 5%;
+  right: -12%;
+  width: min(56vw, 42rem);
+  aspect-ratio: 1;
+  border: 1px solid rgba(243, 139, 38, 0.18);
+  border-radius: 50%;
+  box-shadow: 0 0 0 4rem rgba(243, 139, 38, 0.025), 0 0 0 8rem rgba(243, 139, 38, 0.018);
+  content: "";
+  animation: orbit 28s linear infinite;
+  pointer-events: none;
+}
+
+.intro {
+  animation: rise 700ms ease-out both;
+}
+
+.headline {
+  animation: rise 850ms 100ms ease-out both;
+}
+
+.headlineAccent {
+  background: linear-gradient(90deg, #f38b26 0%, #ffad4b 45%, #f38b26 100%);
+  background-size: 220% 100%;
+  background-clip: text;
+  color: transparent;
+  animation: shimmer 6s linear infinite;
+}
+
+.subhead {
+  animation: rise 850ms 200ms ease-out both;
+}
+
+.actions {
+  animation: rise 850ms 300ms ease-out both;
+}
+
+.primaryLink,
+.secondaryLink {
+  transition: transform 220ms ease, box-shadow 220ms ease, background-color 220ms ease;
+}
+
+.primaryLink:hover,
+.secondaryLink:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 26px rgba(243, 139, 38, 0.2);
+}
+
+.visual {
+  position: relative;
+  animation: float 7s ease-in-out infinite;
+}
+
+.mediaFrame {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1.35rem;
+  background: #142142;
+}
+
+.mediaFrame img {
+  display: block;
+  transition: transform 800ms ease;
+}
+
+.visual:hover .mediaFrame img {
+  transform: scale(1.035);
+}
+
+.mediaLabel {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 999px;
+  background: rgba(20, 33, 66, 0.76);
+  padding: 0.45rem 0.75rem;
+  color: white;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  backdrop-filter: blur(12px);
+}
+
+.visual::before {
+  position: absolute;
+  z-index: -1;
+  inset: -0.75rem;
+  border-radius: 2.5rem;
+  background: conic-gradient(from 0deg, transparent, rgba(243, 139, 38, 0.48), transparent 42%);
+  filter: blur(12px);
+  content: "";
+  animation: orbit 10s linear infinite;
+  pointer-events: none;
+}
+
+.poweredUnit {
+  transition: transform 220ms ease, box-shadow 220ms ease;
+}
+
+.poweredUnit:hover {
+  transform: translateY(-2px) rotate(-1deg);
+  box-shadow: 0 10px 24px rgba(243, 139, 38, 0.16);
+}
+
+.ticker {
+  overflow: hidden;
+  border-block: 1px solid var(--border);
+  background: var(--accent);
+  color: #0b132a;
+  transform: rotate(-1deg) scale(1.02);
+}
+
+.tickerTrack {
+  display: flex;
+  width: max-content;
+  padding-block: 0.9rem;
+  animation: marquee 22s linear infinite;
+}
+
+.tickerText {
+  flex: none;
+  padding-right: 2.5rem;
+  font-size: clamp(0.85rem, 1.5vw, 1.15rem);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+
+.card {
+  transition: transform 300ms ease, border-color 300ms ease, box-shadow 300ms ease;
+}
+
+.card:hover {
+  transform: translateY(-8px) rotate(-0.5deg);
+  border-color: rgba(243, 139, 38, 0.55);
+  box-shadow: 0 20px 40px rgba(20, 33, 66, 0.12);
+}
+
+:global(html.dark) .card:hover {
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+}
+
+.question {
+  transition: border-color 220ms ease, transform 220ms ease;
+}
+
+.question:hover {
+  border-color: rgba(243, 139, 38, 0.6);
+  transform: translateX(4px);
+}
+
+.question summary::after {
+  position: absolute;
+  right: 0;
+  content: "+";
+  color: var(--accent);
+  font-size: 1.35rem;
+  line-height: 1;
+  transition: transform 220ms ease;
+}
+
+.question[open] summary::after {
+  transform: rotate(45deg);
+}
+
+@supports (animation-timeline: view()) {
+  .scrollReveal {
+    animation: rise 1ms linear both;
+    animation-timeline: view();
+    animation-range: entry 0% cover 25%;
+  }
+}
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0) rotate(0); }
+  50% { transform: translateY(-10px) rotate(1deg); }
+}
+
+@keyframes orbit {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes shimmer {
+  to { background-position: -220% 0; }
+}
+
+@keyframes marquee {
+  to { transform: translateX(-50%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home :is(.intro, .headline, .headlineAccent, .subhead, .actions, .visual, .tickerTrack, .scrollReveal),
+  .hero::before,
+  .visual::before {
+    animation: none !important;
+  }
+
+  .home :is(.primaryLink, .secondaryLink, .poweredUnit, .card, .question):hover {
+    transform: none;
+  }
+
+  .visual:hover .mediaFrame img {
+    transform: none;
+  }
+}
