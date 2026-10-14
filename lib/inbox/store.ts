@@ -261,11 +261,13 @@ export async function getWABA(workspaceId: string): Promise<WABAAccount> {
     wabaId: string; verifiedName: string | null; webhookSubscribed: boolean;
   } | undefined;
   const numbers = await database().query(
-    `SELECT phone_number_id AS "phoneNumberId", display_phone_number AS "displayPhoneNumber",
-      verified_name AS "verifiedName", quality_rating AS "qualityRating",
-      code_verification_status AS "codeVerificationStatus"
-     FROM app_whatsapp_channels WHERE workspace_id = $1::uuid AND enabled
-     ORDER BY connected_at, phone_number_id`,
+    `SELECT c.phone_number_id AS "phoneNumberId", c.display_phone_number AS "displayPhoneNumber",
+      c.verified_name AS "verifiedName", c.quality_rating AS "qualityRating",
+      c.code_verification_status AS "codeVerificationStatus"
+     FROM app_whatsapp_channels c
+     JOIN app_waba_connections a ON a.workspace_id = c.workspace_id AND a.waba_id = c.waba_id
+     WHERE c.workspace_id = $1::uuid AND c.enabled AND a.status = 'connected'
+     ORDER BY c.connected_at, c.phone_number_id`,
     [workspaceId]
   ) as Array<{
     phoneNumberId: string; displayPhoneNumber: string | null; verifiedName: string | null;
