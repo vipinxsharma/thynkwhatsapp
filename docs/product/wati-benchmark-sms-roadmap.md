@@ -4,7 +4,7 @@ Observed read-only in the user's WATI workspace on 14 October 2026. This is a pr
 
 | WATI area observed | Xeccel today | Product decision |
 | --- | --- | --- |
-| Campaigns, templates, scheduled campaigns | Templates exist; production broadcasts deliberately disabled | Keep the send gate until audience consent, durable scheduling, receipts and billing are proven |
+| Campaigns, templates, scheduled campaigns | Templates exist; broadcasts disabled in every environment | Add workspace-scoped opt-in evidence, approved-template validation, durable scheduling/idempotency, receipts and billing before enabling sends |
 | Team Inbox and Contacts | Inbox, contacts and team foundations exist | Deepen assignment, routing, filters and real unread counts; never show sample counts as live |
 | Automations: rules, chatbots, sequences, flows, routing, drip | Automations page states inactive | Build durable tenant-scoped rules and audit before enabling any automatic reply |
 | Astra AI agents | AI support case review only | Add a distinct AI Agents section; customer-facing bots require knowledge, safety, evaluation and handoff |
