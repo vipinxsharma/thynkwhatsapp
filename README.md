@@ -84,18 +84,18 @@ cp .env.example .env.local
 ```
 
 Generate unique secrets for `AUTH_SESSION_SECRET`, `META_WEBHOOK_VERIFY_TOKEN`, and
-`ENCRYPTION_KEY`. The server intentionally fails closed when they are absent. The current
-webhook implementation also requires `META_WEBHOOK_TENANT_ID` as a temporary single-tenant
-route; durable WABA-to-tenant routing is required before production use.
+`ENCRYPTION_KEY`. The server intentionally fails closed when they are absent. Webhooks resolve
+the workspace from the verified WABA ID stored during Embedded Signup; no client or global
+environment value selects the tenant.
 
 Self-service identity additionally requires a dedicated Neon project with Managed Better Auth,
 `NEON_AUTH_BASE_URL`, `NEON_AUTH_COOKIE_SECRET`, and `DATABASE_URL`. Apply
 `db/migrations/0001_self_service_identity.sql` using the direct `DATABASE_URL_UNPOOLED`; normal
 application queries use the pooled URL. Do not point this application at an unrelated tenant DB.
 
-Meta Embedded Signup currently returns `501` before exchanging the one-time code. This is
-intentional: durable, encrypted, tenant-owned credential persistence and ownership verification
-must land before onboarding can safely be enabled.
+Meta Embedded Signup exchanges the code only after durable storage is configured, verifies that
+the phone number belongs to the selected WABA, subscribes the WABA to webhooks, encrypts the
+access token, and stores the connection against the authenticated workspace.
 
 ### 3. Run Automated Tests
 Verify webhook cryptography and challenge tokens:

@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireApiSession } from "@/lib/auth/session";
+import { MetaGraphClient } from "@/lib/meta/client";
+import { saveMetaConnection, validMetaIdentifier } from "@/lib/meta/connections";
+import { encryptToken } from "@/lib/meta/encryption";
 
 interface EmbeddedSignupRequestBody {
   code: string;
@@ -23,17 +26,42 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!/^\d+$/.test(wabaId) || !/^\d+$/.test(phoneNumberId)) {
+    if (!validMetaIdentifier(wabaId) || !validMetaIdentifier(phoneNumberId)) {
       return NextResponse.json({ error: "Invalid Meta account identifiers" }, { status: 400 });
     }
 
-    // Do not consume a one-time Meta authorization code until the durable tenant-owned
-    // credential store exists. The previous implementation returned a mock success and
-    // discarded the encrypted credential, leaving the WABA unusable after onboarding.
+    if (!process.env.DATABASE_URL || !process.env.ENCRYPTION_KEY) {
+      return NextResponse.json(
+        { error: "Durable Meta onboarding storage is not configured" },
+        { status: 503 }
+      );
+    }
+
+    const tokenResponse = await MetaGraphClient.exchangeCodeForToken(code);
+    const accessToken = tokenResponse.access_token;
+    const metaClient = new MetaGraphClient(accessToken);
+    const ownership = await metaClient.verifyPhoneOwnership(wabaId, phoneNumberId);
+    const subscription = await metaClient.subscribeWabaToWebhook(wabaId);
+    if (!subscription.success) throw new Error("Meta did not confirm webhook subscription");
+
+    await saveMetaConnection({
+      workspaceId: auth.session.tenantId,
+      authUserId: auth.session.userId,
+      ownership: { wabaId, phoneNumberId, ...ownership },
+      encryptedToken: encryptToken(accessToken),
+    });
+
     return NextResponse.json({
-      error: "Durable tenant-scoped Meta onboarding is not enabled yet",
-      next: "Implement encrypted credential persistence and WABA ownership verification before code exchange",
-    }, { status: 501 });
+      success: true,
+      data: {
+        wabaId,
+        phoneNumberId,
+        displayPhoneNumber: ownership.displayPhoneNumber,
+        verifiedName: ownership.verifiedName,
+        status: "CONNECTED",
+        webhookSubscribed: true,
+      },
+    });
   } catch (error: any) {
     console.error("[Embedded Signup Error]", error);
     return NextResponse.json(

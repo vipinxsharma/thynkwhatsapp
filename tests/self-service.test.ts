@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { neonAuthConfigured } from "../lib/auth/config";
 import { createWorkspaceSlug } from "../lib/workspaces/store";
+import { validMetaIdentifier } from "../lib/meta/connections";
 
 afterEach(() => vi.unstubAllEnvs());
 
@@ -24,5 +25,11 @@ describe("self-service identity configuration", () => {
     expect(createWorkspaceSlug("Acme Advisors Pvt. Ltd.", "auth_user_1234567890")).toBe(
       "acme-advisors-pvt-ltd-34567890"
     );
+  });
+
+  it("accepts only numeric Meta account identifiers", () => {
+    expect(validMetaIdentifier("109823485723910")).toBe(true);
+    expect(validMetaIdentifier("1234")).toBe(false);
+    expect(validMetaIdentifier("109823485723910?fields=token")).toBe(false);
   });
 });

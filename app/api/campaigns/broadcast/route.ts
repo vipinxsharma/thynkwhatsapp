@@ -4,6 +4,8 @@ import { CampaignStore } from "@/lib/campaigns/store";
 import { MetaGraphClient } from "@/lib/meta/client";
 import { emitNewInboundMessage } from "@/lib/events/emitter";
 import { requireApiSession } from "@/lib/auth/session";
+import { getMetaConnectionForWorkspace } from "@/lib/meta/connections";
+import type { MetaSendMessagePayload } from "@/types/meta-api";
 
 export async function POST(request: NextRequest) {
   try {
@@ -52,36 +54,44 @@ export async function POST(request: NextRequest) {
     let failedCount = 0;
 
     const ratePerConv = category === "MARKETING" ? 0.075 : 0.015;
-    const metaClient = new MetaGraphClient();
+    const connection = await getMetaConnectionForWorkspace(auth.session.tenantId);
+    const metaClient = new MetaGraphClient(connection.accessToken);
 
     // Iterate through recipients and record outbound messages
     for (const conv of targetConversations) {
-      const wamId = `wamid.CAMP_${Date.now()}_${conv.id}`;
       try {
+        const metaPayload: MetaSendMessagePayload = {
+          messaging_product: "whatsapp",
+          to: conv.contact.waId.replace(/\D/g, ""),
+          type: "template",
+          template: {
+            name: templateName,
+            language: { code: templateLanguage },
+            components:
+              templateVariables.length > 0
+                ? [{
+                    type: "body",
+                    parameters: templateVariables.map((value: string) => ({ type: "text", text: value })),
+                  }]
+                : undefined,
+          },
+        };
+        const metaResponse = await metaClient.sendMessage(connection.phoneNumberId, metaPayload);
+        const wamId = metaResponse.messages[0]?.id;
+        if (!wamId) throw new Error("Meta did not return a message ID");
         const recordedMessage = await strapiClient.recordMessage(conv.id, {
           wamId,
           direction: "outbound",
           type: "template",
           body: `[Broadcast Template: ${templateName}]`,
-          rawPayload: {
-            messaging_product: "whatsapp",
-            to: conv.contact.phoneNumber,
-            type: "template",
-            template: {
-              name: templateName,
-              language: { code: templateLanguage },
-            },
-          },
-          status: "delivered",
+          rawPayload: metaPayload,
+          status: "sent",
           timestamp: new Date().toISOString(),
         });
 
         emitNewInboundMessage(auth.session.tenantId, conv.id, recordedMessage);
         sentCount++;
-        deliveredCount++;
-        if (Math.random() > 0.15) {
-          readCount++;
-        }
+        // Delivery and read counts are updated only by verified Meta webhooks.
       } catch (err) {
         failedCount++;
       }
@@ -104,7 +114,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: `Broadcast delivered to ${deliveredCount} of ${totalRecipients} recipients.`,
+      message: `Broadcast accepted by Meta for ${sentCount} of ${totalRecipients} recipients. Delivery and read counts update from webhooks.`,
       data: campaignRecord,
     });
   } catch (error: any) {
