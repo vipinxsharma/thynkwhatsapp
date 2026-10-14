@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { ShieldCheck } from "lucide-react";
 import { signInAction, signUpAction } from "@/app/auth/actions";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
+import { XeccelLogo } from "@/components/brand/XeccelLogo";
 
 const errors: Record<string, string> = {
   configuration: "Self-service authentication needs its dedicated Neon project configuration.",
@@ -27,15 +27,8 @@ export default async function LoginPage({
     <main className="min-h-screen bg-[var(--background)] text-[var(--foreground)] flex items-center justify-center p-6">
       <section className="w-full max-w-md rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-8 shadow-sm">
         <div className="mb-6 flex justify-end"><ThemeToggle /></div>
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-whatsapp/20 flex items-center justify-center">
-            <ShieldCheck className="h-5 w-5 text-whatsapp-light" />
-          </div>
-          <div>
-            <h1 className="text-xl font-bold text-[var(--heading)]">Xeccel</h1>
-            <p className="text-xs text-[var(--muted)]">Secure workspace access</p>
-          </div>
-        </div>
+        <XeccelLogo size="login" priority />
+        <h1 className="mt-4 text-xl font-bold text-[var(--heading)]">Secure workspace access</h1>
 
         {params.error && (
           <p className="mt-6 rounded-lg border border-red-500/20 bg-red-500/10 p-3 text-xs text-red-200">

@@ -1,6 +1,6 @@
 import Link from "next/link";
-import Image from "next/image";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
+import { XeccelLogo } from "@/components/brand/XeccelLogo";
 import { legalContact, policies } from "@/lib/legal/policies";
 
 export default function LegalLayout({ children }: Readonly<{ children: React.ReactNode }>) {
@@ -10,8 +10,7 @@ export default function LegalLayout({ children }: Readonly<{ children: React.Rea
       <div className="mx-auto max-w-6xl px-6 sm:px-10">
         <header className="flex min-h-24 flex-wrap items-center justify-between gap-4 border-b border-[var(--border)] py-4">
           <Link href="/" className="inline-flex items-center gap-3 text-[var(--heading)]" aria-label="Xeccel home">
-            <span className="flex size-10 items-center justify-center rounded-2xl bg-[var(--accent)] text-xl font-extrabold text-[#0b132a]">X</span>
-            <span className="text-xl font-bold tracking-tight">Xeccel</span>
+            <XeccelLogo priority />
           </Link>
           <nav aria-label="Legal navigation" className="flex items-center gap-4 text-sm font-medium text-[var(--muted)]">
             <Link href="/legal" className="hover:text-[var(--heading)]">Legal center</Link>
@@ -33,10 +32,7 @@ export default function LegalLayout({ children }: Readonly<{ children: React.Rea
             <nav aria-label="All Xeccel policies" className="mt-3 grid gap-x-6 gap-y-2 sm:grid-cols-2">
               {policies.map((policy) => <Link key={policy.slug} href={`/legal/${policy.slug}`} className="hover:text-[var(--heading)]">{policy.title}</Link>)}
             </nav>
-            <a href="https://www.thynkwise.ai/" className="mt-6 inline-flex items-center gap-2 rounded-xl border border-[var(--border)] bg-white px-3 py-1.5" aria-label="Powered by thynkWISE">
-              <span className="w-10 text-[9px] font-semibold uppercase leading-tight text-[#142142]">Powered by</span>
-              <Image src="/brand/thynkwise-logo.png" alt="thynkWISE" width={100} height={38} className="h-auto w-[100px]" />
-            </a>
+            <div className="mt-6"><XeccelLogo size="footer" /></div>
           </div>
         </footer>
       </div>

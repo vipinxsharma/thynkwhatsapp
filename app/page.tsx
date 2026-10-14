@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import {
   ArrowDownRight,
   ArrowRight,
@@ -12,6 +11,7 @@ import {
   Workflow,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
+import { XeccelLogo } from "@/components/brand/XeccelLogo";
 import styles from "./HomePage.module.css";
 
 export const metadata: Metadata = {
@@ -26,8 +26,9 @@ export const metadata: Metadata = {
     url: "https://xeccel.com/",
     siteName: "Xeccel",
     type: "website",
+    images: [{ url: "/brand/xeccel-logo.jpg", width: 2000, height: 2000, alt: "Xeccel logo" }],
   },
-  twitter: { card: "summary", title: "Xeccel | Business messaging, in one workspace" },
+  twitter: { card: "summary_large_image", title: "Xeccel | Business messaging, in one workspace", images: ["/brand/xeccel-logo.jpg"] },
 };
 
 const capabilities = [
@@ -103,8 +104,7 @@ export default function HomePage() {
       <div className="mx-auto max-w-7xl px-6 sm:px-10">
         <header className="flex min-h-24 flex-wrap items-center justify-between gap-4 border-b border-[var(--border)] py-4">
           <a href="#top" className="inline-flex items-center gap-3 text-[var(--heading)]" aria-label="Xeccel home">
-            <span className="flex size-10 items-center justify-center rounded-2xl bg-[var(--accent)] text-xl font-extrabold text-[#0b132a]">X</span>
-            <span className="text-xl font-bold tracking-tight">Xeccel</span>
+            <XeccelLogo priority />
           </a>
           <nav aria-label="Main navigation" className="order-3 flex w-full flex-wrap items-center gap-x-5 gap-y-2 text-xs font-semibold text-[var(--muted)] md:order-2 md:w-auto">
             <a className="hover:text-[var(--heading)]" href="#platform">Platform</a>
@@ -114,10 +114,6 @@ export default function HomePage() {
             <a className="hover:text-[var(--heading)]" href="#policies">Policies</a>
           </nav>
           <div className="order-2 flex items-center gap-3 md:order-3">
-            <a href="https://www.thynkwise.ai/" className={`${styles.poweredUnit} hidden items-center gap-2 rounded-2xl border border-[var(--border)] bg-white px-3 py-1.5 lg:inline-flex`} aria-label="Powered by thynkWISE">
-              <span className="w-10 text-[9px] font-semibold uppercase leading-tight tracking-wide text-[#142142]">Powered by</span>
-              <Image src="/brand/thynkwise-logo.png" alt="thynkWISE" width={100} height={38} className="h-auto w-[100px]" />
-            </a>
             <ThemeToggle />
           </div>
         </header>
@@ -147,16 +143,7 @@ export default function HomePage() {
             </div>
             <div className={`${styles.visual} rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-3 shadow-sm sm:p-4`}>
               <div className={styles.mediaFrame}>
-                <Image
-                  src="/media/xeccel-flow-hero.webp"
-                  alt="Abstract orange light trails linking translucent conversation cards"
-                  width={1376}
-                  height={768}
-                  priority
-                  sizes="(max-width: 768px) 100vw, 40vw"
-                  className="h-auto w-full"
-                />
-                <span className={styles.mediaLabel}>The Xeccel idea, in motion</span>
+                <XeccelLogo size="hero" priority />
               </div>
               <div className="flex items-center justify-between gap-3 px-3 pb-2 pt-5">
                 <span className="text-xs font-semibold uppercase tracking-[.18em] text-[var(--muted)]">One connected workspace</span>
@@ -170,7 +157,7 @@ export default function HomePage() {
                   </div>
                 ))}
               </div>
-              <p className="px-3 pb-3 text-xs leading-5 text-[var(--muted)]">Concept illustration, not a product screenshot. Customer access is not open yet.</p>
+              <p className="px-3 pb-3 text-xs leading-5 text-[var(--muted)]">Xeccel brand artwork. Customer access is not open yet.</p>
             </div>
           </section>
 
@@ -329,10 +316,7 @@ export default function HomePage() {
         <footer className="grid gap-8 border-t border-[var(--border)] py-10 text-xs text-[var(--muted)] md:grid-cols-[1fr_1.5fr]">
           <div className="space-y-4">
             <p>© {new Date().getFullYear()} Xeccel · Operated by ThynkWISE Advisors Private Limited.</p>
-            <a href="https://www.thynkwise.ai/" className={`${styles.poweredUnit} inline-flex items-center gap-2 rounded-2xl border border-[var(--border)] bg-white px-3 py-1.5`} aria-label="Powered by thynkWISE">
-              <span className="w-10 text-[9px] font-semibold uppercase leading-tight tracking-wide text-[#142142]">Powered by</span>
-              <Image src="/brand/thynkwise-logo.png" alt="thynkWISE" width={100} height={38} className="h-auto w-[100px]" />
-            </a>
+            <XeccelLogo size="footer" />
             <p>Public website live · Customer access in preparation</p>
           </div>
           <nav aria-label="Policies and support" className="grid gap-x-5 gap-y-3 sm:grid-cols-3">
