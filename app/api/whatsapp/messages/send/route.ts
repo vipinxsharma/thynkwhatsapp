@@ -5,6 +5,7 @@ import { MetaSendMessagePayload } from "@/types/meta-api";
 import { requireApiSession } from "@/lib/auth/session";
 import { getMetaConnectionForWorkspace } from "@/lib/meta/connections";
 import { getConversation } from "@/lib/inbox/store";
+import { evaluateEntitlement, getEntitlementSnapshot } from "@/lib/billing/entitlements";
 import {
   acceptOutboundRequest,
   beginOutboundRequest,
@@ -20,6 +21,23 @@ export async function POST(request: NextRequest) {
     const durable = isDurableInboxEnabled();
     if (process.env.NODE_ENV === "production" && !durable) {
       return NextResponse.json({ error: "Durable outbound delivery is not configured" }, { status: 503 });
+    }
+    if (process.env.NODE_ENV === "production") {
+      let access: ReturnType<typeof evaluateEntitlement>;
+      try {
+        access = evaluateEntitlement(
+          await getEntitlementSnapshot(auth.session.tenantId),
+          "whatsapp_send"
+        );
+      } catch {
+        return NextResponse.json({ error: "Subscription status is temporarily unavailable" }, { status: 503 });
+      }
+      if (!access.allowed) {
+        return NextResponse.json(
+          { error: "WhatsApp sending is not active for this workspace", code: access.reason },
+          { status: access.reason === "no_subscription" ? 503 : 403 }
+        );
+      }
     }
     const strapiClient = new StrapiClient(auth.session.tenantId);
 

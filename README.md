@@ -108,6 +108,12 @@ unverified SMS/DLT readiness draft per workspace. The SMS page does not submit
 registrations or send messages. Do not point this
 application at an unrelated tenant DB.
 
+Migration 0009 adds subscription state and feature grants. Production outbound
+sends require a current workspace subscription and explicit `whatsapp_send`
+grant, but no payment activation writer exists yet. See the
+[production-readiness checklist](docs/operations/production-readiness.md) before
+considering a release.
+
 Meta Embedded Signup exchanges the code only after durable storage is configured, verifies that
 the phone number belongs to the selected WABA, subscribes the WABA to webhooks, encrypts the
 access token, and stores the connection against the authenticated workspace.
