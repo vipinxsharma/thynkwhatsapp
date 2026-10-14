@@ -42,7 +42,7 @@ export function TeamSettings({
 
   return (
     <div className="grid gap-6 lg:grid-cols-[380px_1fr]">
-      <form onSubmit={createInvite} className="space-y-4 rounded-xl border border-white/10 bg-[#0d1117] p-5">
+      <form onSubmit={createInvite} className="space-y-4 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-5">
         <div>
           <h2 className="font-semibold text-white">Invite a teammate</h2>
           <p className="mt-1 text-xs text-gray-400">Links expire after 72 hours and only work for the invited email.</p>
@@ -65,7 +65,7 @@ export function TeamSettings({
       </form>
 
       <div className="space-y-6">
-        <section className="rounded-xl border border-white/10 bg-[#0d1117] p-5">
+        <section className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-5">
           <h2 className="font-semibold text-white">Members</h2>
           <div className="mt-4 divide-y divide-white/5">
             {initialMembers.map((member) => (
@@ -77,7 +77,7 @@ export function TeamSettings({
           </div>
         </section>
 
-        <section className="rounded-xl border border-white/10 bg-[#0d1117] p-5">
+        <section className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-5">
           <h2 className="font-semibold text-white">Pending invitations</h2>
           <div className="mt-4 divide-y divide-white/5">
             {invitations.length === 0 && <p className="text-sm text-gray-400">No pending invitations.</p>}

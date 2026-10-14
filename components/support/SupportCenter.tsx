@@ -78,7 +78,7 @@ export function SupportCenter({ initialCases }: { initialCases: SupportCase[] })
 
   return (
     <div className="grid gap-6 lg:grid-cols-[380px_1fr]">
-      <form onSubmit={submit} className="space-y-4 rounded-xl border border-white/10 bg-[#0d1117] p-5">
+      <form onSubmit={submit} className="space-y-4 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-5">
         <div>
           <h2 className="font-semibold text-white">Ask for help</h2>
           <p className="mt-1 text-xs text-gray-400">Your case stays within this workspace.</p>
@@ -89,7 +89,7 @@ export function SupportCenter({ initialCases }: { initialCases: SupportCase[] })
         <button disabled={pending} className="rounded-lg bg-whatsapp px-4 py-2 text-sm font-semibold text-black disabled:opacity-50">{pending ? "Creating…" : "Start support chat"}</button>
       </form>
 
-      <section className="rounded-xl border border-white/10 bg-[#0d1117] p-5">
+      <section className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-5">
         <h2 className="font-semibold text-white">Your support cases</h2>
         <div className="mt-4 space-y-3">
           {cases.length === 0 && <p className="text-sm text-gray-400">No support cases yet.</p>}
@@ -106,7 +106,7 @@ export function SupportCenter({ initialCases }: { initialCases: SupportCase[] })
       </section>
 
       {selectedCase && (
-        <section className="lg:col-start-2 rounded-xl border border-white/10 bg-[#0d1117] p-5">
+        <section className="lg:col-start-2 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-5">
           <div className="flex items-center justify-between gap-3">
             <h2 className="font-semibold text-white">{selectedCase.subject}</h2>
             <button type="button" onClick={requestAIReview} disabled={aiPending} className="rounded-lg border border-whatsapp/40 px-3 py-2 text-xs font-semibold text-whatsapp disabled:opacity-50">

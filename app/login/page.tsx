@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ShieldCheck } from "lucide-react";
 import { signInAction, signUpAction } from "@/app/auth/actions";
+import { ThemeToggle } from "@/components/theme/ThemeToggle";
 
 const errors: Record<string, string> = {
   configuration: "Self-service authentication needs its dedicated Neon project configuration.",
@@ -23,15 +24,16 @@ export default async function LoginPage({
   const params = await searchParams;
   const signingUp = params.mode === "signup";
   return (
-    <main className="min-h-screen bg-[#090c10] text-gray-200 flex items-center justify-center p-6">
-      <section className="w-full max-w-md rounded-2xl border border-white/10 bg-[#0d1117] p-8 shadow-2xl">
+    <main className="min-h-screen bg-[var(--background)] text-[var(--foreground)] flex items-center justify-center p-6">
+      <section className="w-full max-w-md rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-8 shadow-sm">
+        <div className="mb-6 flex justify-end"><ThemeToggle /></div>
         <div className="flex items-center gap-3">
           <div className="h-10 w-10 rounded-xl bg-whatsapp/20 flex items-center justify-center">
             <ShieldCheck className="h-5 w-5 text-whatsapp-light" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-white">Xeccel</h1>
-            <p className="text-xs text-gray-400">Secure workspace access</p>
+            <h1 className="text-xl font-bold text-[var(--heading)]">Xeccel</h1>
+            <p className="text-xs text-[var(--muted)]">Secure workspace access</p>
           </div>
         </div>
 
@@ -48,29 +50,29 @@ export default async function LoginPage({
 
         <form action={signingUp ? signUpAction : signInAction} className="mt-6 space-y-4">
           {signingUp && (
-            <label className="block text-xs text-gray-300">
+            <label className="block text-xs text-[var(--muted)]">
               Name
-              <input name="name" required minLength={2} className="mt-1 w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm" />
+              <input name="name" required minLength={2} className="mt-1 min-h-12 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-muted)] px-3 py-2 text-sm" />
             </label>
           )}
-          <label className="block text-xs text-gray-300">
+          <label className="block text-xs text-[var(--muted)]">
             Email
-            <input name="email" type="email" autoComplete="email" required className="mt-1 w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm" />
+            <input name="email" type="email" autoComplete="email" required className="mt-1 min-h-12 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-muted)] px-3 py-2 text-sm" />
           </label>
-          <label className="block text-xs text-gray-300">
+          <label className="block text-xs text-[var(--muted)]">
             Password
-            <input name="password" type="password" autoComplete={signingUp ? "new-password" : "current-password"} required minLength={12} className="mt-1 w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm" />
+            <input name="password" type="password" autoComplete={signingUp ? "new-password" : "current-password"} required minLength={12} className="mt-1 min-h-12 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-muted)] px-3 py-2 text-sm" />
           </label>
-          <button className="w-full rounded-lg bg-whatsapp px-4 py-2.5 text-sm font-semibold text-black">
+          <button className="min-h-12 w-full rounded-full bg-whatsapp px-4 py-2.5 text-sm font-semibold text-[#0b132a] shadow-glow hover:bg-whatsapp-dark">
             {signingUp ? "Create workspace" : "Sign in"}
           </button>
         </form>
 
-        <div className="mt-5 flex justify-between text-xs text-gray-400">
-          <Link href={signingUp ? "/login" : "/login?mode=signup"} className="hover:text-white">
+        <div className="mt-5 flex justify-between text-xs text-[var(--muted)]">
+          <Link href={signingUp ? "/login" : "/login?mode=signup"} className="hover:text-[var(--heading)]">
             {signingUp ? "Already have an account?" : "Create an account"}
           </Link>
-          {!signingUp && <Link href="/auth/forgot-password" className="hover:text-white">Forgot password?</Link>}
+          {!signingUp && <Link href="/auth/forgot-password" className="hover:text-[var(--heading)]">Forgot password?</Link>}
         </div>
       </section>
     </main>

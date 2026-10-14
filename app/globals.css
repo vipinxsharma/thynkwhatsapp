@@ -1,56 +1,109 @@
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap");
 @import "tailwindcss";
 
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --color-background: #0c0f14;
-  --color-foreground: #f3f4f6;
-  --color-surface-50: #181d24;
-  --color-surface-100: #13171d;
-  --color-surface-200: #0e1116;
-  --color-surface-300: #090c0f;
-  --color-whatsapp: #128c7e;
-  --color-whatsapp-light: #25d366;
-  --color-whatsapp-dark: #075e54;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-surface-50: var(--surface-raised);
+  --color-surface-100: var(--surface);
+  --color-surface-200: var(--surface-muted);
+  --color-surface-300: var(--background);
+  --color-whatsapp: #f38b26;
+  --color-whatsapp-light: #f38b26;
+  --color-whatsapp-dark: #e07512;
   --color-whatsapp-teal: #00a884;
   --color-whatsapp-badge: #00a884;
   --color-whatsapp-chatbg: #0b141a;
   --color-whatsapp-bubbleIn: #202c33;
   --color-whatsapp-bubbleOut: #005c4b;
-  --color-border: rgba(255, 255, 255, 0.08);
-  --shadow-glass: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-  --shadow-glow: 0 0 20px -5px rgba(37, 211, 102, 0.3);
+  --color-border: var(--border);
+  --shadow-glass: 0 8px 20px rgba(15, 23, 42, 0.08);
+  --shadow-glow: 0 12px 28px rgba(243, 139, 38, 0.25);
 }
 
 :root {
-  --background: #0b0e14;
-  --foreground: #f3f4f6;
+  color-scheme: light;
+  --background: #fefaf2;
+  --surface: #ffffff;
+  --surface-raised: #fafafb;
+  --surface-muted: #f2f3f5;
+  --foreground: #0f172a;
+  --heading: #142142;
+  --muted: #4b5563;
+  --border: #e6e8ec;
+  --accent: #f38b26;
+  --accent-hover: #e07512;
+  --focus-ring: 0 0 0 3px rgba(243, 139, 38, 0.45);
+}
+
+html.dark {
+  color-scheme: dark;
+  --background: #0b132a;
+  --surface: #142142;
+  --surface-raised: #1b2d58;
+  --surface-muted: #101b36;
+  --foreground: #f8fafc;
+  --heading: #ffffff;
+  --muted: #cbd5e1;
+  --border: rgba(255, 255, 255, 0.16);
 }
 
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-family: Poppins, system-ui, -apple-system, "Segoe UI", sans-serif;
   overflow-x: hidden;
 }
 
-/* Custom smooth dark scrollbars */
+*:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+/* Legacy dashboard utilities follow the active palette; WhatsApp previews retain their native colors. */
+html:not(.dark) .theme-content:not(.theme-content--chat) :where([class~="text-white"], [class~="text-gray-100"], [class~="text-gray-200"]):not(.whatsapp-pattern *) {
+  color: var(--heading);
+}
+
+html:not(.dark) .theme-content:not(.theme-content--chat) :where([class~="text-gray-300"], [class~="text-gray-400"], [class~="text-gray-500"]):not(.whatsapp-pattern *) {
+  color: var(--muted);
+}
+
+html:not(.dark) .theme-content:not(.theme-content--chat) :where([class~="border-white/5"], [class~="border-white/10"]):not(.whatsapp-pattern *) {
+  border-color: var(--border);
+}
+
+html:not(.dark) .theme-content:not(.theme-content--chat) :where([class~="bg-white/5"], [class~="bg-white/10"], [class~="bg-black/20"], [class~="bg-black/40"]):not(.whatsapp-pattern *) {
+  background-color: var(--surface-muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Custom scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--background);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.15);
+  background: var(--border);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(37, 211, 102, 0.4);
+  background: var(--accent);
 }
 
 /* WhatsApp chat background pattern */
@@ -62,8 +115,8 @@ body {
 
 /* Glassmorphism utility */
 .glass-panel {
-  background: rgba(18, 23, 31, 0.7);
+  background: color-mix(in srgb, var(--surface) 80%, transparent);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border);
 }

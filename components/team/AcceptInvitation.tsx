@@ -30,7 +30,7 @@ export function AcceptInvitation() {
   }
 
   return (
-    <div className="space-y-4 rounded-xl border border-white/10 bg-[#0d1117] p-6 text-center">
+    <div className="space-y-4 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-6 text-center">
       <p className="text-sm text-gray-300">Join this Xeccel workspace using the exact email address that was invited.</p>
       {error && <p className="text-sm text-red-300">{error}</p>}
       {!token && <p className="text-sm text-red-300">This invitation link is incomplete.</p>}
