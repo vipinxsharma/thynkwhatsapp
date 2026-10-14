@@ -192,34 +192,34 @@ export default function HomePage() {
 
           <section id="vision-film" aria-labelledby="vision-film-title" className={`${styles.scrollReveal} border-t border-[var(--border)] py-16 md:py-20`}>
             <div className="max-w-3xl">
-              <p className="text-xs font-bold uppercase tracking-[.2em] text-[var(--accent)]">A glimpse of the vision</p>
+              <p className="text-xs font-bold uppercase tracking-[.2em] text-[var(--accent)]">The Xeccel experience</p>
               <h2 id="vision-film-title" className="mt-4 text-3xl font-bold tracking-tight text-[var(--heading)] sm:text-4xl">Meet Xeccel in motion.</h2>
-              <p className="mt-5 text-sm leading-7 text-[var(--muted)]">A voiced introduction and two silent concept films show the service experience we&apos;re working toward. These are creative previews, not a demonstration of a live product.</p>
+              <p className="mt-5 text-sm leading-7 text-[var(--muted)]">A voiced introduction and two silent films explore connected conversations, workflows, and AI-assisted support. These are creative illustrations, not footage of a live customer account.</p>
             </div>
             <div className="mt-10 grid gap-6 lg:grid-cols-2">
               <article className={`${styles.filmFrame} lg:col-span-2`}>
                 <div className="grid lg:grid-cols-[.36fr_.64fr] lg:items-center">
                   <div className="p-6 sm:p-8">
-                    <p className="text-xs font-bold uppercase tracking-[.18em] text-[var(--accent)]">With voice · 29 seconds</p>
+                    <p className="text-xs font-bold uppercase tracking-[.18em] text-[var(--accent)]">With voice</p>
                     <h3 className="mt-3 text-2xl font-bold text-[var(--heading)]">The Xeccel introduction</h3>
-                    <p className="mt-3 text-sm leading-7 text-[var(--muted)]">A fictional presenter introduces the planned workspace against a modern service-team backdrop. Play to hear the English narration. The brand name is pronounced like “Excel.”</p>
+                    <p className="mt-3 text-sm leading-7 text-[var(--muted)]">A fictional presenter introduces Xeccel against a modern service-team backdrop. Play to hear the English narration. The brand name is pronounced like “Excel.”</p>
                     <details className={`${styles.transcript} mt-5 text-xs leading-6 text-[var(--muted)]`}>
                       <summary className="cursor-pointer font-semibold text-[var(--heading)]">Read the transcript</summary>
-                      <p className="mt-2">Every customer message matters. Xeccel is being built to give service teams one place for conversations, workflows, and AI-assisted support. Our goal is simple: make it easier to stay in the loop and resolve routine questions faster. We&apos;re preparing customer access now. Xeccel, powered by thynkWISE.</p>
+                      <p className="mt-2">Every customer message matters. Xeccel is designed to give service teams one place for conversations, workflows, and AI-assisted support. Our goal is simple: make it easier to stay in the loop and resolve routine questions faster. Built for teams that want every conversation to move forward. Xeccel, powered by thynkWISE. Explore Xeccel at xeccel.com. One connected place for your service team.</p>
                     </details>
                   </div>
                   <video controls playsInline preload="none" poster="/media/xeccel-presenter-poster.jpg" aria-label="Xeccel introduction with a fictional presenter and English narration">
-                    <source src="/media/xeccel-heygen-presenter.mp4" type="video/mp4" />
+                    <source src="/media/xeccel-heygen-presenter-corrected.mp4" type="video/mp4" />
                     Your browser does not support video playback.
                   </video>
                 </div>
               </article>
               <figure className={styles.filmFrame}>
-                <video controls playsInline preload="none" poster="/media/xeccel-video-poster.jpg" aria-label="Silent Xeccel prelaunch concept film">
+                <video controls playsInline preload="none" poster="/media/xeccel-video-poster.jpg" aria-label="Silent Xeccel service conversation film">
                   <source src="/media/xeccel-heygen-explainer-silent.mp4" type="video/mp4" />
                   Your browser does not support video playback.
                 </video>
-                <figcaption className="px-5 py-4 text-xs leading-6 text-[var(--muted)]"><strong className="text-[var(--heading)]">The vision · Silent, 20 seconds.</strong> Concept animation, not footage of a live product.</figcaption>
+                <figcaption className="px-5 py-4 text-xs leading-6 text-[var(--muted)]"><strong className="text-[var(--heading)]">The experience · Silent, 20 seconds.</strong> Concept animation, not footage of a live product.</figcaption>
               </figure>
               <figure className={styles.filmFrame}>
                 <video controls playsInline muted preload="none" poster="/media/xeccel-flow-hero.webp" aria-label="Silent Google Flow Xeccel motion concept">
@@ -229,7 +229,7 @@ export default function HomePage() {
                 <figcaption className="px-5 py-4 text-xs leading-6 text-[var(--muted)]"><strong className="text-[var(--heading)]">The energy · Silent, 8 seconds.</strong> A Google Flow concept loop inspired by the Xeccel visual identity.</figcaption>
               </figure>
             </div>
-            <p className="mt-5 text-xs leading-6 text-[var(--muted)]">All films depict concepts. Customer onboarding is not open yet.</p>
+            <p className="mt-5 text-xs leading-6 text-[var(--muted)]">All films depict concepts. Public customer onboarding is not open yet.</p>
           </section>
 
           <section id="how-it-works" aria-labelledby="how-title" className={`${styles.scrollReveal} scroll-mt-8 border-t border-[var(--border)] py-16 md:py-20`}>
