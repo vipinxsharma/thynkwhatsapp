@@ -16,6 +16,7 @@ import {
   Settings,
   ShieldCheck,
   Users,
+  LifeBuoy,
 } from "lucide-react";
 
 const navigation = [
@@ -27,6 +28,7 @@ const navigation = [
   { name: "HSM Templates", href: "/templates", icon: FileText },
   { name: "Analytics", href: "/analytics", icon: BarChart3 },
   { name: "WABA Settings", href: "/settings/waba", icon: Settings },
+  { name: "Support", href: "/support", icon: LifeBuoy },
 ];
 
 export function DashboardShell({
