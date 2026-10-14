@@ -19,12 +19,16 @@ import {
   ShieldCheck,
   Users,
   LifeBuoy,
+  PlugZap,
+  ShoppingBag,
+  Smartphone,
+  Sparkles,
   UserPlus,
 } from "lucide-react";
 
 const navigation = [
   { name: "Overview", href: "/", icon: LayoutDashboard },
-  { name: "CRM Inbox", href: "/inbox", icon: MessageSquare, badge: "3" },
+  { name: "CRM Inbox", href: "/inbox", icon: MessageSquare },
   { name: "Contacts", href: "/contacts", icon: Users },
   { name: "Automations", href: "/automations", icon: Bot },
   { name: "Broadcasts", href: "/campaigns", icon: Send },
@@ -33,6 +37,14 @@ const navigation = [
   { name: "WABA Settings", href: "/settings/waba", icon: Settings },
   { name: "Support", href: "/support", icon: LifeBuoy },
 ];
+
+const roadmapNavigation = [
+  { name: "AI Agents", href: "/ai-agents", icon: Sparkles },
+  { name: "Integrations", href: "/integrations", icon: PlugZap },
+  { name: "Commerce & Ads", href: "/growth", icon: ShoppingBag },
+];
+
+const phaseTwoNavigation = [{ name: "SMS Gateway", href: "/sms", icon: Smartphone }];
 
 export function DashboardShell({
   children,
@@ -94,35 +106,33 @@ export function DashboardShell({
           </div>
         </div>
 
-        <nav className="flex-1 px-3 space-y-1 mt-2">
-          {visibleNavigation.map((item) => {
+        <nav aria-label="Workspace sections" className="mt-2 flex-1 space-y-1 overflow-y-auto px-3 pb-3">
+          {[...visibleNavigation, ...roadmapNavigation, ...phaseTwoNavigation].map((item, index) => {
             const isActive = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
             const Icon = item.icon;
             return (
-              <Link
-                key={item.name}
-                href={item.href}
-                aria-current={isActive ? "page" : undefined}
-                className={`flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                  isActive
-                    ? "bg-whatsapp/15 text-[var(--foreground)] border border-whatsapp/30 shadow-sm"
-                    : "text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-surface-200"
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <Icon className={`w-4 h-4 ${isActive ? "text-whatsapp-dark" : "text-[var(--muted)]"}`} />
-                  <span>{item.name}</span>
-                </div>
-                {item.badge && (
-                  <span
-                    className={`text-xs px-2 py-0.5 rounded-full font-bold ${
-                      isActive ? "bg-whatsapp-light text-[#0b132a]" : "bg-surface-200 text-[var(--foreground)]"
-                    }`}
-                  >
-                    {item.badge}
-                  </span>
+              <div key={item.name}>
+                {index === visibleNavigation.length && (
+                  <p className="px-3 pb-1 pt-5 text-[10px] font-bold uppercase tracking-widest text-[var(--muted)]">Build next</p>
                 )}
-              </Link>
+                {index === visibleNavigation.length + roadmapNavigation.length && (
+                  <p className="px-3 pb-1 pt-5 text-[10px] font-bold uppercase tracking-widest text-[var(--muted)]">Phase 2</p>
+                )}
+                <Link
+                  href={item.href}
+                  aria-current={isActive ? "page" : undefined}
+                  className={`flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                    isActive
+                      ? "bg-whatsapp/15 text-[var(--foreground)] border border-whatsapp/30 shadow-sm"
+                      : "text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-surface-200"
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <Icon className={`w-4 h-4 ${isActive ? "text-whatsapp-dark" : "text-[var(--muted)]"}`} />
+                    <span>{item.name}</span>
+                  </div>
+                </Link>
+              </div>
             );
           })}
         </nav>
