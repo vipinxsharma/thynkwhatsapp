@@ -4,6 +4,7 @@ import { MetaWebhookPayload, WebhookChangeValue } from "@/types/meta-webhook";
 import { StrapiClient, isDurableInboxEnabled } from "@/lib/strapi/client";
 import { emitMessageStatusUpdate, emitNewInboundMessage } from "@/lib/events/emitter";
 import { getMetaConnectionForWaba } from "@/lib/meta/connections";
+import { getConversationForSender } from "@/lib/inbox/store";
 
 /**
  * 1. GET: Webhook Challenge Verification
@@ -135,9 +136,11 @@ async function processWebhookEntries(entries: MetaWebhookPayload["entry"]) {
             }
 
             // Never attach a new sender's message to an unrelated conversation.
-            const conversations = await strapiClient.getConversations();
-            let matchedConv = conversations.find((c) => c.contact.waId === msg.from &&
-              c.phoneNumber.phoneNumberId === connection.phoneNumberId);
+            const matched = isDurableInboxEnabled()
+              ? await getConversationForSender(tenantId, msg.from, connection.phoneNumberId)
+              : (await strapiClient.getConversations()).find((c) => c.contact.waId === msg.from &&
+                c.phoneNumber.phoneNumberId === connection.phoneNumberId);
+            let matchedConv = matched || undefined;
             if (!matchedConv) {
               const created = await strapiClient.createContact({
                 name: value.contacts?.find((contact) => contact.wa_id === msg.from)?.profile.name || msg.from,

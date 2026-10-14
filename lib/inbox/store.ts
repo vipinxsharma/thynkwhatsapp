@@ -103,6 +103,17 @@ export async function getConversation(workspaceId: string, conversationId: strin
   return rows[0] ? conversationFromRow(rows[0] as ConversationRow) : null;
 }
 
+export async function getConversationForSender(
+  workspaceId: string, waId: string, phoneNumberId: string,
+): Promise<Conversation | null> {
+  const rows = await database().query(
+    `${conversationSelect} WHERE c.workspace_id = $1::uuid
+      AND contact.wa_id = $2 AND c.phone_number_id = $3 LIMIT 1`,
+    [workspaceId, waId, phoneNumberId]
+  );
+  return rows[0] ? conversationFromRow(rows[0] as ConversationRow) : null;
+}
+
 export async function getMessages(workspaceId: string, conversationId: string): Promise<Message[]> {
   return (await getMessagePage(workspaceId, conversationId)).messages;
 }

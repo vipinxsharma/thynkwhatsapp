@@ -26,7 +26,9 @@ Message history is a 50-item, newest-first keyset page (returned in display
 order), scoped to workspace and conversation. The `(workspace_id,
 conversation_id, timestamp DESC, id DESC)` index supports that access pattern.
 The API checks that the conversation belongs to the authenticated workspace
-before returning any page. This removes the inbox's largest immediate query
+before returning any page. Inbound webhook routing now looks up the contact
+and sender directly through tenant-scoped unique keys, rather than scanning
+the first 200 conversations. This removes the inbox's largest immediate query
 and payload multiplier; it does **not** make the 200-conversation list a complete
 inbox at large scale.
 

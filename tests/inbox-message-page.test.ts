@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({ query: vi.fn() }));
 vi.mock("@neondatabase/serverless", () => ({ neon: () => ({ query: mocks.query }) }));
 
-import { getMessagePage } from "../lib/inbox/store";
+import { getConversationForSender, getMessagePage } from "../lib/inbox/store";
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -30,5 +30,12 @@ describe("bounded message history", () => {
     await getMessagePage("workspace", "conversation", cursor);
     expect(mocks.query.mock.calls[0][0]).toContain("(timestamp, id) < ($3::timestamptz, $4::uuid)");
     expect(mocks.query.mock.calls[0][1]).toEqual(["workspace", "conversation", cursor.timestamp, cursor.id]);
+  });
+
+  it("finds an inbound conversation by workspace, contact and sender channel", async () => {
+    mocks.query.mockResolvedValue([]);
+    expect(await getConversationForSender("workspace", "919876543210", "phone-id")).toBeNull();
+    expect(mocks.query.mock.calls[0][0]).toContain("contact.wa_id = $2 AND c.phone_number_id = $3");
+    expect(mocks.query.mock.calls[0][1]).toEqual(["workspace", "919876543210", "phone-id"]);
   });
 });
