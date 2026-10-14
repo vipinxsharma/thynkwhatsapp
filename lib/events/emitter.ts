@@ -19,15 +19,25 @@ export const INBOX_EVENTS = {
   CONVERSATION_UPDATED: "conversation:updated",
 } as const;
 
-export function emitNewInboundMessage(conversationId: string | number, message: Message) {
+export function emitNewInboundMessage(
+  tenantId: string,
+  conversationId: string | number,
+  message: Message
+) {
   inboxEventEmitter.emit(INBOX_EVENTS.MESSAGE_RECEIVED, {
+    tenantId,
     conversationId: String(conversationId),
     message,
   });
 }
 
-export function emitMessageStatusUpdate(wamId: string, status: Message["status"]) {
+export function emitMessageStatusUpdate(
+  tenantId: string,
+  wamId: string,
+  status: Message["status"]
+) {
   inboxEventEmitter.emit(INBOX_EVENTS.MESSAGE_STATUS_UPDATED, {
+    tenantId,
     wamId,
     status,
   });

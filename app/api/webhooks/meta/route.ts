@@ -2,13 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifyMetaWebhookSignature } from "@/lib/meta/signature";
 import { MetaWebhookPayload, WebhookChangeValue } from "@/types/meta-webhook";
 import { StrapiClient } from "@/lib/strapi/client";
-import { MetaGraphClient } from "@/lib/meta/client";
 import { emitMessageStatusUpdate, emitNewInboundMessage } from "@/lib/events/emitter";
 import { AutomationEngine } from "@/lib/automations/rules";
-
-const META_VERIFY_TOKEN = process.env.META_WEBHOOK_VERIFY_TOKEN || "thynkwise_meta_verify_token_secure_2026";
-const strapiClient = new StrapiClient();
-const metaClient = new MetaGraphClient();
 
 /**
  * 1. GET: Webhook Challenge Verification
@@ -25,7 +20,12 @@ export async function GET(request: NextRequest) {
     return new NextResponse("Missing query parameters", { status: 400 });
   }
 
-  if (mode === "subscribe" && token === META_VERIFY_TOKEN) {
+  const verifyToken = process.env.META_WEBHOOK_VERIFY_TOKEN;
+  if (!verifyToken) {
+    return new NextResponse("Webhook verification is not configured", { status: 503 });
+  }
+
+  if (mode === "subscribe" && token === verifyToken) {
     // Meta requires plain text response with HTTP 200 containing the exact challenge value
     return new NextResponse(challenge, {
       status: 200,
@@ -47,14 +47,15 @@ export async function POST(request: NextRequest) {
     const rawBody = await request.text();
     const signatureHeader = request.headers.get("x-hub-signature-256");
 
-    // In production or when META_APP_SECRET is set, enforce HMAC-SHA256 signature verification
     const appSecret = process.env.META_APP_SECRET;
-    if (appSecret) {
-      const isValid = verifyMetaWebhookSignature(rawBody, signatureHeader, appSecret);
-      if (!isValid) {
-        console.warn("[Meta Webhook] Invalid HMAC-SHA256 signature rejected.");
-        return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
-      }
+    if (!appSecret) {
+      return NextResponse.json({ error: "Webhook signing is not configured" }, { status: 503 });
+    }
+
+    const isValid = verifyMetaWebhookSignature(rawBody, signatureHeader, appSecret);
+    if (!isValid) {
+      console.warn("[Meta Webhook] Invalid HMAC-SHA256 signature rejected.");
+      return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
     }
 
     const payload: MetaWebhookPayload = JSON.parse(rawBody);
@@ -81,6 +82,13 @@ export async function POST(request: NextRequest) {
  */
 async function processWebhookEntries(entries: MetaWebhookPayload["entry"]) {
   if (!entries || !Array.isArray(entries)) return;
+  const tenantId =
+    process.env.META_WEBHOOK_TENANT_ID ||
+    (process.env.NODE_ENV === "test" ? "webhook-test-tenant" : "");
+  if (!tenantId) {
+    throw new Error("META_WEBHOOK_TENANT_ID is required until WABA-based routing is implemented");
+  }
+  const strapiClient = new StrapiClient(tenantId);
 
   for (const entry of entries) {
     const wabaId = entry.id;
@@ -98,7 +106,7 @@ async function processWebhookEntries(entries: MetaWebhookPayload["entry"]) {
         if (value.statuses && Array.isArray(value.statuses)) {
           for (const statusUpdate of value.statuses) {
             await strapiClient.updateMessageStatus(statusUpdate.id, statusUpdate.status);
-            emitMessageStatusUpdate(statusUpdate.id, statusUpdate.status);
+            emitMessageStatusUpdate(tenantId, statusUpdate.id, statusUpdate.status);
             console.log(
               `[Webhook Status] Message ${statusUpdate.id} status updated to: ${statusUpdate.status}`
             );
@@ -139,13 +147,13 @@ async function processWebhookEntries(entries: MetaWebhookPayload["entry"]) {
                 status: "received",
                 timestamp: new Date(parseInt(msg.timestamp, 10) * 1000).toISOString(),
               });
-              emitNewInboundMessage(matchedConv.id, recorded);
+              emitNewInboundMessage(tenantId, matchedConv.id, recorded);
               console.log(
                 `[Webhook Inbound Message] Ingested message ${msg.id} from ${msg.from} to conversation ${matchedConv.id}`
               );
 
               // 3. Automated Bot & Keyword Triggers Engine
-              const autoRule = AutomationEngine.matchRule(bodyText);
+              const autoRule = AutomationEngine.matchRule(tenantId, bodyText);
               if (autoRule) {
                 console.log(`[Auto-Responder Bot] Triggered rule "${autoRule.name}" for message: "${bodyText}"`);
 
@@ -178,7 +186,7 @@ async function processWebhookEntries(entries: MetaWebhookPayload["entry"]) {
                   timestamp: new Date().toISOString(),
                 });
 
-                emitNewInboundMessage(matchedConv.id, botMessage);
+                emitNewInboundMessage(tenantId, matchedConv.id, botMessage);
                 console.log(`[Auto-Responder Bot] Sent automated reply to conversation ${matchedConv.id}`);
               }
             }

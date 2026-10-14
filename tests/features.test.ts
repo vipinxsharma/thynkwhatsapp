@@ -4,7 +4,7 @@ import { AutomationEngine } from "../lib/automations/rules";
 import { CampaignStore } from "../lib/campaigns/store";
 
 describe("CRM Contact Management Suite", () => {
-  const strapi = new StrapiClient();
+  const strapi = new StrapiClient("features-tenant");
 
   it("should create a new contact and automatically spin up a conversation", async () => {
     const res = await strapi.createContact({
@@ -50,15 +50,17 @@ describe("CRM Contact Management Suite", () => {
 });
 
 describe("Automated Bot & Keyword Triggers Engine", () => {
+  const tenantId = "automation-tenant";
+
   it("should match pricing keyword triggers", () => {
-    const rule = AutomationEngine.matchRule("Can you share your WhatsApp pricing and rates?");
+    const rule = AutomationEngine.matchRule(tenantId, "Can you share your WhatsApp pricing and rates?");
     expect(rule).not.toBeNull();
     expect(rule?.id).toBe("rule_pricing");
     expect(rule?.replyText).toContain("Our WhatsApp Business plans start at $49/mo");
   });
 
   it("should match welcome greetings", () => {
-    const rule = AutomationEngine.matchRule("Hi team, good morning!");
+    const rule = AutomationEngine.matchRule(tenantId, "Hi team, good morning!");
     expect(rule).not.toBeNull();
     expect(rule?.id).toBe("rule_welcome");
     expect(rule?.responseType).toBe("interactive");
@@ -66,13 +68,13 @@ describe("Automated Bot & Keyword Triggers Engine", () => {
   });
 
   it("should match demo requests", () => {
-    const rule = AutomationEngine.matchRule("I would like to schedule a demo call tomorrow");
+    const rule = AutomationEngine.matchRule(tenantId, "I would like to schedule a demo call tomorrow");
     expect(rule).not.toBeNull();
     expect(rule?.id).toBe("rule_demo");
   });
 
   it("should allow dynamically creating, toggling, and testing custom rules", () => {
-    const customRule = AutomationEngine.addRule({
+    const customRule = AutomationEngine.addRule(tenantId, {
       name: "Black Friday Discount",
       description: "Auto responds with holiday coupon code",
       triggerType: "contains_keyword",
@@ -84,26 +86,31 @@ describe("Automated Bot & Keyword Triggers Engine", () => {
 
     expect(customRule.id).toBeDefined();
 
-    const matched = AutomationEngine.matchRule("Do you have any blackfriday discounts?");
+    const matched = AutomationEngine.matchRule(tenantId, "Do you have any blackfriday discounts?");
     expect(matched?.id).toBe(customRule.id);
 
     // Toggle off
-    AutomationEngine.toggleRule(customRule.id);
-    const matchedAfterDisable = AutomationEngine.matchRule("Do you have any blackfriday discounts?");
+    AutomationEngine.toggleRule(tenantId, customRule.id);
+    const matchedAfterDisable = AutomationEngine.matchRule(
+      tenantId,
+      "Do you have any blackfriday discounts?"
+    );
     expect(matchedAfterDisable?.id).not.toBe(customRule.id);
   });
 });
 
 describe("Broadcast Campaign Engine", () => {
+  const tenantId = "campaign-tenant";
+
   it("should retrieve historical broadcast runs", () => {
-    const campaigns = CampaignStore.getAll();
+    const campaigns = CampaignStore.getAll(tenantId);
     expect(campaigns.length).toBeGreaterThanOrEqual(2);
     expect(campaigns[0].status).toBe("completed");
     expect(campaigns[0].deliveredCount).toBeGreaterThan(0);
   });
 
   it("should record a new campaign run with delivery receipts and cost", () => {
-    const newRun = CampaignStore.add({
+    const newRun = CampaignStore.add(tenantId, {
       name: "Q1 Renewal Blast",
       templateName: "order_confirmation_v1",
       segment: "customers",
@@ -119,7 +126,7 @@ describe("Broadcast Campaign Engine", () => {
     expect(newRun.id).toBeDefined();
     expect(newRun.createdAt).toBeDefined();
 
-    const all = CampaignStore.getAll();
+    const all = CampaignStore.getAll(tenantId);
     expect(all[0].id).toBe(newRun.id);
   });
 });

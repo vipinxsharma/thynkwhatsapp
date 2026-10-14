@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { AutomationEngine } from "@/lib/automations/rules";
+import { requireApiSession } from "@/lib/auth/session";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const rules = AutomationEngine.getRules();
+    const auth = await requireApiSession(request);
+    if (!auth.ok) return auth.response;
+    const rules = AutomationEngine.getRules(auth.session.tenantId);
     return NextResponse.json({ success: true, data: rules });
   } catch (error: any) {
     return NextResponse.json(
@@ -15,12 +18,14 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = await requireApiSession(request, ["owner", "admin"]);
+    if (!auth.ok) return auth.response;
     const body = await request.json();
 
     // Check if test simulation action
     if (body.action === "test") {
       const { text } = body;
-      const matched = AutomationEngine.matchRule(text || "");
+      const matched = AutomationEngine.matchRule(auth.session.tenantId, text || "");
       return NextResponse.json({
         success: true,
         matched: !!matched,
@@ -47,7 +52,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const newRule = AutomationEngine.addRule({
+    const newRule = AutomationEngine.addRule(auth.session.tenantId, {
       name,
       description: description || "",
       triggerType,
@@ -71,6 +76,8 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
+    const auth = await requireApiSession(request, ["owner", "admin"]);
+    if (!auth.ok) return auth.response;
     const body = await request.json();
     const { id, toggle, updates } = body;
 
@@ -80,9 +87,9 @@ export async function PUT(request: NextRequest) {
 
     let result;
     if (toggle) {
-      result = AutomationEngine.toggleRule(id);
+      result = AutomationEngine.toggleRule(auth.session.tenantId, id);
     } else {
-      result = AutomationEngine.updateRule(id, updates || {});
+      result = AutomationEngine.updateRule(auth.session.tenantId, id, updates || {});
     }
 
     if (!result) {
@@ -100,6 +107,8 @@ export async function PUT(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
+    const auth = await requireApiSession(request, ["owner", "admin"]);
+    if (!auth.ok) return auth.response;
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
 
@@ -107,7 +116,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "Rule ID is required" }, { status: 400 });
     }
 
-    const deleted = AutomationEngine.deleteRule(id);
+    const deleted = AutomationEngine.deleteRule(auth.session.tenantId, id);
     return NextResponse.json({ success: deleted });
   } catch (error: any) {
     return NextResponse.json(

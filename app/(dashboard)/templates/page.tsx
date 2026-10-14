@@ -2,11 +2,13 @@ import Link from "next/link";
 import { StrapiClient } from "@/lib/strapi/client";
 import { MessageTemplate } from "@/types/strapi";
 import { CheckCircle2, Clock, XCircle, Plus, Sparkles, Smartphone } from "lucide-react";
+import { requirePageSession } from "@/lib/auth/session";
 
 export const dynamic = "force-dynamic";
 
 export default async function TemplatesPage() {
-  const strapi = new StrapiClient();
+  const session = await requirePageSession();
+  const strapi = new StrapiClient(session.tenantId);
   const templates = await strapi.getTemplates();
 
   const renderStatusBadge = (status: MessageTemplate["status"]) => {

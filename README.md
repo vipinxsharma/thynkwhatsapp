@@ -10,9 +10,14 @@ Enterprise Multi-Tenant WhatsApp Business API & Unified CRM Inbox built for **th
 - **Backend CMS & RLS**: Strapi (Headless CMS) with Document Service tenant isolation middleware and atomic ingestion controller.
 - **APIs**: Meta WhatsApp Cloud API (`v21.0`), Meta Embedded Signup (Facebook JavaScript SDK).
 - **Security**:
+  - Signed server sessions with role checks and server-derived tenant context.
+  - Tenant-partitioned local state and authenticated, tenant-filtered real-time events.
   - Webhook verification: HMAC-SHA256 signature validation with `crypto.timingSafeEqual`.
   - Token storage: AES-256-GCM symmetric encryption at rest for System User & WABA tokens.
   - WhatsApp 24-Hour Policy: Real-time customer service window tracker with automatic fallback to pre-approved HSM templates.
+
+The self-service and AI support constraints are documented in
+[`docs/architecture/self-service-ai-support.md`](docs/architecture/self-service-ai-support.md).
 
 ---
 
@@ -77,6 +82,15 @@ Copy `.env.example` to `.env.local` and set your credentials:
 cp .env.example .env.local
 ```
 
+Generate unique secrets for `AUTH_SESSION_SECRET`, `META_WEBHOOK_VERIFY_TOKEN`, and
+`ENCRYPTION_KEY`. The server intentionally fails closed when they are absent. The current
+webhook implementation also requires `META_WEBHOOK_TENANT_ID` as a temporary single-tenant
+route; durable WABA-to-tenant routing is required before production use.
+
+Meta Embedded Signup currently returns `501` before exchanging the one-time code. This is
+intentional: durable, encrypted, tenant-owned credential persistence and ownership verification
+must land before onboarding can safely be enabled.
+
 ### 3. Run Automated Tests
 Verify webhook cryptography and challenge tokens:
 ```bash
@@ -98,10 +112,8 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
    ```
    https://<your-domain-or-ngrok>/api/webhooks/meta
    ```
-3. Set **Verify Token** to:
-   ```
-   thynkwise_meta_verify_token_secure_2026
-   ```
+3. Set **Verify Token** to the same unique secret configured in
+   `META_WEBHOOK_VERIFY_TOKEN`.
 4. Subscribe to the webhook fields:
    - `messages`
    - `message_template_status_update`

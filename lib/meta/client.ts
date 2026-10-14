@@ -7,6 +7,10 @@ import {
 const GRAPH_API_VERSION = process.env.META_GRAPH_API_VERSION || "v21.0";
 const GRAPH_API_BASE_URL = `https://graph.facebook.com/${GRAPH_API_VERSION}`;
 
+function metaMocksEnabled(): boolean {
+  return process.env.NODE_ENV !== "production" && process.env.ALLOW_META_MOCKS === "true";
+}
+
 export class MetaGraphClient {
   private accessToken: string;
 
@@ -63,8 +67,10 @@ export class MetaGraphClient {
     phoneNumberId: string,
     payload: MetaSendMessagePayload
   ): Promise<MetaSendMessageResponse> {
-    // If in demo/local mode without live Meta token, return mock response
     if (!this.accessToken || this.accessToken.startsWith("mock_")) {
+      if (!metaMocksEnabled()) {
+        throw new Error("A live Meta access token is required; mock delivery is disabled");
+      }
       console.log("[Meta Client Mock] Sending message via Mock WhatsApp Cloud API:", payload);
       return {
         messaging_product: "whatsapp",
@@ -98,6 +104,9 @@ export class MetaGraphClient {
    */
   public async getTemplates(wabaId: string): Promise<any[]> {
     if (!this.accessToken || this.accessToken.startsWith("mock_")) {
+      if (!metaMocksEnabled()) {
+        throw new Error("A live Meta access token is required; mock templates are disabled");
+      }
       return [
         {
           id: "tpl_101",

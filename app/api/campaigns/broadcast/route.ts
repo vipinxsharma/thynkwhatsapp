@@ -3,11 +3,14 @@ import { StrapiClient } from "@/lib/strapi/client";
 import { CampaignStore } from "@/lib/campaigns/store";
 import { MetaGraphClient } from "@/lib/meta/client";
 import { emitNewInboundMessage } from "@/lib/events/emitter";
-
-const strapiClient = new StrapiClient();
+import { requireApiSession } from "@/lib/auth/session";
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = await requireApiSession(request, ["owner", "admin"]);
+    if (!auth.ok) return auth.response;
+    const strapiClient = new StrapiClient(auth.session.tenantId);
+
     const body = await request.json();
     const {
       name,
@@ -73,7 +76,7 @@ export async function POST(request: NextRequest) {
           timestamp: new Date().toISOString(),
         });
 
-        emitNewInboundMessage(conv.id, recordedMessage);
+        emitNewInboundMessage(auth.session.tenantId, conv.id, recordedMessage);
         sentCount++;
         deliveredCount++;
         if (Math.random() > 0.15) {
@@ -86,7 +89,7 @@ export async function POST(request: NextRequest) {
 
     const estimatedCostUSD = parseFloat((sentCount * ratePerConv).toFixed(2));
 
-    const campaignRecord = CampaignStore.add({
+    const campaignRecord = CampaignStore.add(auth.session.tenantId, {
       name: name || `Broadcast - ${templateName}`,
       templateName,
       segment,

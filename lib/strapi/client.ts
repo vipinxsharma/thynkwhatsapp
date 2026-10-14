@@ -9,17 +9,43 @@ import { Contact, Conversation, Message, MessageTemplate, WABAAccount } from "@/
 const STRAPI_URL = process.env.STRAPI_INTERNAL_URL || "http://localhost:1337";
 const STRAPI_TOKEN = process.env.STRAPI_API_TOKEN;
 
-// Local in-memory state for development and testing
-let localConversations: Conversation[] = [...initialConversations];
-let localMessages: Record<string, Message[]> = { ...initialMessages };
-let localWABA: WABAAccount = { ...initialWABA };
-let localTemplates: MessageTemplate[] = [...sampleTemplates];
+interface LocalTenantState {
+  conversations: Conversation[];
+  messages: Record<string, Message[]>;
+  waba: WABAAccount;
+  templates: MessageTemplate[];
+}
+
+const localTenantStates = new Map<string, LocalTenantState>();
+
+function createLocalTenantState(): LocalTenantState {
+  return {
+    conversations: structuredClone(initialConversations),
+    messages: structuredClone(initialMessages),
+    waba: structuredClone(initialWABA),
+    templates: structuredClone(sampleTemplates),
+  };
+}
+
+function getLocalTenantState(tenantId: string): LocalTenantState {
+  let state = localTenantStates.get(tenantId);
+  if (!state) {
+    state = createLocalTenantState();
+    localTenantStates.set(tenantId, state);
+  }
+  return state;
+}
 
 export class StrapiClient {
-  private tenantId?: string;
+  private tenantId: string;
 
-  constructor(tenantId?: string) {
-    this.tenantId = tenantId || "1";
+  constructor(tenantId: string) {
+    if (!tenantId) throw new Error("A server-derived tenant ID is required");
+    this.tenantId = tenantId;
+  }
+
+  private get localState(): LocalTenantState {
+    return getLocalTenantState(this.tenantId);
   }
 
   /**
@@ -38,7 +64,7 @@ export class StrapiClient {
         }
       }
     }
-    return localWABA;
+    return this.localState.waba;
   }
 
   /**
@@ -58,7 +84,7 @@ export class StrapiClient {
         return json.data || [];
       }
     }
-    return localConversations;
+    return this.localState.conversations;
   }
 
   /**
@@ -79,7 +105,7 @@ export class StrapiClient {
         return json.data || [];
       }
     }
-    return localMessages[convIdStr] || [];
+    return this.localState.messages[convIdStr] || [];
   }
 
   /**
@@ -97,19 +123,19 @@ export class StrapiClient {
       conversationId: convIdStr,
     };
 
-    if (!localMessages[convIdStr]) {
-      localMessages[convIdStr] = [];
+    if (!this.localState.messages[convIdStr]) {
+      this.localState.messages[convIdStr] = [];
     }
-    localMessages[convIdStr].push(createdMessage);
+    this.localState.messages[convIdStr].push(createdMessage);
 
     // Update conversation last message & timestamp
-    const convIndex = localConversations.findIndex((c) => String(c.id) === convIdStr);
+    const convIndex = this.localState.conversations.findIndex((c) => String(c.id) === convIdStr);
     if (convIndex !== -1) {
-      localConversations[convIndex].lastMessage = createdMessage;
-      localConversations[convIndex].lastMessageAt = createdMessage.timestamp;
+      this.localState.conversations[convIndex].lastMessage = createdMessage;
+      this.localState.conversations[convIndex].lastMessageAt = createdMessage.timestamp;
       if (createdMessage.direction === "inbound") {
         // Refresh the 24h window
-        localConversations[convIndex].windowExpiresAt = new Date(
+        this.localState.conversations[convIndex].windowExpiresAt = new Date(
           new Date(createdMessage.timestamp).getTime() + 24 * 60 * 60 * 1000
         ).toISOString();
       }
@@ -122,7 +148,7 @@ export class StrapiClient {
    * Updates message status (delivered, read, failed)
    */
   public async updateMessageStatus(wamId: string, status: Message["status"]): Promise<void> {
-    for (const messages of Object.values(localMessages)) {
+    for (const messages of Object.values(this.localState.messages)) {
       const msg = messages.find((m) => m.wamId === wamId);
       if (msg) {
         msg.status = status;
@@ -135,7 +161,7 @@ export class StrapiClient {
    * Updates contact CRM tags
    */
   public async updateContactTags(contactId: string | number, tags: string[]): Promise<void> {
-    for (const conv of localConversations) {
+    for (const conv of this.localState.conversations) {
       if (String(conv.contact.id) === String(contactId)) {
         conv.contact.tags = tags;
       }
@@ -147,7 +173,7 @@ export class StrapiClient {
    */
   public async getContacts(): Promise<Contact[]> {
     const contactsMap = new Map<string, Contact>();
-    for (const conv of localConversations) {
+    for (const conv of this.localState.conversations) {
       contactsMap.set(String(conv.contact.id), conv.contact);
     }
     return Array.from(contactsMap.values());
@@ -177,7 +203,7 @@ export class StrapiClient {
       lastSeenAt: new Date().toISOString(),
     };
 
-    const newConvId = localConversations.length + 1;
+    const newConvId = this.localState.conversations.length + 1;
     const newConv: Conversation = {
       id: newConvId,
       status: "open",
@@ -186,7 +212,7 @@ export class StrapiClient {
       lastMessageAt: new Date().toISOString(),
       unreadCount: 0,
       contact: newContact,
-      phoneNumber: localWABA.phoneNumbers?.[0] || {
+      phoneNumber: this.localState.waba.phoneNumbers?.[0] || {
         id: 1,
         phoneNumberId: "105678234901234",
         displayPhoneNumber: "+91 98765 43210",
@@ -196,8 +222,8 @@ export class StrapiClient {
       },
     };
 
-    localConversations.unshift(newConv);
-    localMessages[String(newConvId)] = [];
+    this.localState.conversations.unshift(newConv);
+    this.localState.messages[String(newConvId)] = [];
 
     return { contact: newContact, conversation: newConv };
   }
@@ -210,7 +236,7 @@ export class StrapiClient {
     data: Partial<Contact>
   ): Promise<Contact | null> {
     let updatedContact: Contact | null = null;
-    for (const conv of localConversations) {
+    for (const conv of this.localState.conversations) {
       if (String(conv.contact.id) === String(contactId)) {
         conv.contact = {
           ...conv.contact,
@@ -230,11 +256,11 @@ export class StrapiClient {
    * Deletes a contact and their associated conversation
    */
   public async deleteContact(contactId: string | number): Promise<boolean> {
-    const initialLength = localConversations.length;
-    localConversations = localConversations.filter(
+    const initialLength = this.localState.conversations.length;
+    this.localState.conversations = this.localState.conversations.filter(
       (c) => String(c.contact.id) !== String(contactId)
     );
-    return localConversations.length < initialLength;
+    return this.localState.conversations.length < initialLength;
   }
 
   /**
@@ -257,7 +283,7 @@ export class StrapiClient {
         continue;
       }
       const rawDigits = c.phoneNumber.replace(/\D/g, "");
-      const exists = localConversations.some((conv) => conv.contact.waId === rawDigits);
+      const exists = this.localState.conversations.some((conv) => conv.contact.waId === rawDigits);
       if (exists) {
         skipped++;
         continue;
@@ -279,6 +305,12 @@ export class StrapiClient {
    * Fetches approved HSM message templates
    */
   public async getTemplates(): Promise<MessageTemplate[]> {
-    return localTemplates;
+    return this.localState.templates;
+  }
+
+  public async createTemplate(template: Omit<MessageTemplate, "id">): Promise<MessageTemplate> {
+    const created = { ...template, id: Date.now() };
+    this.localState.templates.push(created);
+    return created;
   }
 }

@@ -1,9 +1,13 @@
 import { NextRequest } from "next/server";
 import { inboxEventEmitter, INBOX_EVENTS } from "@/lib/events/emitter";
+import { requireApiSession } from "@/lib/auth/session";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
+  const auth = await requireApiSession(request);
+  if (!auth.ok) return auth.response;
+  const tenantId = auth.session.tenantId;
   const encoder = new TextEncoder();
 
   const stream = new ReadableStream({
@@ -15,6 +19,7 @@ export async function GET(request: NextRequest) {
 
       // 2. Listener for incoming messages
       const onMessageReceived = (data: any) => {
+        if (data.tenantId !== tenantId) return;
         controller.enqueue(
           encoder.encode(`event: message\ndata: ${JSON.stringify(data)}\n\n`)
         );
@@ -22,6 +27,7 @@ export async function GET(request: NextRequest) {
 
       // 3. Listener for status receipt updates
       const onStatusUpdated = (data: any) => {
+        if (data.tenantId !== tenantId) return;
         controller.enqueue(
           encoder.encode(`event: status\ndata: ${JSON.stringify(data)}\n\n`)
         );
