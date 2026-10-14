@@ -103,6 +103,12 @@ authenticated and tenant-scoped. Inbound email must be delivered to
 raw payload signed by `SUPPORT_EMAIL_WEBHOOK_SECRET`. AI and human email replies are placed in a
 durable outbox; no external email is sent until a delivery provider is configured in a later gate.
 
+AI case review additionally requires `db/migrations/0004_ai_support_resolution.sql` and
+`OPENAI_API_KEY`. It uses the Responses API with strict structured output, redacts common secrets
+and personal identifiers, retrieves only workspace-scoped knowledge, and records an auditable run.
+Only grounded, high-confidence, low-risk guidance can auto-resolve a case; billing, security,
+compliance, ownership, and account-restriction issues always escalate.
+
 ### 3. Run Automated Tests
 Verify webhook cryptography and challenge tokens:
 ```bash
