@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyMetaWebhookSignature } from "@/lib/meta/signature";
 import { MetaWebhookPayload, WebhookChangeValue } from "@/types/meta-webhook";
-import { StrapiClient } from "@/lib/strapi/client";
+import { StrapiClient, isDurableInboxEnabled } from "@/lib/strapi/client";
 import { emitMessageStatusUpdate, emitNewInboundMessage } from "@/lib/events/emitter";
 import { getMetaConnectionForWaba } from "@/lib/meta/connections";
 
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
     }
 
-    if (process.env.NODE_ENV === "production") {
+    if (process.env.NODE_ENV === "production" && !isDurableInboxEnabled()) {
       return NextResponse.json({ error: "Durable inbox storage is not configured" }, { status: 503 });
     }
 
@@ -88,10 +88,7 @@ async function processWebhookEntries(entries: MetaWebhookPayload["entry"]) {
 
   for (const entry of entries) {
     const wabaId = entry.id;
-    const connection =
-      process.env.NODE_ENV === "test"
-        ? { workspaceId: "webhook-test-tenant", phoneNumberId: "105678234901234", displayPhoneNumber: "+91 98765 43210", verifiedName: "Test" }
-        : await getMetaConnectionForWaba(wabaId);
+    const connection = await getMetaConnectionForWaba(wabaId);
     if (!connection) {
       console.warn(`[Meta Webhook] No active tenant mapping for WABA ${wabaId}`);
       continue;
@@ -107,7 +104,7 @@ async function processWebhookEntries(entries: MetaWebhookPayload["entry"]) {
       if (change.field === "messages") {
         const metadata = value.metadata;
         const phoneNumberId = metadata?.phone_number_id;
-        if (process.env.NODE_ENV !== "test" && phoneNumberId !== connection.phoneNumberId) {
+        if (phoneNumberId !== connection.phoneNumberId) {
           console.warn(`[Meta Webhook] Phone number does not match WABA ${wabaId}`);
           continue;
         }
@@ -150,6 +147,7 @@ async function processWebhookEntries(entries: MetaWebhookPayload["entry"]) {
                 name: value.contacts?.find((contact) => contact.wa_id === msg.from)?.profile.name || msg.from,
                 phoneNumber: `+${msg.from}`,
                 tags: [],
+                inbound: true,
                 connectedPhone: {
                   id: connection.phoneNumberId,
                   phoneNumberId: connection.phoneNumberId,

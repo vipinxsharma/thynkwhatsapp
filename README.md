@@ -22,9 +22,10 @@ Enterprise Multi-Tenant WhatsApp Business API & Unified CRM Inbox built for **th
 The self-service and AI support constraints are documented in
 [`docs/architecture/self-service-ai-support.md`](docs/architecture/self-service-ai-support.md).
 
-Live messaging and webhook ingestion are temporarily disabled in production until
-the inbox is backed by durable, tenant-scoped storage. Development demo data is
-never used to acknowledge a production Meta webhook or report a live send.
+Live webhook ingestion requires `INBOX_STORAGE=postgres` and a tenant-scoped
+`DATABASE_URL`. Development demo data is never used to acknowledge a production
+Meta webhook. Outbound sends and broadcasts remain disabled in production until
+idempotent delivery and campaign ledgers are implemented.
 
 ---
 
@@ -99,7 +100,8 @@ Self-service identity additionally requires a dedicated Neon project with Manage
 the numbered SQL files in `db/migrations/` in order using the direct
 `DATABASE_URL_UNPOOLED`; normal application queries use the pooled URL. Run
 `db/verify_schema.sql` afterward. CI applies the same migrations to a disposable
-PostgreSQL 17 database on every PR. Do not point this application at an unrelated tenant DB.
+PostgreSQL 17 database on every PR. Migration 0006 provides the durable inbox
+tables. Do not point this application at an unrelated tenant DB.
 
 Meta Embedded Signup exchanges the code only after durable storage is configured, verifies that
 the phone number belongs to the selected WABA, subscribes the WABA to webhooks, encrypts the

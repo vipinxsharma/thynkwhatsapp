@@ -53,7 +53,8 @@ jobs:
             -f db/migrations/0002_meta_waba_connections.sql \
             -f db/migrations/0003_support_cases.sql \
             -f db/migrations/0004_ai_support_resolution.sql \
-            -f db/migrations/0005_workspace_invitations.sql
+            -f db/migrations/0005_workspace_invitations.sql \
+            -f db/migrations/0006_durable_inbox.sql
           psql -v ON_ERROR_STOP=1 -f db/verify_schema.sql
 
   test-build-audit:

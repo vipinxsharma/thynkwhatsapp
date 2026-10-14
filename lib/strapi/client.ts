@@ -5,6 +5,13 @@ import {
   sampleTemplates,
 } from "./mock-data";
 import { Contact, Conversation, Message, MessageTemplate, WABAAccount } from "@/types/strapi";
+import * as inboxStore from "@/lib/inbox/store";
+import { getMetaConnectionForWorkspace } from "@/lib/meta/connections";
+import { MetaGraphClient } from "@/lib/meta/client";
+
+export function isDurableInboxEnabled(): boolean {
+  return process.env.INBOX_STORAGE === "postgres" && Boolean(process.env.DATABASE_URL);
+}
 
 const STRAPI_URL = process.env.STRAPI_INTERNAL_URL || "http://localhost:1337";
 const STRAPI_TOKEN = process.env.STRAPI_API_TOKEN;
@@ -55,6 +62,7 @@ export class StrapiClient {
    * Fetches active WABA account information for the current tenant
    */
   public async getWABA(): Promise<WABAAccount> {
+    if (isDurableInboxEnabled()) return inboxStore.getWABA(this.tenantId);
     if (process.env.USE_REAL_STRAPI === "true" && STRAPI_TOKEN) {
       const res = await fetch(`${STRAPI_URL}/api/wabas?filters[tenant][id][$eq]=${this.tenantId}&populate=*`, {
         headers: { Authorization: `Bearer ${STRAPI_TOKEN}` },
@@ -74,6 +82,7 @@ export class StrapiClient {
    * Fetches all conversations scoped to the tenant
    */
   public async getConversations(): Promise<Conversation[]> {
+    if (isDurableInboxEnabled()) return inboxStore.listConversations(this.tenantId);
     if (process.env.USE_REAL_STRAPI === "true" && STRAPI_TOKEN) {
       const res = await fetch(
         `${STRAPI_URL}/api/conversations?filters[tenant][id][$eq]=${this.tenantId}&populate[contact]=*&populate[phoneNumber]=*&populate[lastMessage]=*&sort=lastMessageAt:desc`,
@@ -95,6 +104,7 @@ export class StrapiClient {
    */
   public async getMessages(conversationId: string | number): Promise<Message[]> {
     const convIdStr = String(conversationId);
+    if (isDurableInboxEnabled()) return inboxStore.getMessages(this.tenantId, convIdStr);
     if (process.env.USE_REAL_STRAPI === "true" && STRAPI_TOKEN) {
       const res = await fetch(
         `${STRAPI_URL}/api/messages?filters[conversation][id][$eq]=${convIdStr}&sort=timestamp:asc`,
@@ -118,6 +128,7 @@ export class StrapiClient {
     conversationId: string | number,
     message: Omit<Message, "id">
   ): Promise<Message> {
+    if (isDurableInboxEnabled()) return inboxStore.recordMessage(this.tenantId, String(conversationId), message);
     const convIdStr = String(conversationId);
     const newId = Date.now();
     const createdMessage: Message = {
@@ -151,6 +162,7 @@ export class StrapiClient {
    * Updates message status (delivered, read, failed)
    */
   public async updateMessageStatus(wamId: string, status: Message["status"]): Promise<void> {
+    if (isDurableInboxEnabled()) return inboxStore.updateMessageStatus(this.tenantId, wamId, status);
     for (const messages of Object.values(this.localState.messages)) {
       const msg = messages.find((m) => m.wamId === wamId);
       if (msg) {
@@ -164,6 +176,10 @@ export class StrapiClient {
    * Updates contact CRM tags
    */
   public async updateContactTags(contactId: string | number, tags: string[]): Promise<void> {
+    if (isDurableInboxEnabled()) {
+      await inboxStore.updateContact(this.tenantId, String(contactId), { tags });
+      return;
+    }
     for (const conv of this.localState.conversations) {
       if (String(conv.contact.id) === String(contactId)) {
         conv.contact.tags = tags;
@@ -175,6 +191,7 @@ export class StrapiClient {
    * Fetches all contacts
    */
   public async getContacts(): Promise<Contact[]> {
+    if (isDurableInboxEnabled()) return (await inboxStore.listConversations(this.tenantId)).map((c) => c.contact);
     const contactsMap = new Map<string, Contact>();
     for (const conv of this.localState.conversations) {
       contactsMap.set(String(conv.contact.id), conv.contact);
@@ -191,7 +208,19 @@ export class StrapiClient {
     tags?: string[];
     customAttributes?: Record<string, any>;
     connectedPhone?: Conversation["phoneNumber"];
+    inbound?: boolean;
   }): Promise<{ contact: Contact; conversation: Conversation }> {
+    if (isDurableInboxEnabled()) {
+      return inboxStore.ensureContactConversation({
+        workspaceId: this.tenantId,
+        name: data.name,
+        phoneNumber: data.phoneNumber,
+        tags: data.tags,
+        customAttributes: data.customAttributes,
+        phoneNumberId: data.connectedPhone?.phoneNumberId,
+        inbound: data.inbound,
+      });
+    }
     const rawDigits = data.phoneNumber.replace(/\D/g, "");
     const waId = rawDigits;
     const formattedPhone = data.phoneNumber.startsWith("+") ? data.phoneNumber : `+${rawDigits}`;
@@ -239,6 +268,7 @@ export class StrapiClient {
     contactId: string | number,
     data: Partial<Contact>
   ): Promise<Contact | null> {
+    if (isDurableInboxEnabled()) return inboxStore.updateContact(this.tenantId, String(contactId), data);
     let updatedContact: Contact | null = null;
     for (const conv of this.localState.conversations) {
       if (String(conv.contact.id) === String(contactId)) {
@@ -260,6 +290,7 @@ export class StrapiClient {
    * Deletes a contact and their associated conversation
    */
   public async deleteContact(contactId: string | number): Promise<boolean> {
+    if (isDurableInboxEnabled()) return inboxStore.deleteContact(this.tenantId, String(contactId));
     const initialLength = this.localState.conversations.length;
     this.localState.conversations = this.localState.conversations.filter(
       (c) => String(c.contact.id) !== String(contactId)
@@ -278,6 +309,27 @@ export class StrapiClient {
       company?: string;
     }>
   ): Promise<{ created: number; skipped: number }> {
+    if (isDurableInboxEnabled()) {
+      let created = 0;
+      let skipped = 0;
+      for (const contact of contacts) {
+        const digits = contact.phoneNumber?.replace(/\D/g, "") || "";
+        if (!contact.name || digits.length < 8 || digits.length > 15) {
+          skipped++;
+          continue;
+        }
+        const result = await inboxStore.ensureContactConversation({
+          workspaceId: this.tenantId,
+          name: contact.name,
+          phoneNumber: contact.phoneNumber,
+          tags: contact.tags || ["Imported CSV"],
+          customAttributes: contact.company ? { company: contact.company } : {},
+        });
+        if (result.created) created++;
+        else skipped++;
+      }
+      return { created, skipped };
+    }
     let created = 0;
     let skipped = 0;
 
@@ -309,10 +361,30 @@ export class StrapiClient {
    * Fetches approved HSM message templates
    */
   public async getTemplates(): Promise<MessageTemplate[]> {
+    if (isDurableInboxEnabled()) {
+      let connection;
+      try {
+        connection = await getMetaConnectionForWorkspace(this.tenantId);
+      } catch (error) {
+        if (error instanceof Error && error.message.startsWith("No connected WhatsApp Business Account")) return [];
+        throw error;
+      }
+      const templates = await new MetaGraphClient(connection.accessToken).getTemplates(connection.wabaId);
+      return templates.map((template) => ({
+        id: template.id,
+        metaTemplateId: String(template.id),
+        name: template.name,
+        language: template.language,
+        category: template.category,
+        status: template.status,
+        components: template.components || [],
+      }));
+    }
     return this.localState.templates;
   }
 
   public async createTemplate(template: Omit<MessageTemplate, "id">): Promise<MessageTemplate> {
+    if (isDurableInboxEnabled()) return { ...template, id: template.metaTemplateId };
     const created = { ...template, id: Date.now() };
     this.localState.templates.push(created);
     return created;

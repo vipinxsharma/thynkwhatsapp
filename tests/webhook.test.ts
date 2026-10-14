@@ -6,6 +6,16 @@ import { GET, POST } from "../app/api/webhooks/meta/route";
 import { NextRequest } from "next/server";
 import { StrapiClient } from "../lib/strapi/client";
 
+vi.mock("@/lib/meta/connections", () => ({
+  getMetaConnectionForWaba: vi.fn(async () => ({
+    workspaceId: "webhook-test-tenant",
+    phoneNumberId: "105678234901234",
+    displayPhoneNumber: "+91 98765 43210",
+    verifiedName: "Test",
+  })),
+  getMetaConnectionForWorkspace: vi.fn(),
+}));
+
 const TEST_META_SECRET = "my_meta_app_secret_test_123";
 const TEST_VERIFY_TOKEN = "test_webhook_verify_token";
 
