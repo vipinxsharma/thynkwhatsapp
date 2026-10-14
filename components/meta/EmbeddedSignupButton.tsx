@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { CheckCircle2, Loader2, Sparkles } from "lucide-react";
+import { parseSignupSessionEvent } from "@/lib/meta/embedded-signup-session";
 
 interface EmbeddedSignupButtonProps {
   onSuccess?: (data: { wabaId: string; phoneNumberId: string }) => void;
@@ -19,112 +20,146 @@ export function EmbeddedSignupButton({ onSuccess }: EmbeddedSignupButtonProps) {
   const [connected, setConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const META_APP_ID = process.env.NEXT_PUBLIC_META_APP_ID || "108923485723910";
-  const CONFIG_ID = process.env.NEXT_PUBLIC_META_CONFIG_ID || "123456789012345";
+  const META_APP_ID = process.env.NEXT_PUBLIC_META_APP_ID;
+  const CONFIG_ID = process.env.NEXT_PUBLIC_META_CONFIG_ID;
+  const activeRef = useRef(false);
+  const submittingRef = useRef(false);
+  const codeRef = useRef<string | null>(null);
+  const idsRef = useRef<{ wabaId: string; phoneNumberId: string } | null>(null);
+  const waitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => {
-    // 1. Initialize Facebook JavaScript SDK
-    if (typeof window !== "undefined") {
-      window.fbAsyncInit = function () {
-        window.FB?.init({
-          appId: META_APP_ID,
-          cookie: true,
-          xfbml: true,
-          version: "v21.0",
-        });
-      };
+  const stopWaiting = useCallback(() => {
+    if (waitTimerRef.current) clearTimeout(waitTimerRef.current);
+    waitTimerRef.current = null;
+  }, []);
 
-      // Load SDK script if not already present
-      if (!document.getElementById("facebook-jssdk")) {
-        const js = document.createElement("script");
-        js.id = "facebook-jssdk";
-        js.src = "https://connect.facebook.net/en_US/sdk.js";
-        document.body.appendChild(js);
-      }
+  const fail = useCallback(
+    (message: string) => {
+      stopWaiting();
+      activeRef.current = false;
+      submittingRef.current = false;
+      codeRef.current = null;
+      idsRef.current = null;
+      setLoading(false);
+      setError(message);
+    },
+    [stopWaiting]
+  );
 
-      // 2. Listen for postMessage from Meta's Embedded Signup popup
-      const handlePostMessage = async (event: MessageEvent) => {
-        if (
-          event.origin !== "https://www.facebook.com" &&
-          event.origin !== "https://web.facebook.com"
-        ) {
-          return;
-        }
+  const submitIfReady = useCallback(async () => {
+    const code = codeRef.current;
+    const ids = idsRef.current;
+    if (!activeRef.current || submittingRef.current || !code || !ids) return;
 
-        try {
-          const data = typeof event.data === "string" ? JSON.parse(event.data) : event.data;
-          if (data.type === "WA_EMBEDDED_SIGNUP") {
-            const { waba_id, phone_number_id } = data.data || {};
-            console.log("[Embedded Signup postMessage received]", { waba_id, phone_number_id });
-          }
-        } catch (e) {
-          // Non-JSON message from other sources
-        }
-      };
-
-      window.addEventListener("message", handlePostMessage);
-      return () => window.removeEventListener("message", handlePostMessage);
-    }
-  }, [META_APP_ID]);
-
-  const handleLaunchSignup = () => {
-    setLoading(true);
-    setError(null);
-
-    // If FB SDK is loaded and real app is configured
-    if (window.FB && META_APP_ID !== "108923485723910") {
-      window.FB.login(
-        (response: any) => {
-          if (response.authResponse?.code) {
-            exchangeOAuthCode(response.authResponse.code);
-          } else {
-            setLoading(false);
-            setError("Meta Embedded Signup was closed or cancelled.");
-          }
-        },
-        {
-          config_id: CONFIG_ID,
-          response_type: "code",
-          override_default_response_type: true,
-          extras: {
-            setup: {},
-            featureType: "",
-            sessionInfoVersion: "2",
-          },
-        }
-      );
-    } else {
-      // Mock Embedded Signup for local development & testing
-      setTimeout(() => {
-        exchangeOAuthCode("mock_code_thynkwise_sandbox_123");
-      }, 1200);
-    }
-  };
-
-  const exchangeOAuthCode = async (code: string) => {
+    submittingRef.current = true;
+    stopWaiting();
     try {
       const res = await fetch("/api/meta/embedded-signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          code,
-          wabaId: "109823485723910",
-          phoneNumberId: "105678234901234",
-        }),
+        body: JSON.stringify({ code, ...ids }),
       });
-
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to link WABA");
 
+      activeRef.current = false;
       setConnected(true);
       setLoading(false);
-      if (onSuccess) {
-        onSuccess(data.data);
-      }
-    } catch (err: any) {
-      setError(err.message);
-      setLoading(false);
+      onSuccess?.(data.data);
+    } catch (err) {
+      fail(err instanceof Error ? err.message : "Failed to link WABA");
     }
+  }, [fail, onSuccess, stopWaiting]);
+
+  useEffect(() => {
+    // 1. Initialize Facebook JavaScript SDK
+    if (typeof window !== "undefined") {
+      if (META_APP_ID && /^\d+$/.test(META_APP_ID)) {
+        window.fbAsyncInit = function () {
+          window.FB?.init({
+            appId: META_APP_ID,
+            cookie: true,
+            xfbml: true,
+            version: "v21.0",
+          });
+        };
+
+        // Load SDK script if not already present
+        if (!document.getElementById("facebook-jssdk")) {
+          const js = document.createElement("script");
+          js.id = "facebook-jssdk";
+          js.src = "https://connect.facebook.net/en_US/sdk.js";
+          document.body.appendChild(js);
+        }
+        if (window.FB) window.fbAsyncInit();
+      }
+
+      // 2. Listen for postMessage from Meta's Embedded Signup popup
+      const handlePostMessage = (event: MessageEvent) => {
+        if (!activeRef.current || submittingRef.current) return;
+        const session = parseSignupSessionEvent(event.origin, event.data);
+        if (!session) return;
+        if (session.kind === "cancel") return fail("Meta Embedded Signup was cancelled.");
+        if (session.kind === "error") {
+          return fail("Meta Embedded Signup reported an error. Please try again.");
+        }
+        if (session.kind === "incomplete") {
+          return fail("Meta did not return a phone number. Complete phone setup and try again.");
+        }
+        idsRef.current = { wabaId: session.wabaId, phoneNumberId: session.phoneNumberId };
+        void submitIfReady();
+      };
+
+      window.addEventListener("message", handlePostMessage);
+      return () => {
+        window.removeEventListener("message", handlePostMessage);
+        activeRef.current = false;
+        stopWaiting();
+      };
+    }
+  }, [META_APP_ID, fail, stopWaiting, submitIfReady]);
+
+  const handleLaunchSignup = () => {
+    if (!META_APP_ID || !/^\d+$/.test(META_APP_ID) || !CONFIG_ID || !/^\d+$/.test(CONFIG_ID)) {
+      setError("Meta Embedded Signup is not configured. Contact your workspace administrator.");
+      return;
+    }
+    if (!window.FB) {
+      setError("Meta sign-in is unavailable. Check your connection and try again.");
+      return;
+    }
+    stopWaiting();
+    activeRef.current = true;
+    submittingRef.current = false;
+    codeRef.current = null;
+    idsRef.current = null;
+    setLoading(true);
+    setError(null);
+
+    window.FB.login(
+      (response: { authResponse?: { code?: string } }) => {
+        if (!activeRef.current) return;
+        const code = response.authResponse?.code;
+        if (!code) return fail("Meta Embedded Signup was closed or cancelled.");
+        codeRef.current = code;
+        void submitIfReady();
+        if (!idsRef.current) {
+          waitTimerRef.current = setTimeout(() => {
+            fail("Meta did not return account details. Please retry the signup.");
+          }, 20_000);
+        }
+      },
+      {
+        config_id: CONFIG_ID,
+        response_type: "code",
+        override_default_response_type: true,
+        extras: {
+          setup: {},
+          featureType: "",
+          sessionInfoVersion: "2",
+        },
+      }
+    );
   };
 
   return (
