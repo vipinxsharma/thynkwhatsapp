@@ -30,7 +30,7 @@ export interface PhoneNumber {
   displayPhoneNumber: string;
   verifiedName: string;
   qualityRating: "GREEN" | "YELLOW" | "RED" | "UNKNOWN";
-  codeVerificationStatus: "VERIFIED" | "NOT_VERIFIED";
+  codeVerificationStatus: "VERIFIED" | "NOT_VERIFIED" | "UNKNOWN";
   waba?: WABAAccount;
 }
 

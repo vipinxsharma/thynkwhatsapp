@@ -22,6 +22,9 @@ vi.mock("@/lib/meta/connections", () => ({
   getMetaConnectionForWorkspace: vi.fn(async () => ({
     wabaId: "12345", phoneNumberId: "1234567890", accessToken: "test-token",
   })),
+  getMetaConnectionForNumber: vi.fn(async () => ({
+    wabaId: "12345", phoneNumberId: "1234567890", accessToken: "test-token",
+  })),
 }));
 vi.mock("@/lib/meta/client", () => ({
   MetaGraphClient: class {
