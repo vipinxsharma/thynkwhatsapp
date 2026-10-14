@@ -1,15 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
 import { MetaGraphClient } from "@/lib/meta/client";
-import { StrapiClient } from "@/lib/strapi/client";
+import { StrapiClient, isDurableInboxEnabled } from "@/lib/strapi/client";
 import { MetaSendMessagePayload } from "@/types/meta-api";
 import { requireApiSession } from "@/lib/auth/session";
 import { getMetaConnectionForWorkspace } from "@/lib/meta/connections";
+import { getConversation } from "@/lib/inbox/store";
+import {
+  acceptOutboundRequest,
+  beginOutboundRequest,
+  getAcceptedMessage,
+  hashOutboundRequest,
+  markOutboundUncertain,
+} from "@/lib/outbound/store";
 
 export async function POST(request: NextRequest) {
   try {
     const auth = await requireApiSession(request, ["owner", "admin", "agent"]);
     if (!auth.ok) return auth.response;
-    if (process.env.NODE_ENV === "production") {
+    const durable = isDurableInboxEnabled();
+    if (process.env.NODE_ENV === "production" && !durable) {
       return NextResponse.json({ error: "Durable outbound delivery is not configured" }, { status: 503 });
     }
     const strapiClient = new StrapiClient(auth.session.tenantId);
@@ -35,10 +44,20 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+    if (durable && !["text", "template"].includes(messageType)) {
+      return NextResponse.json({ error: "This message type is not yet available for live delivery" }, { status: 501 });
+    }
+    if (messageType === "text" && (typeof text !== "string" || !text.trim())) {
+      return NextResponse.json({ error: "Message text is required" }, { status: 400 });
+    }
+    if (messageType === "template" && (!templateName || typeof templateName !== "string")) {
+      return NextResponse.json({ error: "Template name is required" }, { status: 400 });
+    }
 
     // 1. Check conversation and 24-Hour Customer Care Window
-    const conversations = await strapiClient.getConversations();
-    const conversation = conversations.find((c) => String(c.id) === String(conversationId));
+    const conversation = durable
+      ? await getConversation(auth.session.tenantId, String(conversationId))
+      : (await strapiClient.getConversations()).find((c) => String(c.id) === String(conversationId));
 
     if (!conversation) {
       return NextResponse.json({ error: "Conversation not found" }, { status: 404 });
@@ -153,13 +172,81 @@ export async function POST(request: NextRequest) {
       };
     }
 
-    // 3. Dispatch to Meta Cloud API
+    // 3. Reserve the operation before the irreversible provider call.
     const connection = await getMetaConnectionForWorkspace(auth.session.tenantId);
     const metaClient = new MetaGraphClient(connection.accessToken);
-    const metaResponse = await metaClient.sendMessage(connection.phoneNumberId, metaPayload);
-    const wamId = metaResponse.messages[0]?.id || `wamid.LOCAL_${Date.now()}`;
+    if (durable && conversation.phoneNumber.phoneNumberId &&
+        conversation.phoneNumber.phoneNumberId !== connection.phoneNumberId) {
+      return NextResponse.json({ error: "Conversation belongs to another WhatsApp number" }, { status: 403 });
+    }
+    if (durable && messageType === "template") {
+      const approved = (await metaClient.getTemplates(connection.wabaId)).some(
+        (item) => item.name === templateName && item.language === templateLanguage && item.status === "APPROVED"
+      );
+      if (!approved) return NextResponse.json({ error: "Template is not approved for this WABA and language" }, { status: 403 });
+    }
 
-    // 4. Save to Strapi
+    let reserved: Awaited<ReturnType<typeof beginOutboundRequest>> | null = null;
+    if (durable) {
+      const idempotencyKey = request.headers.get("idempotency-key");
+      if (!idempotencyKey || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(idempotencyKey)) {
+        return NextResponse.json({ error: "A UUID Idempotency-Key header is required" }, { status: 400 });
+      }
+      const requestHash = hashOutboundRequest({
+        conversationId: String(conversationId), phoneNumberId: connection.phoneNumberId,
+        recipientWaId: normalizedPhone, payload: metaPayload,
+      });
+      reserved = await beginOutboundRequest({
+        workspaceId: auth.session.tenantId,
+        conversationId: String(conversationId),
+        idempotencyKey,
+        requestHash,
+        authUserId: auth.session.userId,
+        phoneNumberId: connection.phoneNumberId,
+        recipientWaId: normalizedPhone,
+        messageType,
+        messageBody: savedBody,
+        payload: metaPayload,
+      });
+      if (reserved.requestHash !== requestHash) {
+        return NextResponse.json({ error: "Idempotency key was already used for a different message" }, { status: 409 });
+      }
+      if (!reserved.createdNew) {
+        const existing = reserved.wamId && reserved.status === "accepted"
+          ? await getAcceptedMessage(auth.session.tenantId, reserved.wamId) : null;
+        if (existing) return NextResponse.json({ success: true, data: existing });
+        return NextResponse.json({
+          success: false, status: reserved.status,
+          error: "This request has already been submitted. Its outcome is pending reconciliation; do not resend it with a new key.",
+        }, { status: 202 });
+      }
+    }
+
+    let wamId: string;
+    try {
+      const metaResponse = await metaClient.sendMessage(connection.phoneNumberId, metaPayload);
+      const providerId = metaResponse.messages[0]?.id;
+      if (!providerId) throw new Error("Meta did not return a message ID");
+      wamId = providerId;
+      if (reserved) {
+        const recordedMessage = await acceptOutboundRequest({
+          workspaceId: auth.session.tenantId, requestId: reserved.id, wamId,
+        });
+        return NextResponse.json({ success: true, data: recordedMessage });
+      }
+    } catch (error) {
+      if (reserved) {
+        try { await markOutboundUncertain(auth.session.tenantId, reserved.id); }
+        catch (ledgerError) { console.error("[Outbound Ledger Error]", ledgerError); }
+        return NextResponse.json({
+          success: false, status: "uncertain",
+          error: "The provider outcome is uncertain. Do not resend with a new request ID; contact support for reconciliation.",
+        }, { status: 202 });
+      }
+      throw error;
+    }
+
+    // Development demo path only. Production always uses the durable ledger above.
     const recordedMessage = await strapiClient.recordMessage(conversationId, {
       wamId,
       direction: "outbound",

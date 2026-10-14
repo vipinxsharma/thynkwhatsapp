@@ -15,7 +15,8 @@ BEGIN
     'app_workspace_invitations',
     'app_inbox_contacts',
     'app_inbox_conversations',
-    'app_inbox_messages'
+    'app_inbox_messages',
+    'app_outbound_requests'
   ] LOOP
     IF to_regclass('public.' || expected_table) IS NULL THEN
       RAISE EXCEPTION 'Missing application table: %', expected_table;
