@@ -1,6 +1,26 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-background: #0c0f14;
+  --color-foreground: #f3f4f6;
+  --color-surface-50: #181d24;
+  --color-surface-100: #13171d;
+  --color-surface-200: #0e1116;
+  --color-surface-300: #090c0f;
+  --color-whatsapp: #128c7e;
+  --color-whatsapp-light: #25d366;
+  --color-whatsapp-dark: #075e54;
+  --color-whatsapp-teal: #00a884;
+  --color-whatsapp-badge: #00a884;
+  --color-whatsapp-chatbg: #0b141a;
+  --color-whatsapp-bubbleIn: #202c33;
+  --color-whatsapp-bubbleOut: #005c4b;
+  --color-border: rgba(255, 255, 255, 0.08);
+  --shadow-glass: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  --shadow-glow: 0 0 20px -5px rgba(37, 211, 102, 0.3);
+}
 
 :root {
   --background: #0b0e14;

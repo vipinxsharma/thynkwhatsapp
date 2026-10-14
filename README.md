@@ -8,7 +8,7 @@ Enterprise Multi-Tenant WhatsApp Business API & Unified CRM Inbox built for **th
 
 ## Architecture & Tech Stack
 
-- **Frontend & Edge**: Next.js 15 (App Router, React Server Components), Tailwind CSS, TypeScript.
+- **Frontend & Edge**: Next.js 16 (App Router, React Server Components), Tailwind CSS 4, TypeScript.
 - **Backend CMS & RLS**: Strapi (Headless CMS) with Document Service tenant isolation middleware and atomic ingestion controller.
 - **Identity & tenancy**: Neon Managed Better Auth with Lakebase Postgres workspace membership and audit tables.
 - **APIs**: Meta WhatsApp Cloud API (`v21.0`), Meta Embedded Signup (Facebook JavaScript SDK).
