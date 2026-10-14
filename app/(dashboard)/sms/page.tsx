@@ -1,4 +1,6 @@
 import { CapabilitySection } from "@/components/product/CapabilitySection";
+import { DltReadinessForm } from "@/components/sms/DltReadinessForm";
+import { requirePageSession } from "@/lib/auth/session";
 
 const steps = [
   "Choose a DLT access-provider portal and register the sending legal entity as a Principal Entity (PE).",
@@ -8,13 +10,14 @@ const steps = [
   "Allow sending only after approval and route verification, then reconcile delivery receipts, failures, opt-outs and usage.",
 ];
 
-export default function SmsGatewayPage() {
+export default async function SmsGatewayPage() {
+  const session = await requirePageSession();
   return (
     <CapabilitySection
       eyebrow="Phase 2 · India"
       title="SMS gateway & DLT"
       description="A planned second channel for transactional, service and permitted promotional SMS, with DLT compliance built into onboarding."
-      notice="SMS sending is not available. This page is a Phase 2 design guide, not a DLT registration form or operator selection that changes a live account."
+      notice="SMS sending is not available. Draft details saved here are not submitted to or verified by a DLT access provider."
       capabilities={[
         {
           title: "DLT onboarding",
@@ -38,6 +41,7 @@ export default function SmsGatewayPage() {
         },
       ]}
     >
+      <DltReadinessForm canEdit={session.role === "owner" || session.role === "admin"} />
       <section className="space-y-4 border-t border-[var(--border)] pt-6">
         <h2 className="text-xl font-semibold text-[var(--heading)]">Planned self-serve sequence</h2>
         <ol className="list-decimal space-y-2 pl-5 text-sm leading-6 text-[var(--muted)]">

@@ -55,7 +55,8 @@ jobs:
             -f db/migrations/0004_ai_support_resolution.sql \
             -f db/migrations/0005_workspace_invitations.sql \
             -f db/migrations/0006_durable_inbox.sql \
-            -f db/migrations/0007_outbound_requests.sql
+            -f db/migrations/0007_outbound_requests.sql \
+            -f db/migrations/0008_sms_dlt_drafts.sql
           psql -v ON_ERROR_STOP=1 -f db/verify_schema.sql
 
   test-build-audit:
