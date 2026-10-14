@@ -6,7 +6,7 @@ import { calculateWindowRemaining } from "@/lib/utils";
 
 interface MessageInputProps {
   windowExpiresAt: string;
-  onSendMessage: (text: string) => Promise<void>;
+  onSendMessage: (text: string) => Promise<boolean>;
   onOpenTemplateModal: () => void;
   onOpenMediaModal?: () => void;
   disabled?: boolean;
@@ -29,8 +29,7 @@ export function MessageInput({
 
     setSending(true);
     try {
-      await onSendMessage(text.trim());
-      setText("");
+      if (await onSendMessage(text.trim())) setText("");
     } finally {
       setSending(false);
     }

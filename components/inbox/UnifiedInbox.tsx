@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Conversation, Message, MessageTemplate } from "@/types/strapi";
 import { ConversationList } from "./ConversationList";
 import { MessageThread } from "./MessageThread";
@@ -31,6 +31,8 @@ export function UnifiedInbox({
   const [isMediaModalOpen, setIsMediaModalOpen] = useState(false);
   const [isSimulatingInbound, setIsSimulatingInbound] = useState(false);
   const [isLiveConnected, setIsLiveConnected] = useState(false);
+  const pendingSendKeys = useRef(new Map<string, string>());
+  const sendInFlight = useRef(false);
 
   // Real-Time Server-Sent Events (SSE) Listener
   useEffect(() => {
@@ -96,31 +98,49 @@ export function UnifiedInbox({
   const activeConversation = conversations.find((c) => String(c.id) === String(activeId));
   const activeMessages = messagesMap[String(activeId)] || [];
 
+  async function sendToMeta(payload: Record<string, unknown>): Promise<Message> {
+    if (sendInFlight.current) throw new Error("Another message is still being submitted");
+    sendInFlight.current = true;
+    try {
+      const fingerprint = JSON.stringify(payload);
+      let key = pendingSendKeys.current.get(fingerprint);
+      if (!key) {
+        key = crypto.randomUUID();
+        pendingSendKeys.current.set(fingerprint, key);
+      }
+      const response = await fetch("/api/whatsapp/messages/send", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Idempotency-Key": key,
+        },
+        body: fingerprint,
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || result.message || "Message was not confirmed");
+      }
+      pendingSendKeys.current.delete(fingerprint);
+      return result.data as Message;
+    } finally {
+      sendInFlight.current = false;
+    }
+  }
+
   // 1. Send freeform outbound message
   const handleSendMessage = async (text: string) => {
-    if (!activeConversation) return;
+    if (!activeConversation) return false;
 
     try {
-      const res = await fetch("/api/whatsapp/messages/send", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      const newMsg = await sendToMeta({
           conversationId: activeConversation.id,
           recipientPhone: activeConversation.contact.phoneNumber,
           phoneNumberId: activeConversation.phoneNumber.phoneNumberId,
           messageType: "text",
           text,
-        }),
       });
 
-      const json = await res.json();
-      if (!res.ok) {
-        alert(`Failed to send message: ${json.message || json.error}`);
-        return;
-      }
-
       // Append sent message to local state
-      const newMsg: Message = json.data;
       setMessagesMap((prev) => ({
         ...prev,
         [String(activeId)]: [...(prev[String(activeId)] || []), newMsg],
@@ -138,8 +158,10 @@ export function UnifiedInbox({
             : c
         )
       );
+      return true;
     } catch (err: any) {
       alert(`Error sending message: ${err.message}`);
+      return false;
     }
   };
 
@@ -152,10 +174,7 @@ export function UnifiedInbox({
     if (!activeConversation) return;
 
     try {
-      const res = await fetch("/api/whatsapp/messages/send", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      const newMsg = await sendToMeta({
           conversationId: activeConversation.id,
           recipientPhone: activeConversation.contact.phoneNumber,
           phoneNumberId: activeConversation.phoneNumber.phoneNumberId,
@@ -163,16 +182,7 @@ export function UnifiedInbox({
           templateName,
           templateLanguage: language,
           templateVariables: variables,
-        }),
       });
-
-      const json = await res.json();
-      if (!res.ok) {
-        alert(`Failed to send template: ${json.message || json.error}`);
-        return;
-      }
-
-      const newMsg: Message = json.data;
       setMessagesMap((prev) => ({
         ...prev,
         [String(activeId)]: [...(prev[String(activeId)] || []), newMsg],
@@ -206,24 +216,12 @@ export function UnifiedInbox({
     if (!activeConversation) return;
 
     try {
-      const res = await fetch("/api/whatsapp/messages/send", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      const newMsg = await sendToMeta({
           conversationId: activeConversation.id,
           recipientPhone: activeConversation.contact.phoneNumber,
           phoneNumberId: activeConversation.phoneNumber.phoneNumberId,
           ...payload,
-        }),
       });
-
-      const json = await res.json();
-      if (!res.ok) {
-        alert(`Failed to send rich media: ${json.message || json.error}`);
-        return;
-      }
-
-      const newMsg: Message = json.data;
       setMessagesMap((prev) => ({
         ...prev,
         [String(activeId)]: [...(prev[String(activeId)] || []), newMsg],
