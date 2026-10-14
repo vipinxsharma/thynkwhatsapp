@@ -3,6 +3,7 @@ import { MetaGraphClient } from "@/lib/meta/client";
 import { StrapiClient } from "@/lib/strapi/client";
 import { MetaSendMessagePayload } from "@/types/meta-api";
 import { requireApiSession } from "@/lib/auth/session";
+import { getMetaConnectionForWorkspace } from "@/lib/meta/connections";
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,7 +15,6 @@ export async function POST(request: NextRequest) {
     const {
       conversationId,
       recipientPhone,
-      phoneNumberId,
       messageType = "text",
       text,
       templateName,
@@ -26,9 +26,9 @@ export async function POST(request: NextRequest) {
       interactiveButtons = [],
     } = body;
 
-    if (!conversationId || !recipientPhone || !phoneNumberId) {
+    if (!conversationId || !recipientPhone) {
       return NextResponse.json(
-        { error: "Missing required fields: conversationId, recipientPhone, phoneNumberId" },
+        { error: "Missing required fields: conversationId, recipientPhone" },
         { status: 400 }
       );
     }
@@ -58,6 +58,12 @@ export async function POST(request: NextRequest) {
 
     // 2. Build Meta Cloud API payload
     const normalizedPhone = recipientPhone.replace(/\D/g, "");
+    if (normalizedPhone !== conversation.contact.waId.replace(/\D/g, "")) {
+      return NextResponse.json(
+        { error: "Recipient does not match the selected tenant conversation" },
+        { status: 403 }
+      );
+    }
     let metaPayload: MetaSendMessagePayload;
     let savedBody = text || "";
 
@@ -145,8 +151,9 @@ export async function POST(request: NextRequest) {
     }
 
     // 3. Dispatch to Meta Cloud API
-    const metaClient = new MetaGraphClient();
-    const metaResponse = await metaClient.sendMessage(phoneNumberId, metaPayload);
+    const connection = await getMetaConnectionForWorkspace(auth.session.tenantId);
+    const metaClient = new MetaGraphClient(connection.accessToken);
+    const metaResponse = await metaClient.sendMessage(connection.phoneNumberId, metaPayload);
     const wamId = metaResponse.messages[0]?.id || `wamid.LOCAL_${Date.now()}`;
 
     // 4. Save to Strapi

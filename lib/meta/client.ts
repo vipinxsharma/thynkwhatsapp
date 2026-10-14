@@ -60,6 +60,20 @@ export class MetaGraphClient {
     return (await res.json()) as { success: boolean };
   }
 
+  public async verifyPhoneOwnership(
+    wabaId: string,
+    phoneNumberId: string
+  ): Promise<{ displayPhoneNumber?: string; verifiedName?: string }> {
+    if (!this.accessToken) throw new Error("A live Meta access token is required");
+    const url = `${GRAPH_API_BASE_URL}/${wabaId}/phone_numbers?fields=id,display_phone_number,verified_name&limit=100`;
+    const res = await fetch(url, { headers: { Authorization: `Bearer ${this.accessToken}` } });
+    if (!res.ok) throw new Error("Unable to verify WABA phone-number ownership with Meta");
+    const payload = await res.json();
+    const phone = payload.data?.find((item: any) => String(item.id) === phoneNumberId);
+    if (!phone) throw new Error("The selected phone number does not belong to this WABA");
+    return { displayPhoneNumber: phone.display_phone_number, verifiedName: phone.verified_name };
+  }
+
   /**
    * Sends a message (text, media, template) to a recipient via Meta Cloud API
    */
@@ -161,5 +175,25 @@ export class MetaGraphClient {
 
     const data = await res.json();
     return data.data || [];
+  }
+
+  public async createTemplate(
+    wabaId: string,
+    template: { name: string; language: string; category: string; components: unknown[] }
+  ): Promise<{ id: string; status?: string; category?: string }> {
+    if (!this.accessToken) throw new Error("A live Meta access token is required");
+    const res = await fetch(`${GRAPH_API_BASE_URL}/${wabaId}/message_templates`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${this.accessToken}`,
+      },
+      body: JSON.stringify(template),
+    });
+    if (!res.ok) {
+      const payload = await res.json();
+      throw new Error(payload?.error?.message || "Meta rejected the template submission");
+    }
+    return res.json();
   }
 }

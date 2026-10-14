@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { MessageTemplate } from "@/types/strapi";
 import { requireApiSession } from "@/lib/auth/session";
 import { StrapiClient } from "@/lib/strapi/client";
+import { getMetaConnectionForWorkspace } from "@/lib/meta/connections";
+import { MetaGraphClient } from "@/lib/meta/client";
 
 export async function POST(request: NextRequest) {
   try {
@@ -17,13 +19,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // In a live production Meta app, call POST /{waba_id}/message_templates
-    const template: Omit<MessageTemplate, "id"> = {
-      metaTemplateId: `tpl_meta_${Date.now()}`,
-      name: name.toLowerCase().replace(/\s+/g, "_"),
+    const normalizedName = name.toLowerCase().trim().replace(/[^a-z0-9_]+/g, "_");
+    const connection = await getMetaConnectionForWorkspace(auth.session.tenantId);
+    const meta = new MetaGraphClient(connection.accessToken);
+    const metaTemplate = await meta.createTemplate(connection.wabaId, {
+      name: normalizedName,
       language,
       category,
-      status: "PENDING", // Sent to Meta review
+      components,
+    });
+
+    const template: Omit<MessageTemplate, "id"> = {
+      metaTemplateId: metaTemplate.id,
+      name: normalizedName,
+      language,
+      category: (metaTemplate.category || category) as MessageTemplate["category"],
+      status: (metaTemplate.status || "PENDING") as MessageTemplate["status"],
       components,
     };
 
@@ -32,7 +43,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: "Template submitted to Meta for review. Typical approval time is under 1 minute.",
+      message: "Template submitted to Meta. Approval status will update from Meta webhooks.",
       data: createdTemplate,
     });
   } catch (error: any) {

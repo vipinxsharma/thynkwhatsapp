@@ -93,7 +93,9 @@ describe("signed tenant sessions", () => {
     expect(tenantBData.data.some((contact: { name: string }) => contact.name === "Tenant A Only")).toBe(false);
   });
 
-  it("does not consume an Embedded Signup code before durable WABA storage exists", async () => {
+  it("does not consume an Embedded Signup code before durable WABA storage is configured", async () => {
+    vi.stubEnv("DATABASE_URL", "");
+    vi.stubEnv("ENCRYPTION_KEY", "");
     const fetchSpy = vi.spyOn(globalThis, "fetch");
     const request = await authenticatedRequest(
       "http://localhost:3000/api/meta/embedded-signup",
@@ -110,7 +112,7 @@ describe("signed tenant sessions", () => {
     );
 
     const response = await startEmbeddedSignup(request);
-    expect(response.status).toBe(501);
+    expect(response.status).toBe(503);
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 });

@@ -4,6 +4,7 @@ import { MetaWebhookPayload, WebhookChangeValue } from "@/types/meta-webhook";
 import { StrapiClient } from "@/lib/strapi/client";
 import { emitMessageStatusUpdate, emitNewInboundMessage } from "@/lib/events/emitter";
 import { AutomationEngine } from "@/lib/automations/rules";
+import { getMetaConnectionForWaba } from "@/lib/meta/connections";
 
 /**
  * 1. GET: Webhook Challenge Verification
@@ -82,16 +83,19 @@ export async function POST(request: NextRequest) {
  */
 async function processWebhookEntries(entries: MetaWebhookPayload["entry"]) {
   if (!entries || !Array.isArray(entries)) return;
-  const tenantId =
-    process.env.META_WEBHOOK_TENANT_ID ||
-    (process.env.NODE_ENV === "test" ? "webhook-test-tenant" : "");
-  if (!tenantId) {
-    throw new Error("META_WEBHOOK_TENANT_ID is required until WABA-based routing is implemented");
-  }
-  const strapiClient = new StrapiClient(tenantId);
 
   for (const entry of entries) {
     const wabaId = entry.id;
+    const connection =
+      process.env.NODE_ENV === "test"
+        ? { workspaceId: "webhook-test-tenant" }
+        : await getMetaConnectionForWaba(wabaId);
+    if (!connection) {
+      console.warn(`[Meta Webhook] No active tenant mapping for WABA ${wabaId}`);
+      continue;
+    }
+    const tenantId = connection.workspaceId;
+    const strapiClient = new StrapiClient(tenantId);
 
     for (const change of entry.changes || []) {
       const value: WebhookChangeValue = change.value;
