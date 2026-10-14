@@ -15,7 +15,7 @@ import { requirePageSession } from "@/lib/auth/session";
 
 export const dynamic = "force-dynamic";
 
-export default async function OverviewPage() {
+export default async function DashboardOverviewPage() {
   const session = await requirePageSession();
   const strapi = new StrapiClient(session.tenantId);
   const conversations = await strapi.getConversations();

@@ -25,7 +25,7 @@ export function AcceptInvitation() {
     if (response.status === 401) {
       setError("Sign in with the invited email, then open this link again.");
     } else if (!response.ok) setError(payload.error || "Unable to accept this invitation");
-    else window.location.assign("/");
+    else window.location.assign("/dashboard");
     setPending(false);
   }
 

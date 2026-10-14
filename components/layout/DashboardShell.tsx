@@ -27,7 +27,7 @@ import {
 } from "lucide-react";
 
 const navigation = [
-  { name: "Overview", href: "/", icon: LayoutDashboard },
+  { name: "Overview", href: "/dashboard", icon: LayoutDashboard },
   { name: "CRM Inbox", href: "/inbox", icon: MessageSquare },
   { name: "Contacts", href: "/contacts", icon: Users },
   { name: "Automations", href: "/automations", icon: Bot },
@@ -64,7 +64,7 @@ export function DashboardShell({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ workspaceId }),
     });
-    if (response.ok) window.location.assign("/");
+    if (response.ok) window.location.assign("/dashboard");
   }
 
   const visibleNavigation = session.role === "owner" || session.role === "admin"
