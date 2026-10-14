@@ -148,6 +148,25 @@
   white-space: nowrap;
 }
 
+.filmFrame {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 1.75rem;
+  background: var(--surface);
+  box-shadow: 0 24px 60px rgba(20, 33, 66, 0.12);
+}
+
+.filmFrame video {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #142142;
+}
+
+:global(html.dark) .filmFrame {
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.26);
+}
+
 .card {
   transition: transform 300ms ease, border-color 300ms ease, box-shadow 300ms ease;
 }
