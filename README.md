@@ -97,6 +97,12 @@ Meta Embedded Signup exchanges the code only after durable storage is configured
 the phone number belongs to the selected WABA, subscribes the WABA to webhooks, encrypts the
 access token, and stores the connection against the authenticated workspace.
 
+The support center requires `db/migrations/0003_support_cases.sql`. In-product messages are
+authenticated and tenant-scoped. Inbound email must be delivered to
+`support+<workspace-slug>@<your-support-domain>` through `/api/webhooks/support-email`, with the
+raw payload signed by `SUPPORT_EMAIL_WEBHOOK_SECRET`. AI and human email replies are placed in a
+durable outbox; no external email is sent until a delivery provider is configured in a later gate.
+
 ### 3. Run Automated Tests
 Verify webhook cryptography and challenge tokens:
 ```bash

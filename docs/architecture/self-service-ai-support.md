@@ -27,6 +27,12 @@ Support must be available through in-product chat and email. An AI assistant can
 
 Suggested case states are `received`, `triaged`, `awaiting_customer`, `auto_resolved`, `escalated`, and `closed`.
 
+The current support-channel foundation stores cases and messages in Postgres. Authenticated chat
+derives its workspace from the signed application session. Email ingestion accepts only signed
+webhook payloads addressed to a workspace-specific plus address, is idempotent on the provider
+message ID, and queues outbound replies in a durable outbox. Delivery by an email provider and
+AI-generated replies remain separate gates and are not implied by an outbox record.
+
 ## Delivery sequence
 
 1. Security foundation: signed identity, server-derived tenant context, role checks, tenant isolation, and authenticated event streams.
