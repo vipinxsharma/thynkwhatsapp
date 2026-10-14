@@ -33,6 +33,13 @@ webhook payloads addressed to a workspace-specific plus address, is idempotent o
 message ID, and queues outbound replies in a durable outbox. Delivery by an email provider and
 AI-generated replies remain separate gates and are not implied by an outbox record.
 
+The AI resolution layer uses strict structured output, records a hashed/redacted input audit trail,
+and filters model-cited evidence against the exact knowledge records supplied to the model. An
+answer may be marked `auto_resolved` only when it is low-risk, cites approved evidence, and clears
+the confidence threshold. Account restrictions, ownership, billing, security, and compliance are
+always escalated. The current layer provides diagnosis and guided responses only; it exposes no
+destructive or provider-mutating tools.
+
 ## Delivery sequence
 
 1. Security foundation: signed identity, server-derived tenant context, role checks, tenant isolation, and authenticated event streams.

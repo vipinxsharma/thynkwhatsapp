@@ -12,6 +12,7 @@ export function SupportCenter({ initialCases }: { initialCases: SupportCase[] })
   const [selectedCase, setSelectedCase] = useState<SupportCase | null>(null);
   const [messages, setMessages] = useState<SupportMessage[]>([]);
   const [reply, setReply] = useState("");
+  const [aiPending, setAiPending] = useState(false);
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
@@ -60,6 +61,21 @@ export function SupportCenter({ initialCases }: { initialCases: SupportCase[] })
     setPending(false);
   }
 
+  async function requestAIReview() {
+    if (!selectedCase) return;
+    setAiPending(true);
+    setError("");
+    const response = await fetch(`/api/support/cases/${selectedCase.id}/resolve`, { method: "POST" });
+    const payload = await response.json();
+    if (!response.ok) setError(payload.error || "AI assistance is unavailable");
+    else {
+      setMessages((current) => [...current, payload.data.message]);
+      setSelectedCase((current) => current ? { ...current, status: payload.data.status } : current);
+      setCases((current) => current.map((item) => item.id === selectedCase.id ? { ...item, status: payload.data.status } : item));
+    }
+    setAiPending(false);
+  }
+
   return (
     <div className="grid gap-6 lg:grid-cols-[380px_1fr]">
       <form onSubmit={submit} className="space-y-4 rounded-xl border border-white/10 bg-[#0d1117] p-5">
@@ -91,7 +107,12 @@ export function SupportCenter({ initialCases }: { initialCases: SupportCase[] })
 
       {selectedCase && (
         <section className="lg:col-start-2 rounded-xl border border-white/10 bg-[#0d1117] p-5">
-          <h2 className="font-semibold text-white">{selectedCase.subject}</h2>
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="font-semibold text-white">{selectedCase.subject}</h2>
+            <button type="button" onClick={requestAIReview} disabled={aiPending} className="rounded-lg border border-whatsapp/40 px-3 py-2 text-xs font-semibold text-whatsapp disabled:opacity-50">
+              {aiPending ? "Reviewing…" : "Ask AI to resolve"}
+            </button>
+          </div>
           <div className="my-4 max-h-96 space-y-3 overflow-y-auto">
             {messages.map((message) => (
               <div key={message.id} className={`rounded-lg p-3 text-sm ${message.senderType === "customer" ? "ml-8 bg-whatsapp/10" : "mr-8 bg-white/5"}`}>

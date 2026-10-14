@@ -3,6 +3,7 @@ import { neonAuthConfigured } from "../lib/auth/config";
 import { createWorkspaceSlug } from "../lib/workspaces/store";
 import { validMetaIdentifier } from "../lib/meta/connections";
 import { extractWorkspaceSlug } from "../lib/support/store";
+import { applyResolutionGate, redactSensitiveText } from "../lib/support/ai";
 
 afterEach(() => vi.unstubAllEnvs());
 
@@ -39,5 +40,37 @@ describe("self-service identity configuration", () => {
     expect(extractWorkspaceSlug("Support+ACME-ADVISORS@example.com")).toBe("acme-advisors");
     expect(extractWorkspaceSlug("support@example.com")).toBeNull();
     expect(extractWorkspaceSlug("support+../admin@example.com")).toBeNull();
+  });
+
+  it("redacts secrets and personal identifiers before AI processing", () => {
+    const redacted = redactSensitiveText(
+      "Bearer abc.def.ghi email owner@example.com phone +91 97630 08800 token-abcdefghijklmnop"
+    );
+    expect(redacted).not.toContain("owner@example.com");
+    expect(redacted).not.toContain("97630");
+    expect(redacted).not.toContain("abcdefghijklmnop");
+  });
+
+  it("auto-resolves only safe, high-confidence answers grounded in approved evidence", () => {
+    const grounded = applyResolutionGate(
+      { category: "product_guidance", outcome: "answer", confidence: 0.95, answer: "Use the verified callback URL.", evidence: ["kb-1"] },
+      new Set(["kb-1"])
+    );
+    expect(grounded.status).toBe("auto_resolved");
+
+    const ungrounded = applyResolutionGate(
+      { category: "product_guidance", outcome: "answer", confidence: 0.99, answer: "Done.", evidence: ["invented"] },
+      new Set(["kb-1"])
+    );
+    expect(ungrounded.status).toBe("escalated");
+  });
+
+  it("always escalates account restrictions even at high model confidence", () => {
+    const result = applyResolutionGate(
+      { category: "account_restriction", outcome: "answer", confidence: 1, answer: "Contact Meta support.", evidence: ["meta-account-boundaries"] },
+      new Set(["meta-account-boundaries"])
+    );
+    expect(result.status).toBe("escalated");
+    expect(result.resolution.answer).toContain("human review");
   });
 });

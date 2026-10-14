@@ -26,6 +26,12 @@ export interface SupportMessage {
   createdAt: string;
 }
 
+export interface SupportKnowledge {
+  id: string;
+  title: string;
+  body: string;
+}
+
 function sql() {
   if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL is not configured");
   return neon(process.env.DATABASE_URL);
@@ -103,6 +109,111 @@ export async function listSupportMessages(workspaceId: string, caseId: string): 
      FROM app_support_messages WHERE workspace_id = $1::uuid AND case_id = $2::uuid ORDER BY created_at ASC`,
     [workspaceId, caseId]
   )) as SupportMessage[];
+}
+
+export async function getSupportCase(workspaceId: string, caseId: string): Promise<SupportCase | null> {
+  const rows = await sql().query(
+    `SELECT id, workspace_id AS "workspaceId", requester_email AS "requesterEmail",
+      subject, status, priority, source_channel AS "sourceChannel",
+      created_at AS "createdAt", updated_at AS "updatedAt"
+     FROM app_support_cases WHERE workspace_id = $1::uuid AND id = $2::uuid LIMIT 1`,
+    [workspaceId, caseId]
+  );
+  return (rows[0] as SupportCase | undefined) || null;
+}
+
+export async function searchSupportKnowledge(workspaceId: string, query: string): Promise<SupportKnowledge[]> {
+  return (await sql().query(
+    `SELECT id::text, title, body FROM app_support_knowledge
+     WHERE workspace_id = $1::uuid AND is_active = true
+       AND to_tsvector('english', coalesce(title, '') || ' ' || coalesce(body, ''))
+           @@ plainto_tsquery('english', $2)
+     ORDER BY ts_rank(
+       to_tsvector('english', coalesce(title, '') || ' ' || coalesce(body, '')),
+       plainto_tsquery('english', $2)
+     ) DESC
+     LIMIT 6`,
+    [workspaceId, query.slice(0, 2_000)]
+  )) as SupportKnowledge[];
+}
+
+export async function beginAIResolution(input: {
+  workspaceId: string;
+  caseId: string;
+  authUserId: string;
+  model: string;
+  inputHash: string;
+}): Promise<string | null> {
+  const runId = crypto.randomUUID();
+  const rows = await sql().query(
+    `INSERT INTO app_support_ai_runs
+       (id, workspace_id, case_id, requested_by_auth_user_id, model, status, redacted_input_hash)
+     SELECT $1::uuid, $2::uuid, $3::uuid, $4, $5, 'started', $6
+     WHERE EXISTS (
+       SELECT 1 FROM app_support_cases WHERE id = $3::uuid AND workspace_id = $2::uuid
+     ) AND NOT EXISTS (
+       SELECT 1 FROM app_support_ai_runs
+       WHERE case_id = $3::uuid AND workspace_id = $2::uuid AND created_at > now() - interval '60 seconds'
+     )
+     ON CONFLICT (workspace_id, case_id, redacted_input_hash) WHERE status <> 'failed' DO NOTHING
+     RETURNING id`,
+    [runId, input.workspaceId, input.caseId, input.authUserId, input.model, input.inputHash]
+  );
+  return (rows[0] as { id?: string } | undefined)?.id || null;
+}
+
+export async function finalizeAIResolution(input: {
+  runId: string;
+  workspaceId: string;
+  caseItem: SupportCase;
+  status: "auto_resolved" | "awaiting_customer" | "escalated";
+  category: string;
+  confidence: number;
+  answer: string;
+  result: Record<string, unknown>;
+}): Promise<SupportMessage> {
+  const rows = await sql().query(
+    `WITH updated_case AS (
+       UPDATE app_support_cases SET status = $4, updated_at = now()
+       WHERE id = $1::uuid AND workspace_id = $2::uuid
+       RETURNING id, requester_email, subject, source_channel
+     ), created_message AS (
+       INSERT INTO app_support_messages (id, case_id, workspace_id, channel, sender_type, body)
+       SELECT $3::uuid, id, $2::uuid, source_channel, 'ai', $7 FROM updated_case
+       RETURNING id, case_id, channel, sender_type, body, created_at
+     ), queued_email AS (
+       INSERT INTO app_support_email_outbox (id, workspace_id, case_id, recipient_email, subject, body)
+       SELECT $8::uuid, $2::uuid, id, requester_email, 'Re: ' || subject, $7 FROM updated_case
+       WHERE source_channel = 'email'
+     ), completed_run AS (
+       UPDATE app_support_ai_runs SET status = CASE WHEN $4 = 'escalated' THEN 'escalated' ELSE 'completed' END,
+         category = $5, confidence = $6, result = $9::jsonb, completed_at = now()
+       WHERE id = $10::uuid AND workspace_id = $2::uuid
+     )
+     SELECT id, case_id AS "caseId", channel, sender_type AS "senderType", body, created_at AS "createdAt"
+     FROM created_message`,
+    [
+      input.caseItem.id,
+      input.workspaceId,
+      crypto.randomUUID(),
+      input.status,
+      input.category,
+      input.confidence,
+      input.answer,
+      crypto.randomUUID(),
+      JSON.stringify(input.result),
+      input.runId,
+    ]
+  );
+  return rows[0] as SupportMessage;
+}
+
+export async function failAIResolution(runId: string, workspaceId: string, errorCode: string): Promise<void> {
+  await sql().query(
+    `UPDATE app_support_ai_runs SET status = 'failed', error_code = $3, completed_at = now()
+     WHERE id = $1::uuid AND workspace_id = $2::uuid`,
+    [runId, workspaceId, errorCode.slice(0, 100)]
+  );
 }
 
 export async function addSupportMessage(input: {
