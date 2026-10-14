@@ -3,7 +3,6 @@ import { verifyMetaWebhookSignature } from "@/lib/meta/signature";
 import { MetaWebhookPayload, WebhookChangeValue } from "@/types/meta-webhook";
 import { StrapiClient } from "@/lib/strapi/client";
 import { emitMessageStatusUpdate, emitNewInboundMessage } from "@/lib/events/emitter";
-import { AutomationEngine } from "@/lib/automations/rules";
 import { getMetaConnectionForWaba } from "@/lib/meta/connections";
 
 /**
@@ -59,6 +58,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
     }
 
+    if (process.env.NODE_ENV === "production") {
+      return NextResponse.json({ error: "Durable inbox storage is not configured" }, { status: 503 });
+    }
+
     const payload: MetaWebhookPayload = JSON.parse(rawBody);
 
     // Filter for WhatsApp Business Account notifications
@@ -66,10 +69,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ status: "ignored" }, { status: 200 });
     }
 
-    // Process entries asynchronously so response returns quickly within Meta's 3-5 second SLA
-    processWebhookEntries(payload.entry).catch((err) => {
-      console.error("[Meta Webhook Processing Error]", err);
-    });
+    // Acknowledge only after ingestion succeeds. A detached promise can be lost when
+    // the request's serverless invocation ends, with no opportunity for a retry.
+    await processWebhookEntries(payload.entry);
 
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (error: any) {
@@ -88,7 +90,7 @@ async function processWebhookEntries(entries: MetaWebhookPayload["entry"]) {
     const wabaId = entry.id;
     const connection =
       process.env.NODE_ENV === "test"
-        ? { workspaceId: "webhook-test-tenant" }
+        ? { workspaceId: "webhook-test-tenant", phoneNumberId: "105678234901234", displayPhoneNumber: "+91 98765 43210", verifiedName: "Test" }
         : await getMetaConnectionForWaba(wabaId);
     if (!connection) {
       console.warn(`[Meta Webhook] No active tenant mapping for WABA ${wabaId}`);
@@ -105,6 +107,10 @@ async function processWebhookEntries(entries: MetaWebhookPayload["entry"]) {
       if (change.field === "messages") {
         const metadata = value.metadata;
         const phoneNumberId = metadata?.phone_number_id;
+        if (process.env.NODE_ENV !== "test" && phoneNumberId !== connection.phoneNumberId) {
+          console.warn(`[Meta Webhook] Phone number does not match WABA ${wabaId}`);
+          continue;
+        }
 
         // 1. Process Message Status Updates (sent, delivered, read, failed)
         if (value.statuses && Array.isArray(value.statuses)) {
@@ -136,10 +142,25 @@ async function processWebhookEntries(entries: MetaWebhookPayload["entry"]) {
               bodyText = `[${msg.type}]`;
             }
 
-            // Find matching conversation or default to active conversation (for demo/standalone)
+            // Never attach a new sender's message to an unrelated conversation.
             const conversations = await strapiClient.getConversations();
-            const matchedConv =
-              conversations.find((c) => c.contact.waId === msg.from) || conversations[0];
+            let matchedConv = conversations.find((c) => c.contact.waId === msg.from);
+            if (!matchedConv) {
+              const created = await strapiClient.createContact({
+                name: value.contacts?.find((contact) => contact.wa_id === msg.from)?.profile.name || msg.from,
+                phoneNumber: `+${msg.from}`,
+                tags: [],
+                connectedPhone: {
+                  id: connection.phoneNumberId,
+                  phoneNumberId: connection.phoneNumberId,
+                  displayPhoneNumber: connection.displayPhoneNumber || metadata?.display_phone_number || "",
+                  verifiedName: connection.verifiedName || "",
+                  qualityRating: "UNKNOWN",
+                  codeVerificationStatus: "NOT_VERIFIED",
+                },
+              });
+              matchedConv = created.conversation;
+            }
 
             if (matchedConv) {
               const recorded = await strapiClient.recordMessage(matchedConv.id, {
@@ -156,43 +177,6 @@ async function processWebhookEntries(entries: MetaWebhookPayload["entry"]) {
                 `[Webhook Inbound Message] Ingested message ${msg.id} from ${msg.from} to conversation ${matchedConv.id}`
               );
 
-              // 3. Automated Bot & Keyword Triggers Engine
-              const autoRule = AutomationEngine.matchRule(tenantId, bodyText);
-              if (autoRule) {
-                console.log(`[Auto-Responder Bot] Triggered rule "${autoRule.name}" for message: "${bodyText}"`);
-
-                // Auto-assign tags
-                if (autoRule.assignTags && autoRule.assignTags.length > 0) {
-                  const currentTags = matchedConv.contact.tags || [];
-                  const mergedTags = Array.from(new Set([...currentTags, ...autoRule.assignTags]));
-                  await strapiClient.updateContactTags(matchedConv.contact.id, mergedTags);
-                }
-
-                // Send auto-reply
-                const botWamId = `wamid.BOT_${Date.now()}`;
-                let replyRaw: any = {};
-                let replyBody = autoRule.replyText;
-
-                if (autoRule.responseType === "interactive" && autoRule.interactiveButtons?.length) {
-                  replyRaw = {
-                    buttons: autoRule.interactiveButtons,
-                  };
-                }
-
-                // Record and emit bot reply
-                const botMessage = await strapiClient.recordMessage(matchedConv.id, {
-                  wamId: botWamId,
-                  direction: "outbound",
-                  type: autoRule.responseType === "interactive" ? "interactive" : "text",
-                  body: replyBody,
-                  rawPayload: replyRaw,
-                  status: "sent",
-                  timestamp: new Date().toISOString(),
-                });
-
-                emitNewInboundMessage(tenantId, matchedConv.id, botMessage);
-                console.log(`[Auto-Responder Bot] Sent automated reply to conversation ${matchedConv.id}`);
-              }
             }
           }
         }

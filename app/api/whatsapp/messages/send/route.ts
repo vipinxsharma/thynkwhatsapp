@@ -9,6 +9,9 @@ export async function POST(request: NextRequest) {
   try {
     const auth = await requireApiSession(request, ["owner", "admin", "agent"]);
     if (!auth.ok) return auth.response;
+    if (process.env.NODE_ENV === "production") {
+      return NextResponse.json({ error: "Durable inbox storage is not configured" }, { status: 503 });
+    }
     const strapiClient = new StrapiClient(auth.session.tenantId);
 
     const body = await request.json();

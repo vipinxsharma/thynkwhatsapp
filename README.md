@@ -22,6 +22,10 @@ Enterprise Multi-Tenant WhatsApp Business API & Unified CRM Inbox built for **th
 The self-service and AI support constraints are documented in
 [`docs/architecture/self-service-ai-support.md`](docs/architecture/self-service-ai-support.md).
 
+Live messaging and webhook ingestion are temporarily disabled in production until
+the inbox is backed by durable, tenant-scoped storage. Development demo data is
+never used to acknowledge a production Meta webhook or report a live send.
+
 ---
 
 ## Project Structure

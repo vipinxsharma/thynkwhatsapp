@@ -45,6 +45,9 @@ export class StrapiClient {
   }
 
   private get localState(): LocalTenantState {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error("In-memory demo data is unavailable in production");
+    }
     return getLocalTenantState(this.tenantId);
   }
 
@@ -187,6 +190,7 @@ export class StrapiClient {
     phoneNumber: string;
     tags?: string[];
     customAttributes?: Record<string, any>;
+    connectedPhone?: Conversation["phoneNumber"];
   }): Promise<{ contact: Contact; conversation: Conversation }> {
     const rawDigits = data.phoneNumber.replace(/\D/g, "");
     const waId = rawDigits;
@@ -212,7 +216,7 @@ export class StrapiClient {
       lastMessageAt: new Date().toISOString(),
       unreadCount: 0,
       contact: newContact,
-      phoneNumber: this.localState.waba.phoneNumbers?.[0] || {
+      phoneNumber: data.connectedPhone || this.localState.waba.phoneNumbers?.[0] || {
         id: 1,
         phoneNumberId: "105678234901234",
         displayPhoneNumber: "+91 98765 43210",
