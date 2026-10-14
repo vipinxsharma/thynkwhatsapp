@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { AppSession } from "@/lib/auth/session";
 import { signOutAction } from "@/app/auth/actions";
+import type { WorkspaceMembership } from "@/lib/workspaces/store";
 import {
   Activity,
   BarChart3,
@@ -17,6 +18,7 @@ import {
   ShieldCheck,
   Users,
   LifeBuoy,
+  UserPlus,
 } from "lucide-react";
 
 const navigation = [
@@ -34,11 +36,27 @@ const navigation = [
 export function DashboardShell({
   children,
   session,
+  memberships,
 }: {
   children: React.ReactNode;
   session: AppSession;
+  memberships: WorkspaceMembership[];
 }) {
   const pathname = usePathname();
+
+  async function switchWorkspace(workspaceId: string) {
+    if (workspaceId === session.tenantId) return;
+    const response = await fetch("/api/workspaces/switch", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ workspaceId }),
+    });
+    if (response.ok) window.location.assign("/");
+  }
+
+  const visibleNavigation = session.role === "owner" || session.role === "admin"
+    ? [...navigation, { name: "Team", href: "/settings/team", icon: UserPlus }]
+    : navigation;
 
   return (
     <div className="flex h-screen bg-[#090c10] text-gray-200 overflow-hidden">
@@ -63,15 +81,19 @@ export function DashboardShell({
             <div className="w-7 h-7 rounded bg-white/5 flex items-center justify-center flex-shrink-0">
               <Building2 className="w-4 h-4 text-gray-400" />
             </div>
-            <div className="truncate">
-              <p className="text-xs font-semibold text-gray-200 truncate">{session.tenantName}</p>
+            <div className="min-w-0 flex-1 truncate">
+              {memberships.length > 1 ? (
+                <select aria-label="Current workspace" value={session.tenantId} onChange={(event) => switchWorkspace(event.target.value)} className="w-full bg-transparent text-xs font-semibold text-gray-200 outline-none">
+                  {memberships.map((membership) => <option key={membership.workspaceId} value={membership.workspaceId}>{membership.workspaceName}</option>)}
+                </select>
+              ) : <p className="truncate text-xs font-semibold text-gray-200">{session.tenantName}</p>}
               <p className="text-[10px] text-gray-400 truncate">{session.email}</p>
             </div>
           </div>
         </div>
 
         <nav className="flex-1 px-3 space-y-1 mt-2">
-          {navigation.map((item) => {
+          {visibleNavigation.map((item) => {
             const isActive = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
             const Icon = item.icon;
             return (

@@ -50,3 +50,8 @@ destructive or provider-mutating tools.
 6. AI resolution: tenant-safe retrieval, approved diagnostic/remediation tools, confidence gates, confirmation gates, and outcome verification.
 
 The application must not be described as production-ready until each gate has separate evidence for code, deployment, provider acceptance, received events, and live customer behavior.
+
+Workspace invitations are email-bound, expire after 72 hours, store only token hashes, and cannot
+grant the owner role. Active membership and current role are checked against Postgres for every
+protected request, providing immediate access revocation even when a signed application session has
+time remaining. Invitation email delivery is not enabled until a provider is configured and proven.

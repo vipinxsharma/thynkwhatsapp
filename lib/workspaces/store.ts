@@ -77,3 +77,33 @@ export async function ensureWorkspaceForUser(
   if (!membership) throw new Error("Unable to create or load workspace membership");
   return membership;
 }
+
+export async function listWorkspaceMemberships(authUserId: string): Promise<WorkspaceMembership[]> {
+  const databaseUrl = process.env.DATABASE_URL;
+  if (!databaseUrl) throw new Error("DATABASE_URL is not configured");
+  return (await neon(databaseUrl).query(
+    `SELECT w.id AS "workspaceId", w.name AS "workspaceName", w.slug AS "workspaceSlug", m.role
+     FROM app_workspace_members m
+     JOIN app_workspaces w ON w.id = m.workspace_id
+     WHERE m.auth_user_id = $1 AND m.status = 'active'
+     ORDER BY m.created_at ASC`,
+    [authUserId]
+  )) as WorkspaceMembership[];
+}
+
+export async function validateWorkspaceMembership(
+  authUserId: string,
+  workspaceId: string
+): Promise<WorkspaceMembership | null> {
+  const databaseUrl = process.env.DATABASE_URL;
+  if (!databaseUrl) throw new Error("DATABASE_URL is not configured");
+  const rows = await neon(databaseUrl).query(
+    `SELECT w.id AS "workspaceId", w.name AS "workspaceName", w.slug AS "workspaceSlug", m.role
+     FROM app_workspace_members m
+     JOIN app_workspaces w ON w.id = m.workspace_id
+     WHERE m.auth_user_id = $1 AND m.workspace_id = $2::uuid AND m.status = 'active'
+     LIMIT 1`,
+    [authUserId, workspaceId]
+  );
+  return (rows[0] as WorkspaceMembership | undefined) || null;
+}

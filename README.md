@@ -109,6 +109,13 @@ and personal identifiers, retrieves only workspace-scoped knowledge, and records
 Only grounded, high-confidence, low-risk guidance can auto-resolve a case; billing, security,
 compliance, ownership, and account-restriction issues always escalate.
 
+Workspace team onboarding requires `db/migrations/0005_workspace_invitations.sql`. Owners and
+administrators can create 72-hour, email-bound invite links; only owners can grant the administrator
+role. Raw invite tokens are returned once in the URL fragment and only their hashes are stored.
+Acceptance activates membership, records an audit event, and switches the signed application
+session into the invited workspace. Active membership and role are re-checked on every protected
+request so removal or suspension does not wait for the session token to expire.
+
 ### 3. Run Automated Tests
 Verify webhook cryptography and challenge tokens:
 ```bash
