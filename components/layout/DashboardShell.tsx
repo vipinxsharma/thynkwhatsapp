@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import type { AppSession } from "@/lib/auth/session";
 import { signOutAction } from "@/app/auth/actions";
 import type { WorkspaceMembership } from "@/lib/workspaces/store";
+import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import {
   Activity,
   BarChart3,
@@ -59,35 +60,36 @@ export function DashboardShell({
     : navigation;
 
   return (
-    <div className="flex h-screen bg-[#090c10] text-gray-200 overflow-hidden">
-      <aside className="w-64 flex-shrink-0 flex flex-col border-r border-white/5 bg-[#0d1117]/80 backdrop-blur-md">
-        <div className="h-16 px-6 flex items-center gap-3 border-b border-white/5">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#25D366] to-[#075E54] flex items-center justify-center shadow-glow">
-            <MessageSquare className="w-5 h-5 text-white" />
+    <div className="flex h-screen overflow-hidden bg-[var(--background)] text-[var(--foreground)]">
+      <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:m-3 focus:rounded-lg focus:bg-[var(--surface)] focus:p-3">Skip to content</a>
+      <aside className="flex w-64 flex-shrink-0 flex-col border-r border-[var(--border)] bg-[var(--surface)]">
+        <div className="flex h-16 items-center gap-3 border-b border-[var(--border)] px-6">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-whatsapp shadow-glow">
+            <MessageSquare className="w-5 h-5 text-[#0b132a]" />
           </div>
           <div>
             <div className="flex items-center gap-1.5">
-              <span className="font-bold text-white text-base tracking-tight">thynkWISE</span>
-              <span className="text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded bg-whatsapp/20 text-whatsapp-light border border-whatsapp/30">
+              <span className="text-base font-bold tracking-tight text-[var(--heading)]">Xeccel</span>
+              <span className="text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded bg-whatsapp/20 text-[var(--foreground)] border border-whatsapp/30">
                 SaaS
               </span>
             </div>
-            <p className="text-[11px] text-gray-400">Meta Tech Provider</p>
+            <p className="text-[11px] text-[var(--muted)]">WhatsApp Business Platform</p>
           </div>
         </div>
 
         <div className="p-3">
-          <div className="p-2.5 rounded-lg bg-surface-100/60 border border-white/5 flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded bg-white/5 flex items-center justify-center flex-shrink-0">
-              <Building2 className="w-4 h-4 text-gray-400" />
+          <div className="p-2.5 rounded-lg bg-surface-100/60 border border-[var(--border)] flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded bg-surface-200 flex items-center justify-center flex-shrink-0">
+              <Building2 className="w-4 h-4 text-[var(--muted)]" />
             </div>
             <div className="min-w-0 flex-1 truncate">
               {memberships.length > 1 ? (
-                <select aria-label="Current workspace" value={session.tenantId} onChange={(event) => switchWorkspace(event.target.value)} className="w-full bg-transparent text-xs font-semibold text-gray-200 outline-none">
+                <select aria-label="Current workspace" value={session.tenantId} onChange={(event) => switchWorkspace(event.target.value)} className="w-full bg-transparent text-xs font-semibold text-[var(--foreground)]">
                   {memberships.map((membership) => <option key={membership.workspaceId} value={membership.workspaceId}>{membership.workspaceName}</option>)}
                 </select>
-              ) : <p className="truncate text-xs font-semibold text-gray-200">{session.tenantName}</p>}
-              <p className="text-[10px] text-gray-400 truncate">{session.email}</p>
+              ) : <p className="truncate text-xs font-semibold text-[var(--foreground)]">{session.tenantName}</p>}
+              <p className="text-[10px] text-[var(--muted)] truncate">{session.email}</p>
             </div>
           </div>
         </div>
@@ -100,20 +102,21 @@ export function DashboardShell({
               <Link
                 key={item.name}
                 href={item.href}
+                aria-current={isActive ? "page" : undefined}
                 className={`flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
                   isActive
-                    ? "bg-whatsapp/15 text-whatsapp-light border border-whatsapp/20 shadow-sm"
-                    : "text-gray-400 hover:text-gray-200 hover:bg-white/5"
+                    ? "bg-whatsapp/15 text-[var(--foreground)] border border-whatsapp/30 shadow-sm"
+                    : "text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-surface-200"
                 }`}
               >
                 <div className="flex items-center gap-3">
-                  <Icon className={`w-4 h-4 ${isActive ? "text-whatsapp-light" : "text-gray-400"}`} />
+                  <Icon className={`w-4 h-4 ${isActive ? "text-whatsapp-dark" : "text-[var(--muted)]"}`} />
                   <span>{item.name}</span>
                 </div>
                 {item.badge && (
                   <span
                     className={`text-xs px-2 py-0.5 rounded-full font-bold ${
-                      isActive ? "bg-whatsapp-light text-black" : "bg-white/10 text-gray-300"
+                      isActive ? "bg-whatsapp-light text-[#0b132a]" : "bg-surface-200 text-[var(--foreground)]"
                     }`}
                   >
                     {item.badge}
@@ -124,22 +127,23 @@ export function DashboardShell({
           })}
         </nav>
 
-        <div className="p-4 border-t border-white/5 space-y-3">
-          <div className="flex items-center gap-2 text-[11px] text-gray-400">
+        <div className="p-4 border-t border-[var(--border)] space-y-3">
+          <ThemeToggle className="w-full" />
+          <div className="flex items-center gap-2 text-[11px] text-[var(--muted)]">
             <ShieldCheck className="w-3.5 h-3.5 text-whatsapp-light" />
             <span>Tenant session enforced</span>
           </div>
-          <div className="flex items-center gap-2 text-[11px] text-gray-400">
-            <Activity className="w-3.5 h-3.5 text-blue-400" />
+          <div className="flex items-center gap-2 text-[11px] text-[var(--muted)]">
+            <Activity className="w-3.5 h-3.5 text-[var(--muted)]" />
             <span className="capitalize">Role: {session.role}</span>
           </div>
           <form action={signOutAction}>
-            <button className="text-[11px] text-gray-400 hover:text-white">Sign out</button>
+            <button className="min-h-11 text-[11px] text-[var(--muted)] hover:text-[var(--foreground)]">Sign out</button>
           </form>
         </div>
       </aside>
 
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-[#090c10]">{children}</div>
+      <main id="main-content" className={`theme-content ${pathname.startsWith("/inbox") ? "theme-content--chat" : ""} flex min-w-0 flex-1 flex-col overflow-hidden bg-[var(--background)]`}>{children}</main>
     </div>
   );
 }

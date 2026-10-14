@@ -1,9 +1,6 @@
 import { StrapiClient, isDurableInboxEnabled } from "@/lib/strapi/client";
 import { EmbeddedSignupButton } from "@/components/meta/EmbeddedSignupButton";
-import {
-  Phone,
-  Lock,
-} from "lucide-react";
+import { Phone, Lock } from "lucide-react";
 import { formatPhoneNumber } from "@/lib/utils";
 import { requirePageSession } from "@/lib/auth/session";
 

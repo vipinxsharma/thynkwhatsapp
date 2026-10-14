@@ -1,8 +1,8 @@
-# thynkWISE WhatsApp Business Platform
+# Xeccel WhatsApp Business Platform
 
 [![Application CI](https://github.com/vipinxsharma/thynkwhatsapp/actions/workflows/ci.yml/badge.svg)](https://github.com/vipinxsharma/thynkwhatsapp/actions/workflows/ci.yml)
 
-Enterprise Multi-Tenant WhatsApp Business API & Unified CRM Inbox built for **thynkWISE** as a Meta Tech Provider.
+Xeccel is the customer-facing brand for this multi-tenant WhatsApp Business platform. The intended domain is **xeccel.com**. Domain routing, Meta app naming, and legal/business ownership are separate setup steps and are not implied by this code change.
 
 ---
 
