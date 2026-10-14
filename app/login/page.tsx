@@ -30,7 +30,7 @@ export default async function LoginPage({
             <ShieldCheck className="h-5 w-5 text-whatsapp-light" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-white">thynkWISE Messaging Cloud</h1>
+            <h1 className="text-xl font-bold text-white">Xeccel</h1>
             <p className="text-xs text-gray-400">Secure workspace access</p>
           </div>
         </div>

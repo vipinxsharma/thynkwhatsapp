@@ -26,10 +26,10 @@ export default function NewTemplatePage() {
   const [bodyText, setBodyText] = useState(
     "Hi {{1}}, your order #{{2}} has been confirmed and is on its way!"
   );
-  const [footerText, setFooterText] = useState("thynkWISE Automated Notifications");
+  const [footerText, setFooterText] = useState("");
   const [buttonType, setButtonType] = useState<"NONE" | "QUICK_REPLY" | "URL">("QUICK_REPLY");
   const [buttonText, setButtonText] = useState("Track Shipment");
-  const [buttonUrl, setButtonUrl] = useState("https://thynkwise.co.in/orders");
+  const [buttonUrl, setButtonUrl] = useState("");
 
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -345,8 +345,8 @@ export default function NewTemplatePage() {
                   W
                 </div>
                 <div>
-                  <p className="text-xs font-semibold">thynkWISE Verified</p>
-                  <p className="text-[9px] text-emerald-400">Official Business Account</p>
+                  <p className="text-xs font-semibold">Your business</p>
+                  <p className="text-[9px] text-emerald-400">Template preview</p>
                 </div>
               </div>
 

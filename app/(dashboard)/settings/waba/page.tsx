@@ -33,9 +33,9 @@ export default async function WabaSettingsPage() {
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-semibold">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-semibold">
             <CheckCircle2 className="w-3.5 h-3.5" />
-            Meta Tech Provider Mode
+            Meta connection settings
           </span>
         </div>
       </div>
@@ -49,7 +49,7 @@ export default async function WabaSettingsPage() {
             </h2>
             <p className="text-xs text-gray-300 mt-1 max-w-xl leading-relaxed">
               Use Meta Embedded Signup to onboard customer WhatsApp Business Accounts in under 60
-              seconds. The popup grants thynkWISE permission to send messages and register webhooks
+              seconds. The popup grants the connected Meta app permission to send messages and register webhooks
               on their behalf without sharing Facebook passwords.
             </p>
           </div>
@@ -106,7 +106,7 @@ export default async function WabaSettingsPage() {
           <div>
             <h3 className="text-base font-bold text-white">Connected Phone Numbers</h3>
             <p className="text-xs text-gray-400 mt-0.5">
-              Sender endpoints verified on Meta Cloud API
+              Numbers listed for this workspace
             </p>
           </div>
         </div>
@@ -156,16 +156,14 @@ export default async function WabaSettingsPage() {
 
         <div className="space-y-2 text-xs">
           <div className="p-3 rounded-lg bg-black/40 border border-white/5 flex items-center justify-between">
-            <span className="text-gray-400 font-medium">Callback URL</span>
+            <span className="text-gray-400 font-medium">Planned callback URL (after deployment)</span>
             <code className="text-whatsapp-light font-mono">
-              https://your-domain.vercel.app/api/webhooks/meta
+              https://xeccel.com/api/webhooks/meta
             </code>
           </div>
           <div className="p-3 rounded-lg bg-black/40 border border-white/5 flex items-center justify-between">
             <span className="text-gray-400 font-medium">Verify Token</span>
-            <code className="text-gray-200 font-mono">
-              thynkwise_meta_verify_token_secure_2026
-            </code>
+            <span className="text-gray-200">Set META_WEBHOOK_VERIFY_TOKEN securely in the deployment and enter the same value in Meta. It is not shown here.</span>
           </div>
           <div className="p-3 rounded-lg bg-black/40 border border-white/5 flex items-center justify-between">
             <span className="text-gray-400 font-medium">Subscribed Webhook Fields</span>

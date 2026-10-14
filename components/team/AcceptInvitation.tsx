@@ -31,7 +31,7 @@ export function AcceptInvitation() {
 
   return (
     <div className="space-y-4 rounded-xl border border-white/10 bg-[#0d1117] p-6 text-center">
-      <p className="text-sm text-gray-300">Join this thynkWISE Messaging Cloud workspace using the exact email address that was invited.</p>
+      <p className="text-sm text-gray-300">Join this Xeccel workspace using the exact email address that was invited.</p>
       {error && <p className="text-sm text-red-300">{error}</p>}
       {!token && <p className="text-sm text-red-300">This invitation link is incomplete.</p>}
       <button onClick={accept} disabled={pending || !token} className="rounded-lg bg-whatsapp px-4 py-2 text-sm font-semibold text-black disabled:opacity-50">{pending ? "Accepting…" : "Accept invitation"}</button>

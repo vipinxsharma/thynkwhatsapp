@@ -90,7 +90,7 @@ Ananya Sen,+919922233344,CloudScale,VIP Customer`;
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.setAttribute("download", "thynkwise_contacts_sample.csv");
+    link.setAttribute("download", "xeccel_contacts_sample.csv");
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

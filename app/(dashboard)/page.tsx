@@ -33,10 +33,10 @@ export default async function OverviewPage() {
       <div className="flex items-center justify-between pb-6 border-b border-white/5">
         <div>
           <h1 className="text-2xl font-bold text-white tracking-tight">
-            thynkWISE WhatsApp Business Platform
+            Xeccel WhatsApp Business Platform
           </h1>
           <p className="text-sm text-gray-400 mt-1">
-            Meta Tech Provider Console & Multi-Tenant Messaging Infrastructure
+            Your workspace for WhatsApp conversations and customer support
           </p>
         </div>
 
@@ -76,19 +76,19 @@ export default async function OverviewPage() {
             <span>Delivery Rate</span>
             <TrendingUp className="w-4 h-4 text-blue-400" />
           </div>
-          <p className="text-3xl font-extrabold text-white tracking-tight">99.8%</p>
-          <p className="text-[11px] text-gray-400 font-medium">Verified by Meta Webhook Receipts</p>
+          <p className="text-xl font-bold text-gray-300">See analytics</p>
+          <p className="text-[11px] text-gray-400 font-medium">Calculated from recorded provider status updates</p>
         </div>
 
         <div className="p-5 rounded-2xl bg-surface-100/60 border border-white/5 space-y-2">
           <div className="flex items-center justify-between text-xs text-gray-400 font-medium">
-            <span>Verified Senders</span>
+            <span>Connected Senders</span>
             <Phone className="w-4 h-4 text-teal-400" />
           </div>
           <p className="text-3xl font-extrabold text-white tracking-tight">
-            {waba.phoneNumbers?.length || 1}
+            {waba.phoneNumbers?.length ?? 0}
           </p>
-          <p className="text-[11px] text-teal-400 font-medium">Tier 1 Quality (GREEN)</p>
+          <p className="text-[11px] text-gray-400 font-medium">Listed on this workspace</p>
         </div>
       </div>
 

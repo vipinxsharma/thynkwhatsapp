@@ -136,7 +136,7 @@ export const initialMessages: Record<string, Message[]> = {
       wamId: "wamid.HBgLOTE5ODIwMDExMjIzFQIAERgSRjA2",
       direction: "outbound",
       type: "text",
-      body: "Welcome to thynkWISE, Aarav! We provide official Meta Cloud API integration with 99.9% delivery uptime and multi-agent CRM inboxes. What monthly volume are you targeting?",
+      body: "Welcome to Example Business, Aarav! How can we help you today?",
       status: "read",
       timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
     },
@@ -208,11 +208,11 @@ export const sampleTemplates: MessageTemplate[] = [
       },
       {
         type: "BODY",
-        text: "Hi {{1}}, thanks for choosing thynkWISE. Your order has been processed and will dispatch shortly.",
+        text: "Hi {{1}}, thanks for choosing Example Business. Your order has been processed and will dispatch shortly.",
       },
       {
         type: "FOOTER",
-        text: "thynkWISE Automated Notification",
+        text: "Example Business notification",
       },
       {
         type: "BUTTONS",
@@ -220,7 +220,7 @@ export const sampleTemplates: MessageTemplate[] = [
           {
             type: "URL",
             text: "Track Shipment",
-            url: "https://thynkwise.co.in/track/{{1}}",
+            url: "https://example.com/track/{{1}}",
           },
         ],
       },
@@ -237,7 +237,7 @@ export const sampleTemplates: MessageTemplate[] = [
       {
         type: "HEADER",
         format: "TEXT",
-        text: "Following up from thynkWISE",
+        text: "Following up from Example Business",
       },
       {
         type: "BODY",
@@ -280,7 +280,7 @@ export const sampleTemplates: MessageTemplate[] = [
           {
             type: "URL",
             text: "Claim Discount",
-            url: "https://thynkwise.co.in/vip",
+            url: "https://example.com/vip",
           },
         ],
       },

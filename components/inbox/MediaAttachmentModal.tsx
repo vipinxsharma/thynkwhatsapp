@@ -24,7 +24,7 @@ export function MediaAttachmentModal({
   const [activeTab, setActiveTab] = useState<"image" | "document" | "interactive">("image");
   const [mediaUrl, setMediaUrl] = useState("https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&w=800&q=80");
   const [caption, setCaption] = useState("Here is the updated product catalog brochure.");
-  const [filename, setFilename] = useState("thynkWISE_Q4_Enterprise_Catalog.pdf");
+  const [filename, setFilename] = useState("");
   const [docUrl, setDocUrl] = useState("https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf");
   
   // Interactive buttons
@@ -184,7 +184,7 @@ export function MediaAttachmentModal({
                 <label className="block text-gray-300 font-semibold mb-1">Display Filename</label>
                 <input
                   type="text"
-                  placeholder="e.g. thynkWISE_Proposal_2026.pdf"
+                  placeholder="e.g. product_catalog.pdf"
                   value={filename}
                   onChange={(e) => setFilename(e.target.value)}
                   className="w-full px-3.5 py-2.5 rounded-lg bg-black/40 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-whatsapp-light text-xs"

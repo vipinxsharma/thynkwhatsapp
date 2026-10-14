@@ -151,12 +151,12 @@ export default async function TemplatesPage() {
                 <div className="w-6 h-6 rounded-full bg-emerald-600 text-[10px] flex items-center justify-center font-bold">
                   W
                 </div>
-                <span className="text-xs font-semibold">thynkWISE Verified</span>
+                <span className="text-xs font-semibold">Example business</span>
               </div>
 
               {/* Message Bubble Preview */}
               <div className="my-auto bg-[#202c33] p-3 rounded-xl text-gray-100 space-y-1.5 shadow-md">
-                <p className="font-bold text-white text-[11px]">Following up from thynkWISE</p>
+                <p className="font-bold text-white text-[11px]">Example follow-up</p>
                 <p className="text-[11px] leading-relaxed text-gray-300">
                   Hi Aarav, our customer specialist wanted to follow up on your recent question.
                   Would you like to continue our conversation?

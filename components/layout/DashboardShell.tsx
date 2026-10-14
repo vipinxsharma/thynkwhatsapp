@@ -67,7 +67,7 @@ export function DashboardShell({
           </div>
           <div>
             <div className="flex items-center gap-1.5">
-              <span className="font-bold text-white text-base tracking-tight">thynkWISE</span>
+              <span className="font-bold text-white text-base tracking-tight">Xeccel</span>
               <span className="text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded bg-whatsapp/20 text-whatsapp-light border border-whatsapp/30">
                 SaaS
               </span>

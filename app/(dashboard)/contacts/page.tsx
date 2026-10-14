@@ -88,7 +88,7 @@ export default function ContactsPage() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.setAttribute("download", `thynkwise_contacts_${Date.now()}.csv`);
+    link.setAttribute("download", `xeccel_contacts_${Date.now()}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

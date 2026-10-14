@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "thynkWISE | WhatsApp Business SaaS Platform",
+  title: "Xeccel | WhatsApp Business Platform",
   description: "Enterprise Multi-Tenant WhatsApp Business API & Unified CRM Inbox",
 };
 
