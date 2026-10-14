@@ -12,7 +12,10 @@ BEGIN
     'app_support_email_outbox',
     'app_support_knowledge',
     'app_support_ai_runs',
-    'app_workspace_invitations'
+    'app_workspace_invitations',
+    'app_inbox_contacts',
+    'app_inbox_conversations',
+    'app_inbox_messages'
   ] LOOP
     IF to_regclass('public.' || expected_table) IS NULL THEN
       RAISE EXCEPTION 'Missing application table: %', expected_table;
