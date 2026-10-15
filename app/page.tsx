@@ -158,12 +158,12 @@ export default function HomePage() {
               </div>
               <div className="flex items-center justify-between gap-3 px-3 pb-2 pt-5">
                 <span className="text-xs font-semibold uppercase tracking-[.18em] text-[var(--muted)]">One connected workspace</span>
-                <LayoutDashboard className="size-5 text-[var(--accent)]" aria-hidden="true" />
+                <LayoutDashboard className="size-5 text-[var(--accent-text)]" aria-hidden="true" />
               </div>
               <div className="grid grid-cols-3 gap-2 px-3 pb-3">
                 {["Conversations", "Workflows", "Support"].map((item, index) => (
                   <div key={item} className="rounded-xl bg-[var(--surface-muted)] px-2 py-3 text-center">
-                    <span className="block text-xs font-bold text-[var(--accent)]">0{index + 1}</span>
+                    <span className="block text-xs font-bold text-[var(--accent-text)]">0{index + 1}</span>
                     <span className="mt-1 block text-[10px] font-semibold text-[var(--heading)] sm:text-xs">{item}</span>
                   </div>
                 ))}
@@ -181,14 +181,14 @@ export default function HomePage() {
 
           <section id="platform" aria-labelledby="platform-title" className={`${styles.scrollReveal} scroll-mt-8 border-t border-[var(--border)] py-16 md:py-20`}>
             <div className="max-w-3xl">
-              <p className="text-xs font-bold uppercase tracking-[.2em] text-[var(--accent)]">Designed for service teams</p>
+              <p className="text-xs font-bold uppercase tracking-[.2em] text-[var(--accent-text)]">Designed for service teams</p>
               <h2 id="platform-title" className="mt-4 text-3xl font-bold tracking-tight text-[var(--heading)] sm:text-4xl">Keep the conversation and the work around it together.</h2>
               <p className="mt-5 text-sm leading-7 text-[var(--muted)]">A customer question should not get lost between a phone, a campaign tool, and a support inbox. Xeccel gives your team a workspace to see what happened and decide what comes next.</p>
             </div>
             <div className="mt-10 grid gap-4 sm:grid-cols-2">
               {capabilities.map(({ icon: Icon, title, description }) => (
                 <article key={title} className={`${styles.card} rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-7`}>
-                  <span className="flex size-12 items-center justify-center rounded-2xl bg-[var(--surface-muted)] text-[var(--accent)]"><Icon className="size-6" aria-hidden="true" /></span>
+                  <span className="flex size-12 items-center justify-center rounded-2xl bg-[var(--surface-muted)] text-[var(--accent-text)]"><Icon className="size-6" aria-hidden="true" /></span>
                   <h3 className="mt-7 text-lg font-semibold text-[var(--heading)]">{title}</h3>
                   <p className="mt-3 text-sm leading-7 text-[var(--muted)]">{description}</p>
                 </article>
@@ -198,7 +198,7 @@ export default function HomePage() {
 
           <section id="vision-film" aria-labelledby="vision-film-title" className={`${styles.scrollReveal} border-t border-[var(--border)] py-16 md:py-20`}>
             <div className="max-w-3xl">
-              <p className="text-xs font-bold uppercase tracking-[.2em] text-[var(--accent)]">The Xeccel experience</p>
+              <p className="text-xs font-bold uppercase tracking-[.2em] text-[var(--accent-text)]">The Xeccel experience</p>
               <h2 id="vision-film-title" className="mt-4 text-3xl font-bold tracking-tight text-[var(--heading)] sm:text-4xl">Meet Xeccel in motion.</h2>
               <p className="mt-5 text-sm leading-7 text-[var(--muted)]">A voiced introduction and two silent films explore connected conversations, workflows, and AI-assisted support. These are creative illustrations, not footage of a live customer account.</p>
             </div>
@@ -206,7 +206,7 @@ export default function HomePage() {
               <article className={`${styles.filmFrame} lg:col-span-2`}>
                 <div className="grid lg:grid-cols-[.36fr_.64fr] lg:items-center">
                   <div className="p-6 sm:p-8">
-                    <p className="text-xs font-bold uppercase tracking-[.18em] text-[var(--accent)]">With voice</p>
+                    <p className="text-xs font-bold uppercase tracking-[.18em] text-[var(--accent-text)]">With voice</p>
                     <h3 className="mt-3 text-2xl font-bold text-[var(--heading)]">The Xeccel introduction</h3>
                     <p className="mt-3 text-sm leading-7 text-[var(--muted)]">A fictional presenter introduces Xeccel against a modern service-team backdrop. Play to hear the English narration. The brand name is pronounced like “Excel.”</p>
                     <details className={`${styles.transcript} mt-5 text-xs leading-6 text-[var(--muted)]`}>
@@ -241,7 +241,7 @@ export default function HomePage() {
           <section id="how-it-works" aria-labelledby="how-title" className={`${styles.scrollReveal} scroll-mt-8 border-t border-[var(--border)] py-16 md:py-20`}>
             <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
               <div className="max-w-2xl">
-                <p className="text-xs font-bold uppercase tracking-[.2em] text-[var(--accent)]">Your setup journey</p>
+                <p className="text-xs font-bold uppercase tracking-[.2em] text-[var(--accent-text)]">Your setup journey</p>
                 <h2 id="how-title" className="mt-4 text-3xl font-bold tracking-tight text-[var(--heading)] sm:text-4xl">Set up, connect, and serve — from one place.</h2>
               </div>
               <p className="max-w-sm text-sm leading-7 text-[var(--muted)]">Start with your workspace, connect an eligible WhatsApp number, then complete messaging activation with our team.</p>
@@ -249,7 +249,7 @@ export default function HomePage() {
             <ol className="mt-10 grid gap-4 md:grid-cols-3">
               {steps.map((step) => (
                 <li key={step.number} className={`${styles.card} rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-7`}>
-                  <span className="text-sm font-bold text-[var(--accent)]">{step.number}</span>
+                  <span className="text-sm font-bold text-[var(--accent-text)]">{step.number}</span>
                   <h3 className="mt-8 text-lg font-semibold text-[var(--heading)]">{step.title}</h3>
                   <p className="mt-3 text-sm leading-7 text-[var(--muted)]">{step.description}</p>
                 </li>
@@ -284,7 +284,7 @@ export default function HomePage() {
           <section id="questions" aria-labelledby="questions-title" className={`${styles.scrollReveal} scroll-mt-8 border-t border-[var(--border)] py-16 md:py-20`}>
             <div className="grid gap-10 md:grid-cols-[.8fr_1.2fr]">
               <div>
-                <p className="text-xs font-bold uppercase tracking-[.2em] text-[var(--accent)]">Good to know</p>
+                <p className="text-xs font-bold uppercase tracking-[.2em] text-[var(--accent-text)]">Good to know</p>
                 <h2 id="questions-title" className="mt-4 text-3xl font-bold tracking-tight text-[var(--heading)] sm:text-4xl">Questions before you get started?</h2>
               </div>
               <div className="space-y-3">
@@ -300,7 +300,7 @@ export default function HomePage() {
 
           <section id="policies" aria-labelledby="policies-title" className={`${styles.scrollReveal} scroll-mt-8 border-t border-[var(--border)] py-16 md:py-20`}>
             <div className="max-w-3xl">
-              <p className="text-xs font-bold uppercase tracking-[.2em] text-[var(--accent)]">Clear before you commit</p>
+              <p className="text-xs font-bold uppercase tracking-[.2em] text-[var(--accent-text)]">Clear before you commit</p>
               <h2 id="policies-title" className="mt-4 text-3xl font-bold tracking-tight text-[var(--heading)] sm:text-4xl">Your data, payments, and service terms — in plain sight.</h2>
               <p className="mt-5 text-sm leading-7 text-[var(--muted)]">Review our policies before you get started. Account setup and paid messaging activation are separate steps. Any plan price, billing period, taxes, and usage charges must be confirmed before you pay.</p>
             </div>
@@ -309,15 +309,15 @@ export default function HomePage() {
                 <a key={item.href} href={item.href} className={`${styles.card} rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-7 hover:border-[var(--accent)]`}>
                   <h3 className="text-lg font-semibold text-[var(--heading)]">{item.title}</h3>
                   <p className="mt-3 text-sm leading-7 text-[var(--muted)]">{item.detail}</p>
-                  <span className="mt-5 inline-block text-sm font-semibold text-[var(--accent)]">Read the policy →</span>
+                  <span className="mt-5 inline-block text-sm font-semibold text-[var(--accent-text)]">Read the policy →</span>
                 </a>
               ))}
             </div>
-            <a href="/legal" className="mt-7 inline-flex text-sm font-semibold text-[var(--accent)] underline underline-offset-4">View all policies and support details</a>
+            <a href="/legal" className="mt-7 inline-flex text-sm font-semibold text-[var(--accent-text)] underline underline-offset-4">View all policies and support details</a>
           </section>
 
           <section className={`${styles.scrollReveal} mb-16 rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-8 md:p-12`}>
-            <p className="text-xs font-bold uppercase tracking-[.2em] text-[var(--accent)]">Make your next conversation count</p>
+            <p className="text-xs font-bold uppercase tracking-[.2em] text-[var(--accent-text)]">Make your next conversation count</p>
             <h2 className="mt-4 max-w-3xl text-3xl font-bold tracking-tight text-[var(--heading)] sm:text-4xl">Bring your customer conversations together.</h2>
             <p className="mt-5 max-w-2xl text-sm leading-7 text-[var(--muted)]">Follow the setup guide, access your workspace, or ask our team to help you connect your business.</p>
             <a href="/getting-started" className={`${styles.primaryLink} mt-8 inline-flex min-h-12 items-center gap-2 rounded-full bg-[var(--accent)] px-6 py-3 text-sm font-bold text-[#0b132a] hover:bg-[var(--accent-hover)]`}>Get started with Xeccel <ArrowRight className="size-4" aria-hidden="true" /></a>
@@ -337,7 +337,7 @@ export default function HomePage() {
             <a href="/legal/service-delivery" className="hover:text-[var(--heading)]">Service Delivery</a>
             <a href="/legal/cookies" className="hover:text-[var(--heading)]">Cookie Policy</a>
             <a href="/legal/messaging-use" className="hover:text-[var(--heading)]">Messaging Use</a>
-            <a href="/legal" className="font-semibold text-[var(--accent)] hover:underline">Legal & Support Center</a>
+            <a href="/legal" className="font-semibold text-[var(--accent-text)] hover:underline">Legal & Support Center</a>
             <a href="mailto:partner@thynkwise.co.in" className="hover:text-[var(--heading)]">Contact support</a>
           </nav>
         </footer>

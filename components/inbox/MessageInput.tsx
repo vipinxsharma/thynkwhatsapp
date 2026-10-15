@@ -43,10 +43,10 @@ export function MessageInput({
   };
 
   return (
-    <div className="border-t border-white/5 bg-[#0d121a]">
+    <div className="border-t border-white/5 bg-[var(--surface)]">
       {/* 24-Hour Window Notification Bar */}
       <div
-        className={`px-4 py-2 flex items-center justify-between text-xs transition-all ${
+        className={`px-4 py-2 flex flex-wrap items-center justify-between gap-2 text-xs transition-all ${
           windowStatus.isExpired
             ? "bg-amber-950/40 border-b border-amber-900/30 text-amber-300"
             : "bg-emerald-950/30 border-b border-emerald-900/20 text-emerald-300"

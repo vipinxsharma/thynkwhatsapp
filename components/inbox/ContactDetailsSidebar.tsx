@@ -53,10 +53,10 @@ export function ContactDetailsSidebar({
   };
 
   return (
-    <div className="w-72 flex-shrink-0 flex flex-col border-l border-white/5 bg-[#0e131b] p-4 overflow-y-auto space-y-5">
+    <div className="min-h-0 w-72 max-w-full flex-1 flex-shrink-0 flex flex-col border-l border-white/5 bg-[var(--surface)] p-4 overflow-y-auto space-y-5">
       {/* Profile Header */}
       <div className="text-center pb-4 border-b border-white/5">
-        <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-emerald-600 to-teal-400 mx-auto flex items-center justify-center text-white text-2xl font-bold shadow-glow mb-3">
+        <div className="w-16 h-16 rounded-full bg-[var(--accent)] mx-auto flex items-center justify-center text-white text-2xl font-bold shadow-glow mb-3">
           {contact.name.charAt(0)}
         </div>
         <h3 className="text-base font-bold text-white tracking-tight">{contact.name}</h3>
@@ -170,13 +170,13 @@ export function ContactDetailsSidebar({
           <div className="flex justify-between">
             <span>Sender:</span>
             <span className="text-gray-200 font-mono">
-              {conversation.phoneNumber?.displayPhoneNumber || "+91 98765 43210"}
+              {conversation.phoneNumber?.displayPhoneNumber || "Not recorded"}
             </span>
           </div>
           <div className="flex justify-between">
             <span>Quality:</span>
             <span className="text-whatsapp-light font-bold">
-              {conversation.phoneNumber?.qualityRating || "GREEN"}
+              {conversation.phoneNumber?.qualityRating || "Not recorded"}
             </span>
           </div>
         </div>

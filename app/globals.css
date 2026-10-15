@@ -35,6 +35,7 @@
   --border: #e6e8ec;
   --accent: #f38b26;
   --accent-hover: #e07512;
+  --accent-text: #9b4804;
   --focus-ring: 0 0 0 3px rgba(243, 139, 38, 0.45);
 }
 
@@ -48,6 +49,7 @@ html.dark {
   --heading: #ffffff;
   --muted: #cbd5e1;
   --border: rgba(255, 255, 255, 0.16);
+  --accent-text: #ffb366;
 }
 
 body {
@@ -63,21 +65,36 @@ body {
 }
 
 /* Legacy dashboard utilities follow the active palette; WhatsApp previews retain their native colors. */
-html:not(.dark) .theme-content:not(.theme-content--chat) :where([class~="text-white"], [class~="text-gray-100"], [class~="text-gray-200"]):not(.whatsapp-pattern *) {
+html:not(.dark) .theme-content :where([class~="text-white"], [class~="text-gray-100"], [class~="text-gray-200"]):not(.whatsapp-pattern *) {
   color: var(--heading);
 }
 
-html:not(.dark) .theme-content:not(.theme-content--chat) :where([class~="text-gray-300"], [class~="text-gray-400"], [class~="text-gray-500"]):not(.whatsapp-pattern *) {
+html:not(.dark) .theme-content :where([class~="text-gray-300"], [class~="text-gray-400"], [class~="text-gray-500"]):not(.whatsapp-pattern *) {
   color: var(--muted);
 }
 
-html:not(.dark) .theme-content:not(.theme-content--chat) :where([class~="border-white/5"], [class~="border-white/10"]):not(.whatsapp-pattern *) {
+html:not(.dark) .theme-content :where([class~="border-white/5"], [class~="border-white/10"]):not(.whatsapp-pattern *) {
   border-color: var(--border);
 }
 
-html:not(.dark) .theme-content:not(.theme-content--chat) :where([class~="bg-white/5"], [class~="bg-white/10"], [class~="bg-black/20"], [class~="bg-black/40"]):not(.whatsapp-pattern *) {
+html:not(.dark) .theme-content :where([class~="bg-white/5"], [class~="bg-white/10"], [class~="bg-black/20"], [class~="bg-black/40"]):not(.whatsapp-pattern *) {
   background-color: var(--surface-muted);
 }
+
+.theme-content :where([class~="text-whatsapp-light"], [class~="text-whatsapp-dark"]):not(.whatsapp-pattern *) {
+  color: var(--accent-text);
+}
+
+html:not(.dark) .theme-content :where([class~="text-amber-100"], [class~="text-amber-100/80"], [class~="text-amber-200"], [class~="text-amber-300"], [class~="text-amber-400"], [class~="text-orange-200/80"]):not(.whatsapp-pattern *) {
+  color: #92400e;
+}
+
+html:not(.dark) .theme-content :where([class~="text-emerald-200"], [class~="text-emerald-300"], [class~="text-emerald-400"]):not(.whatsapp-pattern *) {
+  color: #166534;
+}
+
+html:not(.dark) .theme-content :where([class~="bg-amber-950/40"]):not(.whatsapp-pattern *) { background-color: #fff3d6; }
+html:not(.dark) .theme-content :where([class~="bg-emerald-950/30"]):not(.whatsapp-pattern *) { background-color: #e7f6ed; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

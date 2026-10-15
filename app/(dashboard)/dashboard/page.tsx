@@ -54,7 +54,7 @@ export default async function DashboardOverviewPage() {
       <section aria-labelledby="setup-title" className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6">
         <h2 id="setup-title" className="text-lg font-semibold text-[var(--heading)]">Get your workspace ready</h2>
         <p className="mt-2 text-sm leading-6 text-[var(--muted)]">Connect your number, prepare contacts and templates, then confirm messaging activation with the Xeccel team.</p>
-        <div className="mt-4 flex flex-wrap gap-4 text-sm font-semibold text-[var(--accent)]">
+        <div className="mt-4 flex flex-wrap gap-4 text-sm font-semibold text-[var(--accent-text)]">
           <Link href="/settings/waba" className="underline">Connect WhatsApp</Link>
           <Link href="/contacts" className="underline">Add contacts</Link>
           <Link href="/templates" className="underline">Prepare templates</Link>
