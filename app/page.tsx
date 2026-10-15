@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import {
   ArrowDownRight,
   ArrowRight,
@@ -26,9 +27,9 @@ export const metadata: Metadata = {
     url: "https://xeccel.com/",
     siteName: "Xeccel",
     type: "website",
-    images: [{ url: "/brand/xeccel-logo.jpg", width: 2000, height: 2000, alt: "Xeccel logo" }],
+    images: [{ url: "/brand/xeccel-logo-horizontal.png", width: 1200, height: 600, alt: "Xeccel logo" }],
   },
-  twitter: { card: "summary_large_image", title: "Xeccel | Business messaging, in one workspace", images: ["/brand/xeccel-logo.jpg"] },
+  twitter: { card: "summary_large_image", title: "Xeccel | Business messaging, in one workspace", images: ["/brand/xeccel-logo-horizontal.png"] },
 };
 
 const capabilities = [
@@ -143,7 +144,15 @@ export default function HomePage() {
             </div>
             <div className={`${styles.visual} rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-3 shadow-sm sm:p-4`}>
               <div className={styles.mediaFrame}>
-                <XeccelLogo size="hero" priority />
+                <Image
+                  src="/media/xeccel-flow-hero.webp"
+                  alt="Abstract orange light trails linking translucent conversation cards"
+                  width={1376}
+                  height={768}
+                  priority
+                  sizes="(max-width: 768px) 100vw, 40vw"
+                  className="h-auto w-full"
+                />
               </div>
               <div className="flex items-center justify-between gap-3 px-3 pb-2 pt-5">
                 <span className="text-xs font-semibold uppercase tracking-[.18em] text-[var(--muted)]">One connected workspace</span>
@@ -157,7 +166,7 @@ export default function HomePage() {
                   </div>
                 ))}
               </div>
-              <p className="px-3 pb-3 text-xs leading-5 text-[var(--muted)]">Xeccel brand artwork. Customer access is not open yet.</p>
+              <p className="px-3 pb-3 text-xs leading-5 text-[var(--muted)]">Concept illustration, not a product screenshot. Customer access is not open yet.</p>
             </div>
           </section>
 
