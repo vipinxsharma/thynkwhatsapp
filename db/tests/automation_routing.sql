@@ -55,4 +55,33 @@ DO $$ BEGIN
  IF (SELECT status FROM app_inbox_conversations WHERE id='5e5b4c26-741e-4818-bb4f-b6b5a0a4fd32')<>'pending' THEN RAISE EXCEPTION 'Status not applied'; END IF;
  IF NOT (SELECT tags @> '["Existing","Support"]'::jsonb AND jsonb_array_length(tags)=2 FROM app_inbox_contacts WHERE id='ba995df2-8593-4a5f-b256-63c863baf14a') THEN RAISE EXCEPTION 'Tags not merged'; END IF;
 END $$;
+WITH selected AS (
+    SELECT id,contact_id FROM app_inbox_conversations WHERE workspace_id='3a6343e2-5a09-442e-9d6c-1040a6de5f98'::uuid AND id='5e5b4c26-741e-4818-bb4f-b6b5a0a4fd32'::uuid
+  ), updated_contact AS (
+    UPDATE app_inbox_contacts SET tags=COALESCE('["Manual"]'::jsonb,tags),updated_at=now()
+    WHERE workspace_id='3a6343e2-5a09-442e-9d6c-1040a6de5f98'::uuid AND id IN (SELECT contact_id FROM selected) RETURNING tags
+  ), updated_conversation AS (
+    UPDATE app_inbox_conversations SET status=COALESCE('closed',status),updated_at=now()
+    WHERE workspace_id='3a6343e2-5a09-442e-9d6c-1040a6de5f98'::uuid AND id IN (SELECT id FROM selected) RETURNING id,status
+  ), audit AS (
+    INSERT INTO app_audit_logs(id,workspace_id,auth_user_id,action,resource_type,resource_id,metadata)
+    SELECT 'c77c4509-43d4-44a0-b1e4-65d57f098253'::uuid,'3a6343e2-5a09-442e-9d6c-1040a6de5f98'::uuid,'qa','conversation.updated','conversation',id::text,'{"status":"closed","tags":["Manual"]}'::jsonb FROM updated_conversation
+  ) SELECT c.id,c.status,t.tags FROM updated_conversation c CROSS JOIN updated_contact t;
+WITH selected AS (
+    SELECT id,contact_id FROM app_inbox_conversations WHERE workspace_id='8a60f37c-2935-4dfb-bf59-24960efaf9c4'::uuid AND id='5e5b4c26-741e-4818-bb4f-b6b5a0a4fd32'::uuid
+  ), updated_contact AS (
+    UPDATE app_inbox_contacts SET tags=COALESCE('["Manual"]'::jsonb,tags),updated_at=now()
+    WHERE workspace_id='8a60f37c-2935-4dfb-bf59-24960efaf9c4'::uuid AND id IN (SELECT contact_id FROM selected) RETURNING tags
+  ), updated_conversation AS (
+    UPDATE app_inbox_conversations SET status=COALESCE('closed',status),updated_at=now()
+    WHERE workspace_id='8a60f37c-2935-4dfb-bf59-24960efaf9c4'::uuid AND id IN (SELECT id FROM selected) RETURNING id,status
+  ), audit AS (
+    INSERT INTO app_audit_logs(id,workspace_id,auth_user_id,action,resource_type,resource_id,metadata)
+    SELECT 'c77c4509-43d4-44a0-b1e4-65d57f098253'::uuid,'8a60f37c-2935-4dfb-bf59-24960efaf9c4'::uuid,'qa','conversation.updated','conversation',id::text,'{"status":"closed","tags":["Manual"]}'::jsonb FROM updated_conversation
+  ) SELECT c.id,c.status,t.tags FROM updated_conversation c CROSS JOIN updated_contact t;
+DO $$ BEGIN
+ IF (SELECT status FROM app_inbox_conversations WHERE id='5e5b4c26-741e-4818-bb4f-b6b5a0a4fd32')<>'closed' THEN RAISE EXCEPTION 'Manual status not saved'; END IF;
+ IF (SELECT tags FROM app_inbox_contacts WHERE id='ba995df2-8593-4a5f-b256-63c863baf14a')<>'["Manual"]'::jsonb THEN RAISE EXCEPTION 'Manual tags not saved'; END IF;
+ IF (SELECT count(*) FROM app_audit_logs WHERE workspace_id='3a6343e2-5a09-442e-9d6c-1040a6de5f98' AND action='conversation.updated')<>1 THEN RAISE EXCEPTION 'Audit not saved or foreign update permitted'; END IF;
+END $$;
 ROLLBACK;
