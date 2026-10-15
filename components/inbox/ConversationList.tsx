@@ -40,7 +40,7 @@ export function ConversationList({
   });
 
   return (
-    <div className="w-80 flex-shrink-0 flex flex-col border-r border-white/5 bg-[#0e131b]">
+    <div className="h-full w-full md:w-80 flex-shrink-0 flex flex-col border-r border-white/5 bg-[var(--surface)]">
       {/* Header & Search */}
       <div className="p-3 border-b border-white/5 space-y-2.5">
         <div className="flex items-center justify-between">
@@ -53,7 +53,8 @@ export function ConversationList({
         <div className="relative">
           <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
-            type="text"
+            type="search"
+            aria-label="Search loaded conversations"
             placeholder="Search loaded chats..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -70,7 +71,7 @@ export function ConversationList({
               const first = conversations.find((conversation) => next === "all" || conversation.phoneNumber.phoneNumberId === next);
               if (first) onSelectConversation(first.id);
             }}
-            className="w-full rounded-lg border border-white/10 bg-[#17212c] px-3 py-2 text-xs text-white">
+            className="w-full rounded-lg border border-white/10 bg-[var(--surface-muted)] px-3 py-2 text-xs text-white">
             <option value="all">All WhatsApp numbers</option>
             {channels.map((channel) => <option key={channel.phoneNumberId} value={channel.phoneNumberId}>
               {channel.displayPhoneNumber || channel.phoneNumberId}
@@ -83,6 +84,7 @@ export function ConversationList({
           {(["all", "unread", "expired"] as const).map((tab) => (
             <button
               key={tab}
+              aria-pressed={filter === tab}
               onClick={() => setFilter(tab)}
               className={`px-2.5 py-1 rounded text-xs font-medium capitalize transition-all ${
                 filter === tab
@@ -108,10 +110,13 @@ export function ConversationList({
             const window = calculateWindowRemaining(conv.windowExpiresAt);
 
             return (
-              <div
+              <button
+                type="button"
+                aria-pressed={isActive}
+                aria-label={`Open conversation with ${conv.contact.name}`}
                 key={conv.id}
                 onClick={() => onSelectConversation(conv.id)}
-                className={`p-3 cursor-pointer transition-all ${
+                className={`block w-full p-3 text-left cursor-pointer transition-all ${
                   isActive
                     ? "bg-whatsapp/10 border-l-4 border-l-whatsapp-light"
                     : "hover:bg-white/[0.03]"
@@ -119,7 +124,7 @@ export function ConversationList({
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-emerald-700 to-teal-500 flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
+                    <div className="w-9 h-9 rounded-full bg-[var(--accent)] flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
                       {conv.contact.name.charAt(0)}
                     </div>
                     <div className="min-w-0">
@@ -165,7 +170,7 @@ export function ConversationList({
                     </span>
                   )}
                 </div>
-              </div>
+              </button>
             );
           })
         )}

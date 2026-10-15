@@ -8,7 +8,7 @@ import { MessageInput } from "./MessageInput";
 import { ContactDetailsSidebar } from "./ContactDetailsSidebar";
 import { TemplateSelectorModal } from "./TemplateSelectorModal";
 import { MediaAttachmentModal } from "./MediaAttachmentModal";
-import { Sparkles, Phone, Video, MoreVertical } from "lucide-react";
+import { ArrowLeft, User, X, Sparkles, Phone, Video, MoreVertical } from "lucide-react";
 import { formatPhoneNumber } from "@/lib/utils";
 
 interface UnifiedInboxProps {
@@ -26,6 +26,8 @@ export function UnifiedInbox({
   const [messagesMap, setMessagesMap] = useState<Record<string, Message[]>>(initialMessages);
   const [hasOlderMap, setHasOlderMap] = useState<Record<string, boolean>>({});
   const [threadLoading, setThreadLoading] = useState(false);
+  const [mobileThreadOpen, setMobileThreadOpen] = useState(false);
+  const [contactPanelOpen, setContactPanelOpen] = useState(false);
   const [threadError, setThreadError] = useState<string | null>(null);
   const [activeId, setActiveId] = useState<number | string>(
     initialConversations[0]?.id || "1"
@@ -326,25 +328,28 @@ export function UnifiedInbox({
   };
 
   return (
-    <div className="flex-1 flex overflow-hidden h-full">
+    <div className="relative flex min-h-0 flex-1 overflow-hidden h-full">
       {/* 1. Conversations Column */}
+      <div className={`${mobileThreadOpen ? "hidden" : "flex"} min-h-0 w-full md:flex md:w-80 md:shrink-0`}>
       <ConversationList
         conversations={conversations}
         activeConversationId={activeId}
-        onSelectConversation={(id) => setActiveId(id)}
+        onSelectConversation={(id) => { setActiveId(id); setMobileThreadOpen(true); setContactPanelOpen(false); }}
       />
+      </div>
 
       {/* 2. Middle Chat Thread Column */}
       {activeConversation ? (
-        <div className="flex-1 flex flex-col min-w-0 bg-[#0b141a]">
+        <div className={`${mobileThreadOpen ? "flex" : "hidden"} min-h-0 flex-1 flex-col min-w-0 bg-[var(--background)] md:flex`}>
           {/* Thread Header */}
-          <div className="h-16 px-4 border-b border-white/5 bg-[#0e131b] flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-emerald-600 to-teal-400 flex items-center justify-center text-white font-bold text-sm shadow-glow">
+          <div className="min-h-20 shrink-0 gap-2 px-4 border-b border-white/5 bg-[var(--surface)] flex items-center justify-between">
+            <div className="flex min-w-0 items-center gap-3">
+              <button type="button" aria-label="Back to conversations" onClick={() => setMobileThreadOpen(false)} className="flex min-h-11 min-w-11 items-center justify-center rounded-xl border border-[var(--border)] md:hidden"><ArrowLeft className="size-4" aria-hidden="true" /></button>
+              <div className="hidden w-10 h-10 shrink-0 rounded-full sm:flex bg-[var(--accent)] flex items-center justify-center text-white font-bold text-sm shadow-glow">
                 {activeConversation.contact.name.charAt(0)}
               </div>
-              <div>
-                <h2 className="text-sm font-bold text-white tracking-tight">
+              <div className="min-w-0">
+                <h2 className="truncate text-sm font-bold text-white tracking-tight">
                   {activeConversation.contact.name}
                 </h2>
                 <p className="text-xs text-gray-400 font-mono">
@@ -353,8 +358,10 @@ export function UnifiedInbox({
               </div>
             </div>
 
+            <button type="button" aria-expanded={contactPanelOpen} aria-controls="inbox-contact-details" onClick={() => setContactPanelOpen((open) => !open)} className="flex min-h-11 shrink-0 items-center gap-2 rounded-xl border border-[var(--border)] px-3 text-xs font-semibold xl:hidden"><User className="size-4" aria-hidden="true" />Details</button>
+
             {/* This connection reflects only the current app instance. */}
-            <div className="flex items-center gap-2.5">
+            <div className="hidden items-center gap-2.5 lg:flex">
               <div
                 className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium border ${
                   isLiveConnected
@@ -394,18 +401,21 @@ export function UnifiedInbox({
           />
         </div>
       ) : (
-        <div className="flex-1 flex items-center justify-center text-gray-500">
+        <div className="hidden flex-1 items-center justify-center text-[var(--muted)] md:flex">
           Select a conversation from the left to start messaging.
         </div>
       )}
 
       {/* 3. Right CRM Contact Sidebar */}
       {activeConversation && (
+        <section id="inbox-contact-details" aria-label="Customer details" className={`${contactPanelOpen ? "flex absolute inset-y-0 right-0 z-20 shadow-xl" : "hidden"} max-w-full flex-col border-l border-[var(--border)] bg-[var(--surface)] xl:static xl:flex xl:shadow-none`}>
+          <button type="button" onClick={() => setContactPanelOpen(false)} className="flex min-h-11 items-center justify-end gap-2 border-b border-[var(--border)] px-4 text-xs xl:hidden"><X className="size-4" aria-hidden="true" />Close details</button>
         <ContactDetailsSidebar
           conversation={activeConversation}
           onUpdateTags={handleUpdateTags}
           onUpdateStatus={handleUpdateStatus}
         />
+        </section>
       )}
 
       {/* Template Picker Modal */}

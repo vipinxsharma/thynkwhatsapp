@@ -133,7 +133,7 @@ export default async function TemplatesPage() {
         </div>
 
         {/* Live WhatsApp Device Simulation */}
-        <div className="p-6 rounded-2xl bg-[#0e131b] border border-white/5 flex flex-col items-center">
+        <div className="p-6 rounded-2xl bg-[var(--surface)] border border-white/5 flex flex-col items-center">
           <div className="flex items-center gap-2 mb-4 text-xs font-semibold text-gray-300">
             <Smartphone className="w-4 h-4 text-whatsapp-light" />
             <span>WhatsApp Mobile Preview</span>

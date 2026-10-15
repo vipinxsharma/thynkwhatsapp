@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { usePathname } from "next/navigation";
 import type { AppSession } from "@/lib/auth/session";
 import { signOutAction } from "@/app/auth/actions";
@@ -8,6 +9,8 @@ import type { WorkspaceMembership } from "@/lib/workspaces/store";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { XeccelLogo } from "@/components/brand/XeccelLogo";
 import {
+  Menu,
+  X,
   Activity,
   BarChart3,
   Bot,
@@ -29,11 +32,11 @@ import {
 
 const navigation = [
   { name: "Overview", href: "/dashboard", icon: LayoutDashboard },
-  { name: "CRM Inbox", href: "/inbox", icon: MessageSquare },
+  { name: "Team inbox", href: "/inbox", icon: MessageSquare },
   { name: "Contacts", href: "/contacts", icon: Users },
   { name: "Automations", href: "/automations", icon: Bot },
-  { name: "Broadcasts", href: "/campaigns", icon: Send },
-  { name: "HSM Templates", href: "/templates", icon: FileText },
+  { name: "Campaigns", href: "/campaigns", icon: Send },
+  { name: "Message templates", href: "/templates", icon: FileText },
   { name: "Analytics", href: "/analytics", icon: BarChart3 },
   { name: "Channels", href: "/settings/waba", icon: Settings },
   { name: "Support", href: "/support", icon: LifeBuoy },
@@ -57,6 +60,7 @@ export function DashboardShell({
   memberships: WorkspaceMembership[];
 }) {
   const pathname = usePathname();
+  const [mobileNavigationOpen, setMobileNavigationOpen] = useState(false);
 
   async function switchWorkspace(workspaceId: string) {
     if (workspaceId === session.tenantId) return;
@@ -73,10 +77,16 @@ export function DashboardShell({
     : navigation;
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[var(--background)] text-[var(--foreground)]">
+    <div className="flex h-dvh min-h-0 flex-col overflow-hidden bg-[var(--background)] text-[var(--foreground)] md:flex-row">
       <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:m-3 focus:rounded-lg focus:bg-[var(--surface)] focus:p-3">Skip to content</a>
-      <aside className="flex w-64 flex-shrink-0 flex-col border-r border-[var(--border)] bg-[var(--surface)]">
-        <div className="flex h-16 items-center gap-3 border-b border-[var(--border)] px-6">
+      <header className="flex min-h-20 shrink-0 items-center justify-between border-b border-[var(--border)] bg-[var(--surface)] px-4 md:hidden">
+        <Link href="/dashboard" aria-label="Xeccel workspace home"><XeccelLogo size="sidebar" /></Link>
+        <button type="button" aria-expanded={mobileNavigationOpen} aria-controls="workspace-navigation" onClick={() => setMobileNavigationOpen((open) => !open)} className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-[var(--border)] px-4 text-sm font-semibold">
+          {mobileNavigationOpen ? <X className="size-4" aria-hidden="true" /> : <Menu className="size-4" aria-hidden="true" />} {mobileNavigationOpen ? "Close menu" : "Menu"}
+        </button>
+      </header>
+      <aside id="workspace-navigation" aria-label="Workspace navigation" className={`${mobileNavigationOpen ? "flex" : "hidden"} max-h-[65dvh] w-full shrink-0 flex-col border-b border-[var(--border)] bg-[var(--surface)] md:flex md:max-h-none md:w-64 md:border-b-0 md:border-r`}>
+        <div className="hidden h-24 shrink-0 items-center gap-3 border-b border-[var(--border)] px-4 md:flex">
           <XeccelLogo size="sidebar" priority />
           <div>
             <div className="flex items-center gap-1.5">
@@ -111,13 +121,14 @@ export function DashboardShell({
             return (
               <div key={item.name}>
                 {index === visibleNavigation.length && (
-                  <p className="px-3 pb-1 pt-5 text-[10px] font-bold uppercase tracking-widest text-[var(--muted)]">Build next</p>
+                  <p className="px-3 pb-1 pt-5 text-[10px] font-bold uppercase tracking-widest text-[var(--muted)]">Explore · Planned</p>
                 )}
                 {index === visibleNavigation.length + roadmapNavigation.length && (
-                  <p className="px-3 pb-1 pt-5 text-[10px] font-bold uppercase tracking-widest text-[var(--muted)]">Phase 2</p>
+                  <p className="px-3 pb-1 pt-5 text-[10px] font-bold uppercase tracking-widest text-[var(--muted)]">Additional channels</p>
                 )}
                 <Link
                   href={item.href}
+                  onClick={() => setMobileNavigationOpen(false)}
                   aria-current={isActive ? "page" : undefined}
                   className={`flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
                     isActive
@@ -139,7 +150,7 @@ export function DashboardShell({
           <ThemeToggle className="w-full" />
           <div className="flex items-center gap-2 text-[11px] text-[var(--muted)]">
             <ShieldCheck className="w-3.5 h-3.5 text-whatsapp-light" />
-            <span>Tenant session enforced</span>
+            <span>Protected workspace</span>
           </div>
           <div className="flex items-center gap-2 text-[11px] text-[var(--muted)]">
             <Activity className="w-3.5 h-3.5 text-[var(--muted)]" />
@@ -151,7 +162,7 @@ export function DashboardShell({
         </div>
       </aside>
 
-      <main id="main-content" className={`theme-content ${pathname.startsWith("/inbox") ? "theme-content--chat" : ""} flex min-w-0 flex-1 flex-col overflow-hidden bg-[var(--background)]`}>{children}</main>
+      <main id="main-content" className="theme-content flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-[var(--background)]">{children}</main>
     </div>
   );
 }
