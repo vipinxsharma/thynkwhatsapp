@@ -5,3 +5,10 @@ export function neonAuthConfigured(): boolean {
       process.env.NEON_AUTH_COOKIE_SECRET.length >= 32
   );
 }
+
+export function workspaceAccessConfigured(): boolean {
+  return neonAuthConfigured() && Boolean(
+    process.env.DATABASE_URL && process.env.AUTH_SESSION_SECRET &&
+    process.env.AUTH_SESSION_SECRET.length >= 32
+  );
+}

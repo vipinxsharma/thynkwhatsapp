@@ -1,8 +1,11 @@
 import { resetPasswordAction } from "@/app/auth/actions";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { XeccelLogo } from "@/components/brand/XeccelLogo";
+import { redirect } from "next/navigation";
+import { workspaceAccessConfigured } from "@/lib/auth/config";
 
 export default async function ResetPasswordPage({ searchParams }: { searchParams: Promise<{ token?: string; error?: string }> }) {
+  if (!workspaceAccessConfigured()) redirect("/login?error=configuration");
   const params = await searchParams;
   return (
     <main className="min-h-screen bg-[var(--background)] text-[var(--foreground)] flex items-center justify-center p-6">

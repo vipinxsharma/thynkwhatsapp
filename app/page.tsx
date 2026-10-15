@@ -18,12 +18,12 @@ import styles from "./HomePage.module.css";
 export const metadata: Metadata = {
   title: "Xeccel | One workspace for business messaging",
   description:
-    "Xeccel is building a self-service WhatsApp business platform for service teams: shared conversations, messaging workflows, and AI-assisted customer support.",
+    "Manage customer conversations, prepare messaging workflows, and get support with Xeccel. Explore the platform and start your workspace setup.",
   alternates: { canonical: "https://xeccel.com/" },
   openGraph: {
     title: "Xeccel | One workspace for business messaging",
     description:
-      "A self-service messaging workspace for service teams. Xeccel is preparing customer access.",
+      "One workspace for your customer conversations. Explore Xeccel and start your setup.",
     url: "https://xeccel.com/",
     siteName: "Xeccel",
     type: "website",
@@ -77,12 +77,12 @@ const questions = [
   {
     question: "Can I create a Xeccel account today?",
     answer:
-      "Not yet. The website is live, but public customer onboarding remains closed while provider connections, payments, and launch checks are completed.",
+      "Use Get started to create your workspace when self-service access is available, or contact our onboarding team for setup assistance. WhatsApp messaging requires a verified channel and an enabled messaging plan.",
   },
   {
     question: "Will Xeccel work with my WhatsApp business number?",
     answer:
-      "That depends on the number's current provider and Meta account status. The planned onboarding flow will check ownership and eligibility before a number is connected.",
+      "Eligibility depends on your number’s current provider and Meta account status. An owner or admin connects a number through Channels, then completes the required Meta checks.",
   },
   {
     question: "Is SMS part of the platform?",
@@ -110,11 +110,13 @@ export default function HomePage() {
           <nav aria-label="Main navigation" className="order-3 flex w-full flex-wrap items-center gap-x-5 gap-y-2 text-xs font-semibold text-[var(--muted)] md:order-2 md:w-auto">
             <a className="hover:text-[var(--heading)]" href="#platform">Platform</a>
             <a className="hover:text-[var(--heading)]" href="#how-it-works">How it works</a>
-            <a className="hover:text-[var(--heading)]" href="#roadmap">Roadmap</a>
+            <a className="hover:text-[var(--heading)]" href="#customer-journeys">Customer journeys</a>
             <a className="hover:text-[var(--heading)]" href="#questions">Questions</a>
             <a className="hover:text-[var(--heading)]" href="#policies">Policies</a>
           </nav>
           <div className="order-2 flex items-center gap-3 md:order-3">
+            <a href="/login" className="text-sm font-semibold text-[var(--heading)]">Sign in</a>
+            <a href="/getting-started" className="rounded-full bg-[var(--accent)] px-4 py-2 text-sm font-bold text-[#0b132a]">Get started</a>
             <ThemeToggle />
           </div>
         </header>
@@ -124,21 +126,21 @@ export default function HomePage() {
             <div>
               <p className={`${styles.intro} mb-7 inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--surface)] px-4 py-2 text-xs font-semibold text-[var(--muted)]`}>
                 <span className="size-2 rounded-full bg-[var(--accent)]" aria-hidden="true" />
-                Xeccel is preparing for launch
+                Business messaging, made simple
               </p>
               <h1 className={`${styles.headline} max-w-4xl text-5xl font-bold leading-[1.08] tracking-tight text-[var(--heading)] sm:text-6xl lg:text-7xl`}>
                 One workspace for <span className={styles.headlineAccent}>every customer conversation.</span>
               </h1>
               <p className={`${styles.subhead} mt-8 max-w-2xl text-base leading-8 text-[var(--muted)] sm:text-lg`}>
-                We&apos;re building Xeccel for service teams that want to manage WhatsApp conversations, messaging workflows, and customer support themselves — without stitching together separate tools.
+                Xeccel brings service teams a workspace to manage WhatsApp conversations, messaging workflows, and customer support themselves — without stitching together separate tools.
               </p>
               <p className="mt-3 text-sm font-medium text-[var(--muted)]">Xeccel is pronounced like “Excel.”</p>
               <div className={`${styles.actions} mt-10 flex flex-wrap items-center gap-4`}>
-                <a href="#platform" className={`${styles.primaryLink} inline-flex min-h-12 items-center gap-3 rounded-full bg-[var(--accent)] px-6 py-3 text-sm font-bold text-[#0b132a] hover:bg-[var(--accent-hover)]`}>
-                  Explore the platform <ArrowDownRight className="size-4" aria-hidden="true" />
+                <a href="/getting-started" className={`${styles.primaryLink} inline-flex min-h-12 items-center gap-3 rounded-full bg-[var(--accent)] px-6 py-3 text-sm font-bold text-[#0b132a] hover:bg-[var(--accent-hover)]`}>
+                  Get started <ArrowDownRight className="size-4" aria-hidden="true" />
                 </a>
-                <a href="#roadmap" className={`${styles.secondaryLink} inline-flex min-h-12 items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--surface)] px-6 py-3 text-sm font-semibold text-[var(--heading)] hover:border-[var(--accent)]`}>
-                  See launch status <ArrowRight className="size-4" aria-hidden="true" />
+                <a href="#customer-journeys" className={`${styles.secondaryLink} inline-flex min-h-12 items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--surface)] px-6 py-3 text-sm font-semibold text-[var(--heading)] hover:border-[var(--accent)]`}>
+                  Find your next step <ArrowRight className="size-4" aria-hidden="true" />
                 </a>
               </div>
             </div>
@@ -166,7 +168,7 @@ export default function HomePage() {
                   </div>
                 ))}
               </div>
-              <p className="px-3 pb-3 text-xs leading-5 text-[var(--muted)]">Concept illustration, not a product screenshot. Customer access is not open yet.</p>
+              <p className="px-3 pb-3 text-xs leading-5 text-[var(--muted)]">Brand illustration. Explore your account setup and customer journey below.</p>
             </div>
           </section>
 
@@ -181,7 +183,7 @@ export default function HomePage() {
             <div className="max-w-3xl">
               <p className="text-xs font-bold uppercase tracking-[.2em] text-[var(--accent)]">Designed for service teams</p>
               <h2 id="platform-title" className="mt-4 text-3xl font-bold tracking-tight text-[var(--heading)] sm:text-4xl">Keep the conversation and the work around it together.</h2>
-              <p className="mt-5 text-sm leading-7 text-[var(--muted)]">A customer question should not get lost between a phone, a campaign tool, and a support inbox. Xeccel is being built to give your team one place to see what happened and decide what comes next.</p>
+              <p className="mt-5 text-sm leading-7 text-[var(--muted)]">A customer question should not get lost between a phone, a campaign tool, and a support inbox. Xeccel gives your team a workspace to see what happened and decide what comes next.</p>
             </div>
             <div className="mt-10 grid gap-4 sm:grid-cols-2">
               {capabilities.map(({ icon: Icon, title, description }) => (
@@ -233,16 +235,16 @@ export default function HomePage() {
                 <figcaption className="px-5 py-4 text-xs leading-6 text-[var(--muted)]"><strong className="text-[var(--heading)]">The energy · Silent, 8 seconds.</strong> A Google Flow concept loop inspired by the Xeccel visual identity.</figcaption>
               </figure>
             </div>
-            <p className="mt-5 text-xs leading-6 text-[var(--muted)]">All films depict concepts. Public customer onboarding is not open yet.</p>
+            <p className="mt-5 text-xs leading-6 text-[var(--muted)]">Brand films illustrate the Xeccel experience. Visit Get started for account setup and channel requirements.</p>
           </section>
 
           <section id="how-it-works" aria-labelledby="how-title" className={`${styles.scrollReveal} scroll-mt-8 border-t border-[var(--border)] py-16 md:py-20`}>
             <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
               <div className="max-w-2xl">
-                <p className="text-xs font-bold uppercase tracking-[.2em] text-[var(--accent)]">Planned self-service journey</p>
+                <p className="text-xs font-bold uppercase tracking-[.2em] text-[var(--accent)]">Your setup journey</p>
                 <h2 id="how-title" className="mt-4 text-3xl font-bold tracking-tight text-[var(--heading)] sm:text-4xl">Set up, connect, and serve — from one place.</h2>
               </div>
-              <p className="max-w-sm text-sm leading-7 text-[var(--muted)]">The flow below is our launch direction, not an active signup promise.</p>
+              <p className="max-w-sm text-sm leading-7 text-[var(--muted)]">Start with your workspace, connect an eligible WhatsApp number, then complete messaging activation with our team.</p>
             </div>
             <ol className="mt-10 grid gap-4 md:grid-cols-3">
               {steps.map((step) => (
@@ -255,25 +257,25 @@ export default function HomePage() {
             </ol>
           </section>
 
-          <section id="roadmap" aria-labelledby="roadmap-title" className={`${styles.scrollReveal} scroll-mt-8 border-t border-[var(--border)] py-16 md:py-20`}>
+          <section id="customer-journeys" aria-labelledby="journeys-title" className={`${styles.scrollReveal} scroll-mt-8 border-t border-[var(--border)] py-16 md:py-20`}>
             <div className="grid gap-10 rounded-[2rem] bg-[#142142] p-8 text-white md:grid-cols-[1fr_1.1fr] md:p-12">
               <div>
-                <p className="text-xs font-bold uppercase tracking-[.2em] text-[#f38b26]">Launch status</p>
-                <h2 id="roadmap-title" className="mt-4 text-3xl font-bold tracking-tight sm:text-4xl">We&apos;re opening carefully, not prematurely.</h2>
-                <p className="mt-5 text-sm leading-7 text-slate-200">The public website is ready. Customer onboarding will open after the provider, account, and payment checks needed for reliable service are complete.</p>
+                <p className="text-xs font-bold uppercase tracking-[.2em] text-[#f38b26]">Customer journeys</p>
+                <h2 id="journeys-title" className="mt-4 text-3xl font-bold tracking-tight sm:text-4xl">A clear next step for every customer.</h2>
+                <p className="mt-5 text-sm leading-7 text-slate-200">New to Xeccel? Start your account setup. Returning customer? Sign in to your workspace. Need help? Contact support or follow the setup guide.</p>
               </div>
               <div className="space-y-3">
                 <div className="flex gap-4 rounded-2xl border border-white/15 bg-white/5 p-5">
                   <MessageSquareText className="mt-1 size-5 shrink-0 text-[#f38b26]" aria-hidden="true" />
-                  <div><h3 className="font-semibold">WhatsApp platform</h3><p className="mt-1 text-xs leading-6 text-slate-200">Core workspace and integration work is in progress. Public onboarding is not open.</p></div>
+                  <div><h3 className="font-semibold">New customers</h3><p className="mt-1 text-xs leading-6 text-slate-200">Set up your account, connect your channel, and prepare your team.</p><a href="/getting-started" className="mt-2 inline-block text-sm font-semibold text-[#f38b26] underline">Start your setup →</a></div>
                 </div>
                 <div className="flex gap-4 rounded-2xl border border-white/15 bg-white/5 p-5">
                   <CircleHelp className="mt-1 size-5 shrink-0 text-[#f38b26]" aria-hidden="true" />
-                  <div><h3 className="font-semibold">AI support</h3><p className="mt-1 text-xs leading-6 text-slate-200">Chat and email resolution are part of the product plan, with safety checks and human handoff.</p></div>
+                  <div><h3 className="font-semibold">Returning customers</h3><p className="mt-1 text-xs leading-6 text-slate-200">Sign in to your workspace or recover your account.</p><a href="/login" className="mt-2 inline-block text-sm font-semibold text-[#f38b26] underline">Sign in →</a> <a href="/auth/forgot-password" className="ml-3 text-xs underline">Reset password</a></div>
                 </div>
                 <div className="flex gap-4 rounded-2xl border border-white/15 bg-white/5 p-5">
                   <Smartphone className="mt-1 size-5 shrink-0 text-[#f38b26]" aria-hidden="true" />
-                  <div><h3 className="font-semibold">SMS gateway · Phase 2</h3><p className="mt-1 text-xs leading-6 text-slate-200">A separate future channel with its own operator selection and DLT process.</p></div>
+                  <div><h3 className="font-semibold">Setup and customer support</h3><p className="mt-1 text-xs leading-6 text-slate-200">Get help with account access, channel setup, or a service question.</p><a href="mailto:partner@thynkwise.co.in" className="mt-2 inline-block text-sm font-semibold text-[#f38b26] underline">Contact the Xeccel team →</a></div>
                 </div>
               </div>
             </div>
@@ -283,7 +285,7 @@ export default function HomePage() {
             <div className="grid gap-10 md:grid-cols-[.8fr_1.2fr]">
               <div>
                 <p className="text-xs font-bold uppercase tracking-[.2em] text-[var(--accent)]">Good to know</p>
-                <h2 id="questions-title" className="mt-4 text-3xl font-bold tracking-tight text-[var(--heading)] sm:text-4xl">Questions before launch?</h2>
+                <h2 id="questions-title" className="mt-4 text-3xl font-bold tracking-tight text-[var(--heading)] sm:text-4xl">Questions before you get started?</h2>
               </div>
               <div className="space-y-3">
                 {questions.map(({ question, answer }) => (
@@ -300,7 +302,7 @@ export default function HomePage() {
             <div className="max-w-3xl">
               <p className="text-xs font-bold uppercase tracking-[.2em] text-[var(--accent)]">Clear before you commit</p>
               <h2 id="policies-title" className="mt-4 text-3xl font-bold tracking-tight text-[var(--heading)] sm:text-4xl">Your data, payments, and service terms — in plain sight.</h2>
-              <p className="mt-5 text-sm leading-7 text-[var(--muted)]">Public checkout is not active yet. Before paid access opens, you can review the policies and contact the business behind Xeccel. The exact plan and any usage charges will be disclosed before a purchase.</p>
+              <p className="mt-5 text-sm leading-7 text-[var(--muted)]">Review our policies before you get started. Account setup and paid messaging activation are separate steps. Any plan price, billing period, taxes, and usage charges must be confirmed before you pay.</p>
             </div>
             <div className="mt-10 grid gap-4 sm:grid-cols-2">
               {policyHighlights.map((item) => (
@@ -315,10 +317,10 @@ export default function HomePage() {
           </section>
 
           <section className={`${styles.scrollReveal} mb-16 rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-8 md:p-12`}>
-            <p className="text-xs font-bold uppercase tracking-[.2em] text-[var(--accent)]">Xeccel is on its way</p>
-            <h2 className="mt-4 max-w-3xl text-3xl font-bold tracking-tight text-[var(--heading)] sm:text-4xl">A better home for your customer messaging is taking shape.</h2>
-            <p className="mt-5 max-w-2xl text-sm leading-7 text-[var(--muted)]">For now, explore the platform direction and check back as we complete the launch gates. We won&apos;t ask you to sign up for a service that is not ready.</p>
-            <a href="#platform" className={`${styles.primaryLink} mt-8 inline-flex min-h-12 items-center gap-2 rounded-full bg-[var(--accent)] px-6 py-3 text-sm font-bold text-[#0b132a] hover:bg-[var(--accent-hover)]`}>Explore what&apos;s coming <ArrowRight className="size-4" aria-hidden="true" /></a>
+            <p className="text-xs font-bold uppercase tracking-[.2em] text-[var(--accent)]">Make your next conversation count</p>
+            <h2 className="mt-4 max-w-3xl text-3xl font-bold tracking-tight text-[var(--heading)] sm:text-4xl">Bring your customer conversations together.</h2>
+            <p className="mt-5 max-w-2xl text-sm leading-7 text-[var(--muted)]">Follow the setup guide, access your workspace, or ask our team to help you connect your business.</p>
+            <a href="/getting-started" className={`${styles.primaryLink} mt-8 inline-flex min-h-12 items-center gap-2 rounded-full bg-[var(--accent)] px-6 py-3 text-sm font-bold text-[#0b132a] hover:bg-[var(--accent-hover)]`}>Get started with Xeccel <ArrowRight className="size-4" aria-hidden="true" /></a>
           </section>
         </div>
 
@@ -326,7 +328,7 @@ export default function HomePage() {
           <div className="space-y-4">
             <p>© {new Date().getFullYear()} Xeccel · Operated by ThynkWISE Advisors Private Limited.</p>
             <XeccelLogo size="footer" />
-            <p>Public website live · Customer access in preparation</p>
+            <p>Customer setup · Workspace access · Support</p>
           </div>
           <nav aria-label="Policies and support" className="grid gap-x-5 gap-y-3 sm:grid-cols-3">
             <a href="/legal/privacy" className="hover:text-[var(--heading)]">Privacy Policy</a>

@@ -13,7 +13,7 @@ export default function LegalCenterPage() {
     <main id="main-content" className="py-16 md:py-20">
       <p className="text-xs font-bold uppercase tracking-[.2em] text-[var(--accent)]">Xeccel · Legal center</p>
       <h1 className="mt-4 max-w-3xl text-4xl font-bold tracking-tight text-[var(--heading)] sm:text-5xl">Clear terms for every conversation and transaction.</h1>
-      <p className="mt-6 max-w-3xl text-base leading-8 text-[var(--muted)]">Review how Xeccel handles data, messaging, service delivery, payments, and support. Public paid checkout is not active yet; the terms of any future purchase will be shown before you pay.</p>
+      <p className="mt-6 max-w-3xl text-base leading-8 text-[var(--muted)]">Review how Xeccel handles data, messaging, service delivery, payments, and support. Account setup and paid messaging activation are separate steps; any purchase terms must be confirmed before you pay.</p>
       <section aria-label="Xeccel policies" className="mt-12 grid gap-4 sm:grid-cols-2">
         {policies.map((policy, index) => (
           <Link key={policy.slug} href={`/legal/${policy.slug}`} className="group rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-7 transition-colors hover:border-[var(--accent)]">
