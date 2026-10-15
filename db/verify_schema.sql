@@ -21,7 +21,9 @@ BEGIN
     'app_workspace_subscriptions',
     'app_workspace_entitlements',
     'app_whatsapp_channels',
-    'app_workspace_channel_defaults'
+    'app_workspace_channel_defaults',
+    'app_automation_rules',
+    'app_automation_runs'
   ] LOOP
     IF to_regclass('public.' || expected_table) IS NULL THEN
       RAISE EXCEPTION 'Missing application table: %', expected_table;

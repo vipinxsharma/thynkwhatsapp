@@ -28,13 +28,13 @@ Presence of a route is not functional parity. Foundation means code exists; prod
 | WATI screen / workflow | Xeccel route | Current verified code state | Remaining work |
 | --- | --- | --- | --- |
 | Team Inbox | /inbox | Tenant-scoped message reads, channel filtering, text/template submission path, older-message paging | Live send/receive test; cross-instance updates; server-side conversation search/paging; assignment/routing |
-| Customer details | Inbox contact panel | Contact/context display; tag/status changes in this panel update client state only | Durable tag/status updates, ownership and assignment history |
+| Customer details | Inbox contact panel | Contact/context display; tags and status saved through a tenant-scoped API with an audit entry | Ownership, assignment history and authenticated live verification |
 | Contacts | /contacts | Create/edit/import API foundations | Persisted consent evidence, opt-out lifecycle, segmentation and bulk operations |
 | Templates list | /templates | Template inventory and selection paths | Provider-verified per-channel inventory and approval lifecycle |
 | Template creation | /templates/new | Template builder and submission path | Verify language, variables, media, categories and Meta review outcomes end to end |
 | Campaign creation and audience | /campaigns | Guidance page; broadcast endpoint refuses dispatch in every environment | Consent-aware audiences, approved templates, scheduling, idempotent jobs, billing and delivery receipts |
 | Scheduled campaigns / campaign reports | No dedicated working screens | Not implemented | Job lifecycle, retries, cancellation and event-backed reports |
-| Automation rules / keywords | /automations | Informational customer page; production rule API disabled | Durable rules, channel scopes, event evaluation, logs and controls |
+| Automation rules / keywords | /automations | Durable keyword routing, channel scope, simulation, tag/status actions and execution history | Automated replies, visual flows, sequences and verified live account testing |
 | Chatbots / sequences / drip / routing / WhatsApp Flows | No dedicated working screens | Not implemented | Separate builders, validation, versioning, testing, publish controls and runtime |
 | AI Agents / Astra equivalent | /ai-agents | Capability map; authenticated support-case AI is separate | Agent instructions, knowledge management, evaluation, channel assignment and human handoff |
 | Channel inventory / add number / rename / default | /settings/waba | Multi-number schema, ownership checks, inventory, rename/default APIs | Provider setup and live verification; resumable onboarding; channel-specific team permissions |
