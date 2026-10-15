@@ -5,6 +5,7 @@ import { StrapiClient, isDurableInboxEnabled } from "@/lib/strapi/client";
 import { emitMessageStatusUpdate, emitNewInboundMessage } from "@/lib/events/emitter";
 import { getMetaConnectionForWaba } from "@/lib/meta/connections";
 import { getConversationForSender } from "@/lib/inbox/store";
+import { routeInboundMessage } from "@/lib/automations/store";
 
 /**
  * 1. GET: Webhook Challenge Verification
@@ -169,6 +170,9 @@ async function processWebhookEntries(entries: MetaWebhookPayload["entry"]) {
                 status: "received",
                 timestamp: new Date(parseInt(msg.timestamp, 10) * 1000).toISOString(),
               });
+              if (isDurableInboxEnabled() && msg.type === "text") {
+                await routeInboundMessage(tenantId, String(matchedConv.id), msg.id, connection.phoneNumberId, bodyText);
+              }
               emitNewInboundMessage(tenantId, matchedConv.id, recorded);
               console.log(
                 `[Webhook Inbound Message] Ingested message ${msg.id} from ${msg.from} to conversation ${matchedConv.id}`

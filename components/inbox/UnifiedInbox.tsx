@@ -306,26 +306,22 @@ export function UnifiedInbox({
     }
   };
 
-  // 4. Update tags
-  const handleUpdateTags = (newTags: string[]) => {
-    setConversations((prev) =>
-      prev.map((c) =>
-        String(c.id) === String(activeId)
-          ? {
-              ...c,
-              contact: { ...c.contact, tags: newTags },
-            }
-          : c
-      )
-    );
+  const [detailsBusy, setDetailsBusy] = useState(false);
+  const [detailsError, setDetailsError] = useState("");
+  const saveDetails = async (updates: {tags?: string[]; status?: Conversation["status"]}) => {
+    if (!activeId || detailsBusy) return;
+    const conversationId = String(activeId);
+    setDetailsBusy(true); setDetailsError("");
+    try {
+      const response = await fetch("/api/inbox/conversation", {method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({conversationId,...updates})});
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Unable to save conversation");
+      setConversations(prev=>prev.map(c=>String(c.id)===conversationId ? {...c,status:result.data.status,contact:{...c.contact,tags:result.data.tags}}:c));
+    } catch(error) { setDetailsError(error instanceof Error ? error.message : "Unable to save conversation"); }
+    finally { setDetailsBusy(false); }
   };
-
-  // 5. Update status
-  const handleUpdateStatus = (status: Conversation["status"]) => {
-    setConversations((prev) =>
-      prev.map((c) => (String(c.id) === String(activeId) ? { ...c, status } : c))
-    );
-  };
+  const handleUpdateTags = (tags: string[]) => { void saveDetails({tags}); };
+  const handleUpdateStatus = (status: Conversation["status"]) => { void saveDetails({status}); };
 
   return (
     <div className="relative flex min-h-0 flex-1 overflow-hidden h-full">
@@ -412,6 +408,8 @@ export function UnifiedInbox({
           <button type="button" onClick={() => setContactPanelOpen(false)} className="flex min-h-11 items-center justify-end gap-2 border-b border-[var(--border)] px-4 text-xs xl:hidden"><X className="size-4" aria-hidden="true" />Close details</button>
         <ContactDetailsSidebar
           conversation={activeConversation}
+          saving={detailsBusy}
+          error={detailsError}
           onUpdateTags={handleUpdateTags}
           onUpdateStatus={handleUpdateStatus}
         />

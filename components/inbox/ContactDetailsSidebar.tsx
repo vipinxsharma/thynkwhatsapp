@@ -18,12 +18,16 @@ import { formatPhoneNumber } from "@/lib/utils";
 
 interface ContactDetailsSidebarProps {
   conversation: Conversation;
+  saving?: boolean;
+  error?: string;
   onUpdateTags: (tags: string[]) => void;
   onUpdateStatus: (status: Conversation["status"]) => void;
 }
 
 export function ContactDetailsSidebar({
   conversation,
+  saving = false,
+  error,
   onUpdateTags,
   onUpdateStatus,
 }: ContactDetailsSidebarProps) {
@@ -54,6 +58,8 @@ export function ContactDetailsSidebar({
 
   return (
     <div className="min-h-0 w-72 max-w-full flex-1 flex-shrink-0 flex flex-col border-l border-white/5 bg-[var(--surface)] p-4 overflow-y-auto space-y-5">
+      {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
+      {saving && <p role="status" className="text-sm text-[var(--muted)]">Saving…</p>}
       {/* Profile Header */}
       <div className="text-center pb-4 border-b border-white/5">
         <div className="w-16 h-16 rounded-full bg-[var(--accent)] mx-auto flex items-center justify-center text-white text-2xl font-bold shadow-glow mb-3">
@@ -83,6 +89,7 @@ export function ContactDetailsSidebar({
           {(["open", "pending", "closed"] as const).map((st) => (
             <button
               key={st}
+              disabled={saving}
               onClick={() => onUpdateStatus(st)}
               className={`py-1.5 px-2 rounded-lg text-xs font-semibold capitalize transition-all ${
                 conversation.status === st
@@ -114,6 +121,8 @@ export function ContactDetailsSidebar({
             >
               <span>{t}</span>
               <button
+                disabled={saving}
+                aria-label={`Remove tag ${t}`}
                 onClick={() => handleRemoveTag(t)}
                 className="hover:text-red-400 transition-all"
               >
@@ -126,6 +135,9 @@ export function ContactDetailsSidebar({
         <form onSubmit={handleAddTag} className="flex gap-1.5 mt-2">
           <input
             type="text"
+            aria-label="New contact tag"
+            maxLength={60}
+            disabled={saving}
             placeholder="Add tag (e.g. VIP, Deal)..."
             value={newTag}
             onChange={(e) => setNewTag(e.target.value)}
@@ -133,6 +145,8 @@ export function ContactDetailsSidebar({
           />
           <button
             type="submit"
+            disabled={saving}
+            aria-label="Add tag"
             className="p-1.5 rounded-lg bg-white/10 text-gray-300 hover:text-white hover:bg-white/15 transition-all"
           >
             <Plus className="w-4 h-4" />

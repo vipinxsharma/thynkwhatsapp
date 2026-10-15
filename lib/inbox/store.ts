@@ -317,3 +317,21 @@ export async function getWABA(workspaceId: string): Promise<WABAAccount> {
     })),
   };
 }
+
+export async function updateConversationDetails(workspaceId: string, userId: string, conversationId: string,
+  input: { status?: Conversation["status"]; tags?: string[] }) {
+  const rows = await database().query(`WITH selected AS (
+    SELECT id,contact_id FROM app_inbox_conversations WHERE workspace_id=$1::uuid AND id=$2::uuid
+  ), updated_contact AS (
+    UPDATE app_inbox_contacts SET tags=COALESCE($4::jsonb,tags),updated_at=now()
+    WHERE workspace_id=$1::uuid AND id IN (SELECT contact_id FROM selected) RETURNING tags
+  ), updated_conversation AS (
+    UPDATE app_inbox_conversations SET status=COALESCE($3,status),updated_at=now()
+    WHERE workspace_id=$1::uuid AND id IN (SELECT id FROM selected) RETURNING id,status
+  ), audit AS (
+    INSERT INTO app_audit_logs(id,workspace_id,auth_user_id,action,resource_type,resource_id,metadata)
+    SELECT $5::uuid,$1::uuid,$6,'conversation.updated','conversation',id::text,$7::jsonb FROM updated_conversation
+  ) SELECT c.id,c.status,t.tags FROM updated_conversation c CROSS JOIN updated_contact t`,
+    [workspaceId,conversationId,input.status || null,input.tags ? JSON.stringify(input.tags):null,randomUUID(),userId,JSON.stringify(input)]);
+  return rows[0] as { id: string; status: Conversation["status"]; tags: string[] } | undefined;
+}
