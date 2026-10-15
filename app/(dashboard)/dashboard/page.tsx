@@ -46,10 +46,22 @@ export default async function DashboardOverviewPage() {
             className="flex items-center gap-2 px-4 py-2 rounded-lg bg-whatsapp-light hover:brightness-110 active:scale-95 text-black font-semibold text-xs transition-all shadow-glow"
           >
             <MessageSquare className="w-4 h-4" />
-            <span>Launch CRM Inbox</span>
+            <span>Open CRM Inbox</span>
           </Link>
         </div>
       </div>
+
+      <section aria-labelledby="setup-title" className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6">
+        <h2 id="setup-title" className="text-lg font-semibold text-[var(--heading)]">Get your workspace ready</h2>
+        <p className="mt-2 text-sm leading-6 text-[var(--muted)]">Connect your number, prepare contacts and templates, then confirm messaging activation with the Xeccel team.</p>
+        <div className="mt-4 flex flex-wrap gap-4 text-sm font-semibold text-[var(--accent)]">
+          <Link href="/settings/waba" className="underline">Connect WhatsApp</Link>
+          <Link href="/contacts" className="underline">Add contacts</Link>
+          <Link href="/templates" className="underline">Prepare templates</Link>
+          <Link href="/getting-started" className="underline">Full setup guide</Link>
+          <a href="mailto:partner@thynkwise.co.in?subject=Xeccel%20messaging%20activation" className="underline">Confirm activation</a>
+        </div>
+      </section>
 
       {/* Metrics Row */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -112,6 +124,7 @@ export default async function DashboardOverviewPage() {
         </div>
 
         <div className="divide-y divide-white/5">
+          {conversations.length === 0 && <p className="py-6 text-sm text-[var(--muted)]">No conversations yet. Connect your WhatsApp channel and complete messaging activation to receive customer messages here.</p>}
           {conversations.slice(0, 5).map((conv) => {
             const window = calculateWindowRemaining(conv.windowExpiresAt);
 

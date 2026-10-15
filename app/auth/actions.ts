@@ -3,10 +3,10 @@
 import { redirect } from "next/navigation";
 import { issueApplicationSession, clearApplicationSession } from "@/lib/auth/bootstrap";
 import { neonAuth } from "@/lib/auth/neon";
-import { neonAuthConfigured } from "@/lib/auth/config";
+import { neonAuthConfigured, workspaceAccessConfigured } from "@/lib/auth/config";
 
 function configuredOrRedirect(): void {
-  if (!neonAuthConfigured() || !process.env.DATABASE_URL) {
+  if (!workspaceAccessConfigured()) {
     redirect("/login?error=configuration");
   }
 }

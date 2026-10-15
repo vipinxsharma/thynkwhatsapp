@@ -2,8 +2,13 @@ import Link from "next/link";
 import { requestPasswordResetAction } from "@/app/auth/actions";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { XeccelLogo } from "@/components/brand/XeccelLogo";
+import { redirect } from "next/navigation";
+import { workspaceAccessConfigured } from "@/lib/auth/config";
+
+export const dynamic = "force-dynamic";
 
 export default function ForgotPasswordPage() {
+  if (!workspaceAccessConfigured()) redirect("/login?error=configuration");
   return (
     <main className="min-h-screen bg-[var(--background)] text-[var(--foreground)] flex items-center justify-center p-6">
       <form action={requestPasswordResetAction} className="w-full max-w-md space-y-4 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-8 shadow-sm">
