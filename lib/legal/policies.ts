@@ -9,6 +9,7 @@ export type Policy = {
   slug: string;
   title: string;
   summary: string;
+  updatedAt?: string;
   sections: { heading: string; paragraphs: string[]; bullets?: string[] }[];
 };
 
@@ -24,6 +25,18 @@ export const policies: Policy[] = [
       { heading: "Providers and transfers", paragraphs: ["Service providers may process data for hosting, authentication, communications, AI features, Meta WhatsApp connectivity, and payment processing when enabled. We do not sell customer message content. Providers may process data outside your country; the applicable customer agreement and provider arrangements govern those transfers. A current sub-processor list can be requested from us."] },
       { heading: "Retention and security", paragraphs: ["We retain records for the service relationship and only as long as needed for support, security, billing, dispute resolution, or legal obligations. Retention may differ for messages, logs, and invoices. We use access controls and technical safeguards, but no service can promise absolute security. Customers should manage their own users, permissions, consent, and retention settings."] },
       { heading: "Your choices and requests", paragraphs: ["You may ask us about access, correction, deletion, export, or withdrawal of consent where applicable. A business customer's end user should first contact that business for requests about messages it controls. Email partner@thynkwise.co.in with your request; we may verify your identity and may retain records required by law or a legitimate dispute. We will respond under applicable law and our customer agreement."] },
+    ],
+  },
+  {
+    slug: "data-deletion",
+    title: "Data Deletion Instructions",
+    summary: "How to request deletion of your Xeccel account, workspace data, or connected-channel information.",
+    updatedAt: "20 October 2026",
+    sections: [
+      { heading: "Request deletion by email", paragraphs: ["Email partner@thynkwise.co.in with the subject \"Xeccel data deletion request\". Include the email used for your Xeccel account, the workspace name or reference if known, and the account or data you want deleted. A workspace owner requesting deletion of connected WhatsApp information can include the business number or WABA reference. Do not send passwords, access tokens, OTPs, or full payment-card details."] },
+      { heading: "Requests about a business's conversations", paragraphs: ["If you contacted a business that uses Xeccel, first ask that business to delete the messages or contact data it controls. If you need help identifying the relevant workspace, email us with the business name and the minimum information needed to locate your request."] },
+      { heading: "What happens next", paragraphs: ["Deletion requests are handled by our team; this page is not an automatic deletion tool. We may need to verify your identity or authority over the workspace and clarify which records your request covers. As described in our Privacy Policy, records required for legal obligations, billing, security, or a legitimate dispute may need to be retained. We will respond under applicable law and the customer agreement."] },
+      { heading: "Connected Meta accounts", paragraphs: ["Removing Xeccel's access in Meta's settings and requesting deletion of data already held by Xeccel are separate steps. Use the email process above to request deletion of Xeccel-held information. This request does not by itself delete your WhatsApp Business Account or records held independently by Meta or the business you contacted."] },
     ],
   },
   {

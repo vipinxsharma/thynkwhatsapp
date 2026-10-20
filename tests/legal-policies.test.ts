@@ -6,7 +6,7 @@ import { proxy } from "../proxy";
 describe("Xeccel public policies", () => {
   it("provides a distinct, complete page for each payment and trust topic", () => {
     expect(policies.map((policy) => policy.slug)).toEqual([
-      "privacy", "terms", "refunds-cancellations", "service-delivery", "cookies", "messaging-use",
+      "privacy", "data-deletion", "terms", "refunds-cancellations", "service-delivery", "cookies", "messaging-use",
     ]);
     for (const policy of policies) {
       expect(getPolicy(policy.slug)).toBe(policy);

@@ -33,7 +33,7 @@ export default async function PolicyPage({ params }: Props) {
       <p className="mt-10 text-xs font-bold uppercase tracking-[.2em] text-[var(--accent-text)]">Xeccel · Legal</p>
       <h1 className="mt-4 max-w-3xl text-4xl font-bold tracking-tight text-[var(--heading)] sm:text-5xl">{policy.title}</h1>
       <p className="mt-5 max-w-3xl text-base leading-8 text-[var(--muted)]">{policy.summary}</p>
-      <p className="mt-4 text-xs text-[var(--muted)]">Last updated 15 October 2026 · Applies to xeccel.com and Xeccel services</p>
+      <p className="mt-4 text-xs text-[var(--muted)]">Last updated {policy.updatedAt || "15 October 2026"} · Applies to xeccel.com and Xeccel services</p>
       <div className="mt-10 grid gap-10 lg:grid-cols-[minmax(0,1fr)_15rem]">
         <article className="space-y-6">
           {policy.sections.map((section) => (
