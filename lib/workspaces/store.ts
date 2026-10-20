@@ -15,6 +15,14 @@ export interface AuthenticatedUser {
   name: string;
 }
 
+export interface PlatformWorkspaceSummary {
+  workspaceId: string;
+  workspaceName: string;
+  workspaceSlug: string;
+  createdAt: string;
+  activeMembers: number;
+}
+
 export function createWorkspaceSlug(name: string, userId: string): string {
   const base = name
     .toLowerCase()
@@ -106,4 +114,18 @@ export async function validateWorkspaceMembership(
     [authUserId, workspaceId]
   );
   return (rows[0] as WorkspaceMembership | undefined) || null;
+}
+
+export async function listPlatformWorkspaceSummaries(): Promise<PlatformWorkspaceSummary[]> {
+  const databaseUrl = process.env.DATABASE_URL;
+  if (!databaseUrl) throw new Error("DATABASE_URL is not configured");
+  return (await neon(databaseUrl).query(
+    `SELECT w.id AS "workspaceId", w.name AS "workspaceName", w.slug AS "workspaceSlug",
+            w.created_at AS "createdAt",
+            COUNT(m.id) FILTER (WHERE m.status = 'active')::int AS "activeMembers"
+     FROM app_workspaces w
+     LEFT JOIN app_workspace_members m ON m.workspace_id = w.id
+     GROUP BY w.id
+     ORDER BY w.created_at DESC`
+  )) as PlatformWorkspaceSummary[];
 }

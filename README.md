@@ -108,6 +108,14 @@ unverified SMS/DLT readiness draft per workspace. The SMS page does not submit
 registrations or send messages. Do not point this
 application at an unrelated tenant DB.
 
+The optional platform workspace directory is restricted to verified Neon Auth identities
+whose email is explicitly listed in the server-only `PLATFORM_SUPERADMIN_EMAILS` variable
+(comma-separated). It is read-only and shows workspace names, slugs, creation dates, and
+active-member counts; it does not grant workspace membership or access to customer messages.
+Set the allowlist only in the intended deployment environment after reviewing and merging
+the PR. Keep workspace roles (`owner`, `admin`, `agent`, `viewer`) separate from this
+platform-level gate.
+
 Migration 0009 adds subscription state and feature grants. Production outbound
 sends require a current workspace subscription and explicit `whatsapp_send`
 grant, but no payment activation writer exists yet. See the
