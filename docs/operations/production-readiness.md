@@ -5,6 +5,9 @@ provider configuration must be verified separately. Changes to the application
 reach production only through reviewed, green pull requests; do not run a direct
 production deployment.
 
+For permission-specific reviewer access, public policy URLs and the required
+live recording, follow [Meta App Review preparation](meta-app-review.md).
+
 ## Current subscription foundation
 
 Migration `0009_subscription_entitlements.sql` creates workspace-scoped
