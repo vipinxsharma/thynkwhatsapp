@@ -28,7 +28,11 @@ import {
   Smartphone,
   Sparkles,
   UserPlus,
+  Shield,
+  type LucideIcon,
 } from "lucide-react";
+
+type NavigationItem = { name: string; href: string; icon: LucideIcon };
 
 const navigation = [
   { name: "Overview", href: "/dashboard", icon: LayoutDashboard },
@@ -54,10 +58,12 @@ export function DashboardShell({
   children,
   session,
   memberships,
+  platformSuperadmin,
 }: {
   children: React.ReactNode;
   session: AppSession;
   memberships: WorkspaceMembership[];
+  platformSuperadmin: boolean;
 }) {
   const pathname = usePathname();
   const [mobileNavigationOpen, setMobileNavigationOpen] = useState(false);
@@ -72,9 +78,10 @@ export function DashboardShell({
     if (response.ok) window.location.assign("/dashboard");
   }
 
-  const visibleNavigation = session.role === "owner" || session.role === "admin"
+  const visibleNavigation: NavigationItem[] = session.role === "owner" || session.role === "admin"
     ? [...navigation, { name: "Team", href: "/settings/team", icon: UserPlus }]
     : navigation;
+  if (platformSuperadmin) visibleNavigation.push({ name: "Platform admin", href: "/platform/admin", icon: Shield });
 
   return (
     <div className="flex h-dvh min-h-0 flex-col overflow-hidden bg-[var(--background)] text-[var(--foreground)] md:flex-row">
