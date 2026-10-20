@@ -22,6 +22,10 @@ Xeccel is the customer-facing brand for this multi-tenant WhatsApp Business plat
 The self-service and AI support constraints are documented in
 [`docs/architecture/self-service-ai-support.md`](docs/architecture/self-service-ai-support.md).
 
+The Android/iOS project under [`apps/mobile`](apps/mobile) is a native preview
+foundation, not a live inbox or store-submission build. Its separate release
+gates are tracked in [`docs/operations/mobile-app-release.md`](docs/operations/mobile-app-release.md).
+
 Live webhook ingestion requires `INBOX_STORAGE=postgres` and a tenant-scoped
 `DATABASE_URL`. Development demo data is never used to acknowledge a production
 Meta webhook. Live text and approved-template sends use an idempotency-keyed
