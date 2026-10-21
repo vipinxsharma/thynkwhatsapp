@@ -61,7 +61,13 @@ export async function resetPasswordAction(formData: FormData) {
 }
 
 export async function signOutAction() {
-  if (neonAuthConfigured()) await neonAuth.signOut();
-  await clearApplicationSession();
-  redirect("/login");
+  try {
+    if (neonAuthConfigured()) await neonAuth.signOut();
+  } catch (error) {
+    // Provider sign-out can fail independently; still revoke Xeccel's app session.
+    console.error("Neon Auth sign-out failed; clearing the Xeccel session", error);
+  } finally {
+    await clearApplicationSession();
+  }
+  redirect("/login?notice=signed-out");
 }
