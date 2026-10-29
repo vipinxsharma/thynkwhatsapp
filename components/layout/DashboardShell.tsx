@@ -153,7 +153,7 @@ export function DashboardShell({
           })}
         </nav>
 
-        <div className="p-4 border-t border-[var(--border)] space-y-3">
+        <div className="relative z-10 shrink-0 p-4 border-t border-[var(--border)] space-y-3">
           <ThemeToggle className="w-full" />
           <div className="flex items-center gap-2 text-[11px] text-[var(--muted)]">
             <ShieldCheck className="w-3.5 h-3.5 text-whatsapp-light" />
@@ -164,7 +164,13 @@ export function DashboardShell({
             <span className="capitalize">Role: {session.role}</span>
           </div>
           <form action={signOutAction}>
-            <button className="min-h-11 text-[11px] text-[var(--muted)] hover:text-[var(--foreground)]">Sign out</button>
+            <button
+              type="submit"
+              aria-label="Sign out of Xeccel"
+              className="flex min-h-11 w-full cursor-pointer items-center rounded-lg px-2 text-left text-xs font-medium text-[var(--muted)] transition-colors hover:bg-surface-200 hover:text-[var(--foreground)]"
+            >
+              Sign out
+            </button>
           </form>
         </div>
       </aside>
