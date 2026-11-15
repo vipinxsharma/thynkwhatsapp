@@ -4,10 +4,11 @@ export type SignupSessionEvent =
   | { kind: "error" }
   | { kind: "incomplete" };
 
-const META_ORIGINS = new Set(["https://www.facebook.com", "https://web.facebook.com"]);
+// Meta can post from www, web, business or other facebook.com subdomains.
+const META_ORIGIN = /^https:\/\/([a-z0-9-]+\.)*facebook\.com$/;
 
 export function parseSignupSessionEvent(origin: string, payload: unknown): SignupSessionEvent | null {
-  if (!META_ORIGINS.has(origin)) return null;
+  if (!META_ORIGIN.test(origin)) return null;
 
   let message: unknown = payload;
   if (typeof payload === "string") {
@@ -23,7 +24,8 @@ export function parseSignupSessionEvent(origin: string, payload: unknown): Signu
   if (event.type !== "WA_EMBEDDED_SIGNUP") return null;
   if (event.event === "CANCEL") return { kind: "cancel" };
   if (event.event === "ERROR") return { kind: "error" };
-  if (event.event !== "FINISH") return null;
+  // FINISH, FINISH_ONLY_WABA, FINISH_WHATSAPP_BUSINESS_APP_ONBOARDING, etc.
+  if (typeof event.event !== "string" || !event.event.startsWith("FINISH")) return null;
 
   const data = event.data;
   if (!data || typeof data !== "object") return { kind: "incomplete" };

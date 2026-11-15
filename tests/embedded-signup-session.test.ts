@@ -19,8 +19,24 @@ describe("Meta Embedded Signup session message", () => {
     });
   });
 
+  it("accepts other facebook.com subdomains and FINISH variants", () => {
+    expect(parseSignupSessionEvent("https://business.facebook.com", finish)).toMatchObject({ kind: "finish" });
+    expect(parseSignupSessionEvent("https://www.facebook.com", { ...finish, event: "FINISH_ONLY_WABA" })).toMatchObject({
+      kind: "finish",
+      wabaId: "123456789",
+    });
+    expect(parseSignupSessionEvent("https://www.facebook.com", {
+      ...finish,
+      event: "FINISH_ONLY_WABA",
+      data: { waba_id: "123456789" },
+    })).toEqual({ kind: "incomplete" });
+  });
+
   it("ignores messages from other origins and unrelated events", () => {
     expect(parseSignupSessionEvent("https://evil.example", finish)).toBeNull();
+    expect(parseSignupSessionEvent("https://facebook.com.evil.example", finish)).toBeNull();
+    expect(parseSignupSessionEvent("http://www.facebook.com", finish)).toBeNull();
+    expect(parseSignupSessionEvent("https://notfacebook.com", finish)).toBeNull();
     expect(parseSignupSessionEvent("https://www.facebook.com", { ...finish, type: "OTHER" })).toBeNull();
     expect(parseSignupSessionEvent("https://www.facebook.com", "not json")).toBeNull();
   });
