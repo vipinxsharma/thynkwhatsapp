@@ -22,6 +22,10 @@ Xeccel is the customer-facing brand for this multi-tenant WhatsApp Business plat
 The self-service and AI support constraints are documented in
 [`docs/architecture/self-service-ai-support.md`](docs/architecture/self-service-ai-support.md).
 
+The Android/iOS project under [`apps/mobile`](apps/mobile) is a native preview
+foundation, not a live inbox or store-submission build. Its separate release
+gates are tracked in [`docs/operations/mobile-app-release.md`](docs/operations/mobile-app-release.md).
+
 Live webhook ingestion requires `INBOX_STORAGE=postgres` and a tenant-scoped
 `DATABASE_URL`. Development demo data is never used to acknowledge a production
 Meta webhook. Live text and approved-template sends use an idempotency-keyed
@@ -107,6 +111,34 @@ migration 0007 provides the outbound request ledger; migration 0008 stores one
 unverified SMS/DLT readiness draft per workspace. The SMS page does not submit
 registrations or send messages. Do not point this
 application at an unrelated tenant DB.
+
+The optional platform workspace directory is restricted to verified Neon Auth identities
+whose email is explicitly listed in the server-only `PLATFORM_SUPERADMIN_EMAILS` variable
+(comma-separated). It is read-only and shows workspace names, slugs, creation dates, and
+active-member counts; it does not grant workspace membership or access to customer messages.
+Set the allowlist only in the intended deployment environment after reviewing and merging
+the PR. Keep workspace roles (`owner`, `admin`, `agent`, `viewer`) separate from this
+platform-level gate.
+
+Migration 0009 adds subscription state and feature grants. Production outbound
+sends require a current workspace subscription and explicit `whatsapp_send`
+grant, but no payment activation writer exists yet. See the
+[production-readiness checklist](docs/operations/production-readiness.md) before
+considering a release.
+
+Migration 0010 adds a separate record for each WhatsApp number, backfills existing
+connections, and stores one default sender per workspace. Apply and verify this
+migration before deploying channel-management code. Settings → WhatsApp channels
+can name and add a number through Meta Embedded Signup, rename it locally, select a default,
+and refresh its Meta phone inventory and quality fields. A Meta inventory match is
+not proof of registration, display-name approval, webhook delivery, or successful
+messaging. Existing conversations retain their original sender number when the
+default changes. Provider-side number release, ownership migration, and live
+cutover are not automated.
+
+The inbox loads only the selected conversation's latest 50 messages and pages
+older history with a tenant-scoped cursor. See the [data-scale plan](docs/architecture/saas-data-scale.md)
+for the remaining conversation-paging, worker, retention, and recovery gates.
 
 Meta Embedded Signup exchanges the code only after durable storage is configured, verifies that
 the phone number belongs to the selected WABA, subscribes the WABA to webhooks, encrypts the

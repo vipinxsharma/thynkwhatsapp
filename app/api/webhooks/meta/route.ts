@@ -4,6 +4,8 @@ import { MetaWebhookPayload, WebhookChangeValue } from "@/types/meta-webhook";
 import { StrapiClient, isDurableInboxEnabled } from "@/lib/strapi/client";
 import { emitMessageStatusUpdate, emitNewInboundMessage } from "@/lib/events/emitter";
 import { getMetaConnectionForWaba } from "@/lib/meta/connections";
+import { getConversationForSender } from "@/lib/inbox/store";
+import { routeInboundMessage } from "@/lib/automations/store";
 
 /**
  * 1. GET: Webhook Challenge Verification
@@ -88,14 +90,6 @@ async function processWebhookEntries(entries: MetaWebhookPayload["entry"]) {
 
   for (const entry of entries) {
     const wabaId = entry.id;
-    const connection = await getMetaConnectionForWaba(wabaId);
-    if (!connection) {
-      console.warn(`[Meta Webhook] No active tenant mapping for WABA ${wabaId}`);
-      continue;
-    }
-    const tenantId = connection.workspaceId;
-    const strapiClient = new StrapiClient(tenantId);
-
     for (const change of entry.changes || []) {
       const value: WebhookChangeValue = change.value;
       if (!value) continue;
@@ -104,10 +98,13 @@ async function processWebhookEntries(entries: MetaWebhookPayload["entry"]) {
       if (change.field === "messages") {
         const metadata = value.metadata;
         const phoneNumberId = metadata?.phone_number_id;
-        if (phoneNumberId !== connection.phoneNumberId) {
-          console.warn(`[Meta Webhook] Phone number does not match WABA ${wabaId}`);
+        const connection = phoneNumberId ? await getMetaConnectionForWaba(wabaId, phoneNumberId) : null;
+        if (!connection) {
+          console.warn(`[Meta Webhook] No active channel mapping for WABA ${wabaId}`);
           continue;
         }
+        const tenantId = connection.workspaceId;
+        const strapiClient = new StrapiClient(tenantId);
 
         // 1. Process Message Status Updates (sent, delivered, read, failed)
         if (value.statuses && Array.isArray(value.statuses)) {
@@ -140,8 +137,11 @@ async function processWebhookEntries(entries: MetaWebhookPayload["entry"]) {
             }
 
             // Never attach a new sender's message to an unrelated conversation.
-            const conversations = await strapiClient.getConversations();
-            let matchedConv = conversations.find((c) => c.contact.waId === msg.from);
+            const matched = isDurableInboxEnabled()
+              ? await getConversationForSender(tenantId, msg.from, connection.phoneNumberId)
+              : (await strapiClient.getConversations()).find((c) => c.contact.waId === msg.from &&
+                c.phoneNumber.phoneNumberId === connection.phoneNumberId);
+            let matchedConv = matched || undefined;
             if (!matchedConv) {
               const created = await strapiClient.createContact({
                 name: value.contacts?.find((contact) => contact.wa_id === msg.from)?.profile.name || msg.from,
@@ -170,6 +170,9 @@ async function processWebhookEntries(entries: MetaWebhookPayload["entry"]) {
                 status: "received",
                 timestamp: new Date(parseInt(msg.timestamp, 10) * 1000).toISOString(),
               });
+              if (isDurableInboxEnabled() && msg.type === "text") {
+                await routeInboundMessage(tenantId, String(matchedConv.id), msg.id, connection.phoneNumberId, bodyText);
+              }
               emitNewInboundMessage(tenantId, matchedConv.id, recorded);
               console.log(
                 `[Webhook Inbound Message] Ingested message ${msg.id} from ${msg.from} to conversation ${matchedConv.id}`

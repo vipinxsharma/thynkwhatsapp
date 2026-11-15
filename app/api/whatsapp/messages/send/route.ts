@@ -3,8 +3,9 @@ import { MetaGraphClient } from "@/lib/meta/client";
 import { StrapiClient, isDurableInboxEnabled } from "@/lib/strapi/client";
 import { MetaSendMessagePayload } from "@/types/meta-api";
 import { requireApiSession } from "@/lib/auth/session";
-import { getMetaConnectionForWorkspace } from "@/lib/meta/connections";
+import { getMetaConnectionForWorkspace, getMetaConnectionForNumber } from "@/lib/meta/connections";
 import { getConversation } from "@/lib/inbox/store";
+import { evaluateEntitlement, getEntitlementSnapshot } from "@/lib/billing/entitlements";
 import {
   acceptOutboundRequest,
   beginOutboundRequest,
@@ -20,6 +21,23 @@ export async function POST(request: NextRequest) {
     const durable = isDurableInboxEnabled();
     if (process.env.NODE_ENV === "production" && !durable) {
       return NextResponse.json({ error: "Durable outbound delivery is not configured" }, { status: 503 });
+    }
+    if (process.env.NODE_ENV === "production") {
+      let access: ReturnType<typeof evaluateEntitlement>;
+      try {
+        access = evaluateEntitlement(
+          await getEntitlementSnapshot(auth.session.tenantId),
+          "whatsapp_send"
+        );
+      } catch {
+        return NextResponse.json({ error: "Subscription status is temporarily unavailable" }, { status: 503 });
+      }
+      if (!access.allowed) {
+        return NextResponse.json(
+          { error: "WhatsApp sending is not active for this workspace", code: access.reason },
+          { status: access.reason === "no_subscription" ? 503 : 403 }
+        );
+      }
     }
     const strapiClient = new StrapiClient(auth.session.tenantId);
 
@@ -173,7 +191,13 @@ export async function POST(request: NextRequest) {
     }
 
     // 3. Reserve the operation before the irreversible provider call.
-    const connection = await getMetaConnectionForWorkspace(auth.session.tenantId);
+    if (durable && !conversation.phoneNumber.phoneNumberId) {
+      return NextResponse.json({ error: "Conversation has no verified sender number. Reassign it before sending." }, { status: 409 });
+    }
+    const connection = durable && conversation.phoneNumber.phoneNumberId
+      ? await getMetaConnectionForNumber(auth.session.tenantId, conversation.phoneNumber.phoneNumberId)
+      : await getMetaConnectionForWorkspace(auth.session.tenantId);
+    if (!connection) return NextResponse.json({ error: "This conversation's WhatsApp channel is not connected" }, { status: 409 });
     const metaClient = new MetaGraphClient(connection.accessToken);
     if (durable && conversation.phoneNumber.phoneNumberId &&
         conversation.phoneNumber.phoneNumberId !== connection.phoneNumberId) {

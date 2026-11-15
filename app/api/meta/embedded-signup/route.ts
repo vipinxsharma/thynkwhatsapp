@@ -8,6 +8,7 @@ interface EmbeddedSignupRequestBody {
   code: string;
   wabaId?: string;
   phoneNumberId?: string;
+  channelName?: string;
 }
 
 /**
@@ -18,7 +19,7 @@ export async function POST(request: NextRequest) {
     const auth = await requireApiSession(request, ["owner", "admin"]);
     if (!auth.ok) return auth.response;
     const body: EmbeddedSignupRequestBody = await request.json();
-    const { code, wabaId, phoneNumberId } = body;
+    const { code, wabaId, phoneNumberId, channelName } = body;
     if (!code || !wabaId || !phoneNumberId) {
       return NextResponse.json(
         { error: "Authorization code, WABA ID, and phone number ID are required" },
@@ -28,6 +29,9 @@ export async function POST(request: NextRequest) {
 
     if (!validMetaIdentifier(wabaId) || !validMetaIdentifier(phoneNumberId)) {
       return NextResponse.json({ error: "Invalid Meta account identifiers" }, { status: 400 });
+    }
+    if (typeof channelName !== "string" || !channelName.trim() || channelName.trim().length > 60) {
+      return NextResponse.json({ error: "Channel name must contain 1–60 characters" }, { status: 400 });
     }
 
     if (!process.env.DATABASE_URL || !process.env.ENCRYPTION_KEY) {
@@ -49,6 +53,7 @@ export async function POST(request: NextRequest) {
       authUserId: auth.session.userId,
       ownership: { wabaId, phoneNumberId, ...ownership },
       encryptedToken: encryptToken(accessToken),
+      channelName: channelName.trim(),
     });
 
     return NextResponse.json({

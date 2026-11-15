@@ -16,14 +16,20 @@ import {
 interface MessageThreadProps {
   messages: Message[];
   customerName: string;
+  loading?: boolean;
 }
 
-export function MessageThread({ messages, customerName }: MessageThreadProps) {
+export function MessageThread({ messages, customerName, loading = false }: MessageThreadProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
+  const newestId = messages.at(-1)?.id;
+  const lastNewestId = useRef<string | number | undefined>(undefined);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+    if (newestId !== lastNewestId.current) {
+      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+      lastNewestId.current = newestId;
+    }
+  }, [newestId]);
 
   const renderStatus = (status: Message["status"]) => {
     switch (status) {
@@ -42,14 +48,9 @@ export function MessageThread({ messages, customerName }: MessageThreadProps) {
 
   return (
     <div className="flex-1 overflow-y-auto p-4 whatsapp-pattern space-y-3">
-      {/* Date Header Separator */}
-      <div className="flex justify-center my-2">
-        <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-[#182229]/90 text-gray-400 border border-white/5 shadow-sm">
-          Today
-        </span>
-      </div>
-
-      {messages.length === 0 ? (
+      {loading && messages.length === 0 ? (
+        <div className="h-full flex items-center justify-center text-xs text-gray-500">Loading messages...</div>
+      ) : messages.length === 0 ? (
         <div className="h-full flex items-center justify-center text-xs text-gray-500">
           No messages yet in this conversation.
         </div>

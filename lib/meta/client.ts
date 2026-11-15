@@ -69,9 +69,22 @@ export class MetaGraphClient {
     const res = await fetch(url, { headers: { Authorization: `Bearer ${this.accessToken}` } });
     if (!res.ok) throw new Error("Unable to verify WABA phone-number ownership with Meta");
     const payload = await res.json();
-    const phone = payload.data?.find((item: any) => String(item.id) === phoneNumberId);
+    const phone = payload.data?.find((item: { id: string }) => String(item.id) === phoneNumberId);
     if (!phone) throw new Error("The selected phone number does not belong to this WABA");
     return { displayPhoneNumber: phone.display_phone_number, verifiedName: phone.verified_name };
+  }
+
+  public async listPhoneNumbers(wabaId: string): Promise<Array<{
+    id: string; display_phone_number?: string; verified_name?: string;
+    quality_rating?: string; code_verification_status?: string;
+  }>> {
+    if (!this.accessToken) throw new Error("A live Meta access token is required");
+    const url = `${GRAPH_API_BASE_URL}/${wabaId}/phone_numbers?fields=id,display_phone_number,verified_name,quality_rating,code_verification_status&limit=100`;
+    const res = await fetch(url, { headers: { Authorization: `Bearer ${this.accessToken}` } });
+    if (!res.ok) throw new Error("Unable to read WABA phone numbers from Meta");
+    const payload = await res.json();
+    if (!Array.isArray(payload.data)) throw new Error("Meta returned an invalid phone-number inventory");
+    return payload.data;
   }
 
   /**

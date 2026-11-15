@@ -5,6 +5,7 @@ import { CheckCircle2, Loader2, Sparkles } from "lucide-react";
 import { parseSignupSessionEvent } from "@/lib/meta/embedded-signup-session";
 
 interface EmbeddedSignupButtonProps {
+  channelName?: string;
   onSuccess?: (data: { wabaId: string; phoneNumberId: string }) => void;
 }
 
@@ -15,7 +16,7 @@ declare global {
   }
 }
 
-export function EmbeddedSignupButton({ onSuccess }: EmbeddedSignupButtonProps) {
+export function EmbeddedSignupButton({ channelName = "", onSuccess }: EmbeddedSignupButtonProps) {
   const [loading, setLoading] = useState(false);
   const [connected, setConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -26,6 +27,9 @@ export function EmbeddedSignupButton({ onSuccess }: EmbeddedSignupButtonProps) {
   const submittingRef = useRef(false);
   const codeRef = useRef<string | null>(null);
   const idsRef = useRef<{ wabaId: string; phoneNumberId: string } | null>(null);
+  const channelNameRef = useRef("");
+  const onSuccessRef = useRef(onSuccess);
+  onSuccessRef.current = onSuccess;
   const waitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const stopWaiting = useCallback(() => {
@@ -57,7 +61,7 @@ export function EmbeddedSignupButton({ onSuccess }: EmbeddedSignupButtonProps) {
       const res = await fetch("/api/meta/embedded-signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code, ...ids }),
+        body: JSON.stringify({ code, ...ids, channelName: channelNameRef.current }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to link WABA");
@@ -65,11 +69,11 @@ export function EmbeddedSignupButton({ onSuccess }: EmbeddedSignupButtonProps) {
       activeRef.current = false;
       setConnected(true);
       setLoading(false);
-      onSuccess?.(data.data);
+      onSuccessRef.current?.(data.data);
     } catch (err) {
       fail(err instanceof Error ? err.message : "Failed to link WABA");
     }
-  }, [fail, onSuccess, stopWaiting]);
+  }, [fail, stopWaiting]);
 
   useEffect(() => {
     // 1. Initialize Facebook JavaScript SDK
@@ -120,6 +124,10 @@ export function EmbeddedSignupButton({ onSuccess }: EmbeddedSignupButtonProps) {
   }, [META_APP_ID, fail, stopWaiting, submitIfReady]);
 
   const handleLaunchSignup = () => {
+    if (!channelName || channelName.length > 60) {
+      setError("Enter a channel name (1–60 characters) before connecting.");
+      return;
+    }
     if (!META_APP_ID || !/^\d+$/.test(META_APP_ID) || !CONFIG_ID || !/^\d+$/.test(CONFIG_ID)) {
       setError("Meta Embedded Signup is not configured. Contact your workspace administrator.");
       return;
@@ -129,6 +137,7 @@ export function EmbeddedSignupButton({ onSuccess }: EmbeddedSignupButtonProps) {
       return;
     }
     stopWaiting();
+    channelNameRef.current = channelName;
     activeRef.current = true;
     submittingRef.current = false;
     codeRef.current = null;
@@ -167,7 +176,7 @@ export function EmbeddedSignupButton({ onSuccess }: EmbeddedSignupButtonProps) {
       {connected ? (
         <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-lg bg-whatsapp-light/10 border border-whatsapp-light/20 text-whatsapp-light text-sm font-medium">
           <CheckCircle2 className="w-4 h-4 text-whatsapp-light" />
-          <span>WhatsApp Business Account Connected (Verified)</span>
+          <span>Number saved. Check Meta status and live delivery separately.</span>
         </div>
       ) : (
         <button

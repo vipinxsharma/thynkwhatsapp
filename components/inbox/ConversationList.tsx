@@ -18,8 +18,13 @@ export function ConversationList({
 }: ConversationListProps) {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | "unread" | "expired">("all");
+  const [channelId, setChannelId] = useState("all");
+  const channels = Array.from(new Map(conversations
+    .filter((conversation) => conversation.phoneNumber.phoneNumberId)
+    .map((conversation) => [conversation.phoneNumber.phoneNumberId, conversation.phoneNumber])).values());
 
   const filteredConversations = conversations.filter((conv) => {
+    if (channelId !== "all" && conv.phoneNumber.phoneNumberId !== channelId) return false;
     const matchesSearch =
       conv.contact.name.toLowerCase().includes(search.toLowerCase()) ||
       conv.contact.phoneNumber.includes(search) ||
@@ -35,32 +40,51 @@ export function ConversationList({
   });
 
   return (
-    <div className="w-80 flex-shrink-0 flex flex-col border-r border-white/5 bg-[#0e131b]">
+    <div className="h-full w-full md:w-80 flex-shrink-0 flex flex-col border-r border-white/5 bg-[var(--surface)]">
       {/* Header & Search */}
       <div className="p-3 border-b border-white/5 space-y-2.5">
         <div className="flex items-center justify-between">
           <h2 className="text-base font-bold text-white tracking-tight">Conversations</h2>
           <span className="text-xs text-gray-400 font-medium">
-            {filteredConversations.length} total
+            {filteredConversations.length} loaded
           </span>
         </div>
 
         <div className="relative">
           <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
-            type="text"
-            placeholder="Search by name, number, or text..."
+            type="search"
+            aria-label="Search loaded conversations"
+            placeholder="Search loaded chats..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full pl-9 pr-3 py-1.5 rounded-lg bg-white/5 border border-white/5 text-xs text-gray-200 placeholder-gray-500 focus:outline-none focus:border-whatsapp-light/50 focus:bg-white/[0.07] transition-all"
           />
         </div>
 
+        {channels.length > 1 && <>
+          <label htmlFor="inbox-channel-filter" className="sr-only">Filter by WhatsApp number</label>
+          <select id="inbox-channel-filter" value={channelId}
+            onChange={(event) => {
+              const next = event.target.value;
+              setChannelId(next);
+              const first = conversations.find((conversation) => next === "all" || conversation.phoneNumber.phoneNumberId === next);
+              if (first) onSelectConversation(first.id);
+            }}
+            className="w-full rounded-lg border border-white/10 bg-[var(--surface-muted)] px-3 py-2 text-xs text-white">
+            <option value="all">All WhatsApp numbers</option>
+            {channels.map((channel) => <option key={channel.phoneNumberId} value={channel.phoneNumberId}>
+              {channel.displayPhoneNumber || channel.phoneNumberId}
+            </option>)}
+          </select>
+        </>}
+
         {/* Filters */}
         <div className="flex gap-1">
           {(["all", "unread", "expired"] as const).map((tab) => (
             <button
               key={tab}
+              aria-pressed={filter === tab}
               onClick={() => setFilter(tab)}
               className={`px-2.5 py-1 rounded text-xs font-medium capitalize transition-all ${
                 filter === tab
@@ -86,10 +110,13 @@ export function ConversationList({
             const window = calculateWindowRemaining(conv.windowExpiresAt);
 
             return (
-              <div
+              <button
+                type="button"
+                aria-pressed={isActive}
+                aria-label={`Open conversation with ${conv.contact.name}`}
                 key={conv.id}
                 onClick={() => onSelectConversation(conv.id)}
-                className={`p-3 cursor-pointer transition-all ${
+                className={`block w-full p-3 text-left cursor-pointer transition-all ${
                   isActive
                     ? "bg-whatsapp/10 border-l-4 border-l-whatsapp-light"
                     : "hover:bg-white/[0.03]"
@@ -97,7 +124,7 @@ export function ConversationList({
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-emerald-700 to-teal-500 flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
+                    <div className="w-9 h-9 rounded-full bg-[var(--accent)] flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
                       {conv.contact.name.charAt(0)}
                     </div>
                     <div className="min-w-0">
@@ -107,6 +134,9 @@ export function ConversationList({
                       <p className="text-[11px] text-gray-400">
                         {formatPhoneNumber(conv.contact.phoneNumber)}
                       </p>
+                      {channels.length > 1 && <p className="text-[10px] text-orange-200/80">
+                        via {conv.phoneNumber.displayPhoneNumber || conv.phoneNumber.phoneNumberId}
+                      </p>}
                     </div>
                   </div>
 
@@ -140,7 +170,7 @@ export function ConversationList({
                     </span>
                   )}
                 </div>
-              </div>
+              </button>
             );
           })
         )}

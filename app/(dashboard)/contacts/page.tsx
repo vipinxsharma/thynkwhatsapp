@@ -199,7 +199,7 @@ export default function ContactsPage() {
       {/* Contacts Table */}
       <div className="rounded-2xl bg-surface-100/60 border border-white/5 overflow-hidden shadow-xl">
         <table className="w-full text-left text-xs">
-          <thead className="bg-[#0b0e14]/60 text-gray-400 uppercase tracking-wider border-b border-white/5 font-semibold">
+          <thead className="bg-[var(--surface-muted)] text-gray-400 uppercase tracking-wider border-b border-white/5 font-semibold">
             <tr>
               <th className="py-3 px-4">Contact</th>
               <th className="py-3 px-4">Company</th>

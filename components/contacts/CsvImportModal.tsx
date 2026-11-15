@@ -127,7 +127,7 @@ Ananya Sen,+919922233344,CloudScale,VIP Customer`;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="w-full max-w-xl rounded-2xl bg-[#0e131b] border border-white/10 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+      <div className="w-full max-w-xl rounded-2xl bg-[var(--surface)] border border-white/10 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
         {/* Header */}
         <div className="px-6 py-4 border-b border-white/5 flex items-center justify-between bg-surface-100/40">
           <div className="flex items-center gap-2.5">

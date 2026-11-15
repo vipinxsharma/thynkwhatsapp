@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
   acceptedMessage: vi.fn(),
   send: vi.fn(),
   conversation: vi.fn(),
+  entitlements: vi.fn(),
 }));
 
 vi.mock("@/lib/auth/session", () => ({
@@ -19,6 +20,9 @@ vi.mock("@/lib/strapi/client", () => ({
 vi.mock("@/lib/inbox/store", () => ({ getConversation: mocks.conversation }));
 vi.mock("@/lib/meta/connections", () => ({
   getMetaConnectionForWorkspace: vi.fn(async () => ({
+    wabaId: "12345", phoneNumberId: "1234567890", accessToken: "test-token",
+  })),
+  getMetaConnectionForNumber: vi.fn(async () => ({
     wabaId: "12345", phoneNumberId: "1234567890", accessToken: "test-token",
   })),
 }));
@@ -34,6 +38,10 @@ vi.mock("@/lib/outbound/store", () => ({
   hashOutboundRequest: () => "stable-hash",
   markOutboundUncertain: vi.fn(),
 }));
+vi.mock("@/lib/billing/entitlements", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/billing/entitlements")>();
+  return { ...actual, getEntitlementSnapshot: mocks.entitlements };
+});
 
 import { POST } from "../app/api/whatsapp/messages/send/route";
 
@@ -66,6 +74,11 @@ beforeEach(() => {
   mocks.send.mockResolvedValue({ messages: [{ id: accepted.wamId }] });
   mocks.accept.mockResolvedValue(accepted);
   mocks.acceptedMessage.mockResolvedValue(accepted);
+  mocks.entitlements.mockResolvedValue({
+    status: "active", planCode: "test_plan",
+    currentPeriodStart: "2020-01-01T00:00:00.000Z",
+    currentPeriodEnd: "2030-01-01T00:00:00.000Z", features: ["whatsapp_send"],
+  });
 });
 
 afterEach(() => {
@@ -91,6 +104,16 @@ describe("live outbound route", () => {
     mocks.begin.mockResolvedValue({ id: "55555555-5555-4555-8555-555555555555", createdNew: false, requestHash: "stable-hash", status: "uncertain", wamId: null });
     const response = await POST(request());
     expect(response.status).toBe(202);
+    expect(mocks.send).not.toHaveBeenCalled();
+  });
+
+  it("does not call Meta without an active workspace entitlement", async () => {
+    mocks.entitlements.mockResolvedValueOnce({
+      status: "none", planCode: null, currentPeriodStart: null, currentPeriodEnd: null, features: [],
+    });
+    const response = await POST(request());
+    expect(response.status).toBe(503);
+    expect(mocks.begin).not.toHaveBeenCalled();
     expect(mocks.send).not.toHaveBeenCalled();
   });
 });

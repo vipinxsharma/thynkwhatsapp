@@ -1,141 +1,46 @@
 import { NextRequest, NextResponse } from "next/server";
-import { AutomationEngine } from "@/lib/automations/rules";
 import { requireApiSession } from "@/lib/auth/session";
-
-function unavailableInProduction(): NextResponse | null {
-  return process.env.NODE_ENV === "production"
-    ? NextResponse.json({ error: "Automations are not available yet" }, { status: 503 })
-    : null;
+import { deleteRoutingRule, listRoutingRules, listRoutingRuns, saveRoutingRule } from "@/lib/automations/store";
+import { matchRoutingRule, parseRoutingRule, RuleValidationError } from "@/lib/automations/routing";
+const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+function failure(error: unknown) {
+  return NextResponse.json({ error: error instanceof RuleValidationError ? error.message : "Automation storage is unavailable. Please contact your administrator." },
+    { status: error instanceof RuleValidationError ? 400 : 503, headers: { "Cache-Control": "no-store" } });
 }
-
 export async function GET(request: NextRequest) {
+  const auth = await requireApiSession(request);
+  if (!auth.ok) return auth.response;
   try {
-    const auth = await requireApiSession(request);
-    if (!auth.ok) return auth.response;
-    const unavailable = unavailableInProduction();
-    if (unavailable) return unavailable;
-    const rules = AutomationEngine.getRules(auth.session.tenantId);
-    return NextResponse.json({ success: true, data: rules });
-  } catch (error: any) {
-    return NextResponse.json(
-      { error: error.message || "Failed to load automation rules" },
-      { status: 500 }
-    );
-  }
+    const [data, runs] = await Promise.all([listRoutingRules(auth.session.tenantId),listRoutingRuns(auth.session.tenantId)]);
+    return NextResponse.json({ data, runs }, { headers: { "Cache-Control": "no-store" } });
+  } catch (error) { return failure(error); }
 }
-
-export async function POST(request: NextRequest) {
+async function mutate(request: NextRequest, update: boolean) {
+  const auth = await requireApiSession(request, ["owner", "admin"]);
+  if (!auth.ok) return auth.response;
   try {
-    const auth = await requireApiSession(request, ["owner", "admin"]);
-    if (!auth.ok) return auth.response;
-    const unavailable = unavailableInProduction();
-    if (unavailable) return unavailable;
-    const body = await request.json();
-
-    // Check if test simulation action
+    let body;
+    try { body = await request.json(); } catch { throw new RuleValidationError("Invalid JSON"); }
+    if (!body || typeof body !== "object") throw new RuleValidationError("A rule is required");
     if (body.action === "test") {
-      const { text } = body;
-      const matched = AutomationEngine.matchRule(auth.session.tenantId, text || "");
-      return NextResponse.json({
-        success: true,
-        matched: !!matched,
-        rule: matched,
-      });
+      if (typeof body.text !== "string" || body.text.length > 65536 || typeof body.channelId !== "string") throw new RuleValidationError("Enter a test message and channel");
+      const rules = await listRoutingRules(auth.session.tenantId);
+      return NextResponse.json({ rule: matchRoutingRule(rules, body.text, body.channelId), simulation: true });
     }
-
-    const {
-      name,
-      description,
-      triggerType = "contains_keyword",
-      keywords = [],
-      responseType = "text",
-      replyText,
-      interactiveButtons,
-      assignTags,
-      setConversationStatus,
-    } = body;
-
-    if (!name || !replyText || !keywords.length) {
-      return NextResponse.json(
-        { error: "Name, reply text, and at least one keyword are required" },
-        { status: 400 }
-      );
-    }
-
-    const newRule = AutomationEngine.addRule(auth.session.tenantId, {
-      name,
-      description: description || "",
-      triggerType,
-      keywords,
-      responseType,
-      replyText,
-      interactiveButtons,
-      assignTags,
-      setConversationStatus,
-      enabled: true,
-    });
-
-    return NextResponse.json({ success: true, data: newRule });
-  } catch (error: any) {
-    return NextResponse.json(
-      { error: error.message || "Failed to save automation rule" },
-      { status: 500 }
-    );
-  }
+    if (update && (typeof body.id !== "string" || !uuid.test(body.id))) throw new RuleValidationError("Invalid rule ID");
+    const input = parseRoutingRule(body);
+    const data = await saveRoutingRule(auth.session.tenantId, auth.session.userId, input, update ? body.id : undefined);
+    return data ? NextResponse.json({ data }, { status: update ? 200 : 201 }) : NextResponse.json({ error: "Rule not found" }, { status: 404 });
+  } catch (error) { return failure(error); }
 }
-
-export async function PUT(request: NextRequest) {
-  try {
-    const auth = await requireApiSession(request, ["owner", "admin"]);
-    if (!auth.ok) return auth.response;
-    const unavailable = unavailableInProduction();
-    if (unavailable) return unavailable;
-    const body = await request.json();
-    const { id, toggle, updates } = body;
-
-    if (!id) {
-      return NextResponse.json({ error: "Rule ID is required" }, { status: 400 });
-    }
-
-    let result;
-    if (toggle) {
-      result = AutomationEngine.toggleRule(auth.session.tenantId, id);
-    } else {
-      result = AutomationEngine.updateRule(auth.session.tenantId, id, updates || {});
-    }
-
-    if (!result) {
-      return NextResponse.json({ error: "Rule not found" }, { status: 404 });
-    }
-
-    return NextResponse.json({ success: true, data: result });
-  } catch (error: any) {
-    return NextResponse.json(
-      { error: error.message || "Failed to update automation rule" },
-      { status: 500 }
-    );
-  }
-}
-
+export const POST = (request: NextRequest) => mutate(request, false);
+export const PUT = (request: NextRequest) => mutate(request, true);
 export async function DELETE(request: NextRequest) {
+  const auth = await requireApiSession(request, ["owner", "admin"]);
+  if (!auth.ok) return auth.response;
+  const id = request.nextUrl.searchParams.get("id") || "";
+  if (!uuid.test(id)) return failure(new RuleValidationError("Invalid rule ID"));
   try {
-    const auth = await requireApiSession(request, ["owner", "admin"]);
-    if (!auth.ok) return auth.response;
-    const unavailable = unavailableInProduction();
-    if (unavailable) return unavailable;
-    const { searchParams } = new URL(request.url);
-    const id = searchParams.get("id");
-
-    if (!id) {
-      return NextResponse.json({ error: "Rule ID is required" }, { status: 400 });
-    }
-
-    const deleted = AutomationEngine.deleteRule(auth.session.tenantId, id);
-    return NextResponse.json({ success: deleted });
-  } catch (error: any) {
-    return NextResponse.json(
-      { error: error.message || "Failed to delete automation rule" },
-      { status: 500 }
-    );
-  }
+    return await deleteRoutingRule(auth.session.tenantId,id) ? NextResponse.json({ success: true }) : NextResponse.json({ error: "Rule not found" }, { status: 404 });
+  } catch(error) { return failure(error); }
 }

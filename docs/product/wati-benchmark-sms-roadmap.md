@@ -4,7 +4,7 @@ Observed read-only in the user's WATI workspace on 14 October 2026. This is a pr
 
 | WATI area observed | Xeccel today | Product decision |
 | --- | --- | --- |
-| Campaigns, templates, scheduled campaigns | Templates exist; production broadcasts deliberately disabled | Keep the send gate until audience consent, durable scheduling, receipts and billing are proven |
+| Campaigns, templates, scheduled campaigns | Templates exist; broadcasts disabled in every environment | Add workspace-scoped opt-in evidence, approved-template validation, durable scheduling/idempotency, receipts and billing before enabling sends |
 | Team Inbox and Contacts | Inbox, contacts and team foundations exist | Deepen assignment, routing, filters and real unread counts; never show sample counts as live |
 | Automations: rules, chatbots, sequences, flows, routing, drip | Automations page states inactive | Build durable tenant-scoped rules and audit before enabling any automatic reply |
 | Astra AI agents | AI support case review only | Add a distinct AI Agents section; customer-facing bots require knowledge, safety, evaluation and handoff |
@@ -12,6 +12,27 @@ Observed read-only in the user's WATI workspace on 14 October 2026. This is a pr
 | Analytics: inbox, sales, calls, chatbot, operator | Recorded message usage only | Add specialized reports only when corresponding source events exist |
 | Connectors: API, integrations, webhooks | Internal routes and Meta webhook exist | Add Integrations section; customer credentials and outbound customer webhooks are not yet available |
 | Settings: channels, users, account | WABA and team settings exist | Preserve accurate provider-status labels and self-serve account controls |
+
+## Multi-number workflow benchmark
+
+WATI's published path is Settings → Channels → Channel Status → Add → name the
+number → Meta Embedded Signup. Its inbox filters by channel, and the channel
+page can rename a number, inspect status, and change the default. These are
+workflow patterns to match with Xeccel's own UI and copy, not WATI assets or code.
+Sources: [multiple-number flow](https://support.wati.io/en/articles/11561205-manage-multiple-whatsapp-numbers-in-a-single-wati-account),
+[channel-based team access](https://support.wati.io/en/articles/13867076-how-to-manage-user-access-with-multiple-whatsapp-numbers-connected-in-wati).
+
+| Journey | Xeccel state | Next better-than-baseline gate |
+| --- | --- | --- |
+| Name → Embedded Signup → channel record | Implemented in PR #28; ownership and webhook subscription checked before save | Resume/retry onboarding with a durable, auditable attempt ID and precise failure reason |
+| Channel inventory, quality, default, rename | Implemented in PR #28; inventory is only a Meta listing observation | Distinguish registration, display-name, webhook receipt, real send, and real receive with timestamps |
+| Inbox channel switch | Implemented as a sender filter; message history now loads on selection | Server-side conversation paging and search; per-channel unread counts |
+| Agent access by channel | Not yet enforced | Workspace teams, channel grants, and deny-by-default API checks |
+| Per-channel templates, campaigns, automations | Not production-enabled | Explicit sender binding, opt-in and entitlement checks, durable jobs, receipts |
+| Replace/disconnect number | Not automated | Safe cutover wizard with ownership confirmation, no implicit history move, rollback |
+
+Do not treat WATI's “Connected” label as proof that Xeccel can send from the same
+number; WABA and Phone Number ID ownership must be confirmed independently.
 
 ## Phase 2: SMS gateway for India
 
