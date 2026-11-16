@@ -1,6 +1,7 @@
 import { requirePageSession } from "@/lib/auth/session";
 import { requirePlatformSuperadmin } from "@/lib/auth/platform-admin";
 import { listPlatformWorkspaceSummaries } from "@/lib/workspaces/store";
+import { TenantInviteForm } from "@/components/platform/TenantInviteForm";
 
 export const dynamic = "force-dynamic";
 
@@ -17,6 +18,7 @@ export default async function PlatformAdminPage() {
         <p className="mb-6 mt-2 text-sm text-[var(--muted)]">
           Read-only directory of Xeccel workspaces. Customer conversations and workspace settings are not exposed here.
         </p>
+        <TenantInviteForm />
         <div className="overflow-x-auto rounded-xl border border-[var(--border)] bg-[var(--surface)]">
           <table className="w-full text-left text-sm">
             <thead className="border-b border-[var(--border)] text-[var(--muted)]">
