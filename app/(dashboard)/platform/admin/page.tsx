@@ -1,13 +1,24 @@
 import { requirePageSession } from "@/lib/auth/session";
 import { requirePlatformSuperadmin } from "@/lib/auth/platform-admin";
-import { listPlatformWorkspaceSummaries } from "@/lib/workspaces/store";
+import { listPlatformTenantHealth, listPlatformWorkspaceSummaries } from "@/lib/workspaces/store";
+import { TenantHealthTable } from "@/components/platform/TenantHealthTable";
 
 export const dynamic = "force-dynamic";
 
 export default async function PlatformAdminPage() {
   const session = await requirePageSession();
   await requirePlatformSuperadmin(session);
-  const workspaces = await listPlatformWorkspaceSummaries();
+  const [workspaces, healthRows] = await Promise.all([
+    listPlatformWorkspaceSummaries(),
+    listPlatformTenantHealth(),
+  ]);
+  const healthById = new Map(healthRows.map((row) => [row.workspaceId, row]));
+  const healthTable = workspaces.map((workspace) => ({
+    workspaceId: workspace.workspaceId,
+    workspaceName: workspace.workspaceName,
+    createdAt: workspace.createdAt,
+    health: healthById.get(workspace.workspaceId),
+  }));
 
   return (
     <main className="flex-1 overflow-y-auto p-8">
@@ -44,6 +55,7 @@ export default async function PlatformAdminPage() {
             </tbody>
           </table>
         </div>
+        <TenantHealthTable rows={healthTable} />
       </div>
     </main>
   );
