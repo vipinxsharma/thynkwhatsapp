@@ -7,7 +7,9 @@ export interface BillingConfig {
   cashfreeEnv: "sandbox" | "production";
 }
 
-export function billingConfig(env: NodeJS.ProcessEnv = process.env): BillingConfig {
+type EnvLike = Record<string, string | undefined>;
+
+export function billingConfig(env: EnvLike = process.env): BillingConfig {
   const price = Number(env.BILLING_PRICE_PER_NUMBER_PAISE ?? "69900");
   if (!Number.isInteger(price) || price < 0) {
     throw new Error("BILLING_PRICE_PER_NUMBER_PAISE must be a non-negative integer");
