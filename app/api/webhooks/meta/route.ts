@@ -5,9 +5,10 @@ import { StrapiClient, isDurableInboxEnabled } from "@/lib/strapi/client";
 import { emitMessageStatusUpdate, emitNewInboundMessage } from "@/lib/events/emitter";
 import { getMetaConnectionForWaba, markWabaDisconnected } from "@/lib/meta/connections";
 import { getConversationForSender } from "@/lib/inbox/store";
-import { routeInboundMessage } from "@/lib/automations/store";
 import { applyDeliveryReceipt, recordOptOutByWaId } from "@/lib/campaigns/store";
 import { isOptOutMessage } from "@/lib/campaigns/template";
+import { handleInboundAutomation } from "@/lib/automations/inbound";
+import { captureLeadFromInbound } from "@/lib/leads/capture";
 
 // account_update events after which the stored business token no longer works for the WABA.
 const ACCOUNT_DISCONNECT_EVENTS = new Set(["PARTNER_REMOVED", "PARTNER_APP_UNINSTALLED", "ACCOUNT_DELETED"]);
@@ -194,8 +195,17 @@ async function processWebhookEntries(entries: MetaWebhookPayload["entry"]) {
                   console.error("[Webhook Opt-out Error]", error);
                 }
               }
-              if (isDurableInboxEnabled() && msg.type === "text") {
-                await routeInboundMessage(tenantId, String(matchedConv.id), msg.id, connection.phoneNumberId, bodyText);
+              if (isDurableInboxEnabled()) {
+                // Automation failures are logged, not retried: the message is already stored.
+                await handleInboundAutomation({
+                  workspaceId: tenantId, conversationId: String(matchedConv.id), wamId: msg.id,
+                  waId: msg.from, phoneNumberId: connection.phoneNumberId, messageType: msg.type,
+                  text: bodyText, conversationStatus: matchedConv.status,
+                  contactName: value.contacts?.find((contact) => contact.wa_id === msg.from)?.profile.name || "",
+                }).catch((error) => console.error("[Webhook Automation Error]", error));
+              }
+              if (isDurableInboxEnabled()) {
+                await captureLeadFromInbound(tenantId, String(matchedConv.contact.id), msg);
               }
               emitNewInboundMessage(tenantId, matchedConv.id, recorded);
               console.log(

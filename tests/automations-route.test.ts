@@ -20,7 +20,7 @@ describe("durable automation routes",()=>{
     store.saveRoutingRule.mockResolvedValueOnce({...input,id:"rule"});
     expect((await POST(request("POST",{...input,workspaceId:"attacker"}))).status).toBe(201);
     expect(auth).toHaveBeenCalledWith(expect.anything(),["owner","admin"]);
-    expect(store.saveRoutingRule).toHaveBeenCalledWith("11111111-1111-4111-8111-111111111111","owner",input,undefined);
+    expect(store.saveRoutingRule).toHaveBeenCalledWith("11111111-1111-4111-8111-111111111111","owner",expect.objectContaining(input),undefined);
   });
   it("rejects unsupported reply actions and malformed IDs",async()=>{
     expect((await POST(request("POST",{...input,matchType:"regex"}))).status).toBe(400);

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Send, FileText, Clock, AlertTriangle, Sparkles, Paperclip } from "lucide-react";
 import { calculateWindowRemaining } from "@/lib/utils";
+import { QuickReplyMenu } from "./QuickReplyMenu";
 
 interface MessageInputProps {
   windowExpiresAt: string;
@@ -10,6 +11,7 @@ interface MessageInputProps {
   onOpenTemplateModal: () => void;
   onOpenMediaModal?: () => void;
   disabled?: boolean;
+  canManageQuickReplies?: boolean;
 }
 
 export function MessageInput({
@@ -18,6 +20,7 @@ export function MessageInput({
   onOpenTemplateModal,
   onOpenMediaModal,
   disabled,
+  canManageQuickReplies = false,
 }: MessageInputProps) {
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
@@ -82,6 +85,12 @@ export function MessageInput({
       </div>
 
       {/* Input Form */}
+      <div className="flex items-center gap-2 px-3 pt-2">
+        <QuickReplyMenu
+          canDelete={canManageQuickReplies}
+          onPick={(body) => setText((current) => (current ? `${current}\n${body}` : body))}
+        />
+      </div>
       <form onSubmit={handleSubmit} className="p-3 flex items-end gap-2">
         {onOpenMediaModal && (
           <button

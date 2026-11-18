@@ -5,9 +5,11 @@ import { Conversation, Message, MessageTemplate } from "@/types/strapi";
 import { ConversationList } from "./ConversationList";
 import { MessageThread } from "./MessageThread";
 import { MessageInput } from "./MessageInput";
-import { ContactDetailsSidebar } from "./ContactDetailsSidebar";
+import { ContactDetailsSidebar, type AssigneeOption } from "./ContactDetailsSidebar";
+import { AgentNotesPanel } from "./AgentNotesPanel";
 import { TemplateSelectorModal } from "./TemplateSelectorModal";
-import { MediaAttachmentModal } from "./MediaAttachmentModal";
+import { MediaAttachmentModal, type MediaSendPayload } from "./MediaAttachmentModal";
+import type { MediaMessageType } from "@/lib/inbox/media";
 import { ArrowLeft, User, X, Sparkles, Phone, Video, MoreVertical } from "lucide-react";
 import { formatPhoneNumber } from "@/lib/utils";
 
@@ -15,13 +17,25 @@ interface UnifiedInboxProps {
   initialConversations: Conversation[];
   initialMessages: Record<string, Message[]>;
   templates: MessageTemplate[];
+  currentUserId: string;
+  currentRole: string;
+  assignees: AssigneeOption[];
 }
+
+type Scope = "all" | "mine" | "unassigned";
 
 export function UnifiedInbox({
   initialConversations,
   initialMessages,
   templates,
+  currentUserId,
+  currentRole,
+  assignees,
 }: UnifiedInboxProps) {
+  const [scope, setScope] = useState<Scope>("all");
+  const [assignError, setAssignError] = useState("");
+  const labelFor = (authUserId: string) =>
+    assignees.find((member) => member.authUserId === authUserId)?.label || "Former member";
   const [conversations, setConversations] = useState<Conversation[]>(initialConversations);
   const [messagesMap, setMessagesMap] = useState<Record<string, Message[]>>(initialMessages);
   const [hasOlderMap, setHasOlderMap] = useState<Record<string, boolean>>({});
@@ -37,6 +51,7 @@ export function UnifiedInbox({
   const [isLiveConnected, setIsLiveConnected] = useState(false);
   const pendingSendKeys = useRef(new Map<string, string>());
   const sendInFlight = useRef(false);
+  const mediaUploads = useRef(new WeakMap<File, { conversationId: string; messageType: MediaMessageType; mediaId: string }>());
 
   useEffect(() => {
     const controller = new AbortController();
@@ -131,6 +146,11 @@ export function UnifiedInbox({
     };
   }, []);
 
+  const visibleConversations = conversations.filter((conversation) => {
+    if (scope === "mine") return conversation.assignedAuthUserId === currentUserId;
+    if (scope === "unassigned") return !conversation.assignedAuthUserId;
+    return true;
+  });
   const activeConversation = conversations.find((c) => String(c.id) === String(activeId));
   const activeMessages = messagesMap[String(activeId)] || [];
 
@@ -267,24 +287,45 @@ export function UnifiedInbox({
     }
   };
 
-  // 3. Send Rich Media (Image, Document/PDF, Interactive buttons)
-  const handleSendMedia = async (payload: {
-    messageType: "image" | "document" | "interactive";
-    mediaUrl?: string;
-    caption?: string;
-    filename?: string;
-    interactiveButtons?: Array<{ id: string; title: string }>;
-    text?: string;
-  }) => {
+  // Stores the file with Meta and returns its media ID. The ID is remembered per file and conversation,
+  // so resending the same file after a failed send reuses it and the send keeps its idempotency key.
+  async function uploadMedia(conversationId: string, file: File, messageType: MediaMessageType): Promise<string> {
+    const cached = mediaUploads.current.get(file);
+    if (cached && cached.conversationId === conversationId && cached.messageType === messageType) {
+      return cached.mediaId;
+    }
+    const form = new FormData();
+    form.append("conversationId", conversationId);
+    form.append("messageType", messageType);
+    form.append("file", file);
+    const response = await fetch("/api/whatsapp/messages/media", { method: "POST", body: form });
+    const result = await response.json();
+    if (!response.ok || !result.success) throw new Error(result.error || "The file could not be uploaded");
+    const mediaId = String(result.data.mediaId);
+    mediaUploads.current.set(file, { conversationId, messageType, mediaId });
+    return mediaId;
+  }
+
+  // 3. Send a file (image, video, document) or interactive buttons
+  const handleSendMedia = async (payload: MediaSendPayload) => {
     if (!activeConversation) return;
 
     try {
-      const newMsg = await sendToMeta({
+      const base = {
           conversationId: activeConversation.id,
           recipientPhone: activeConversation.contact.phoneNumber,
           phoneNumberId: activeConversation.phoneNumber.phoneNumberId,
-          ...payload,
-      });
+      };
+      const outgoing = payload.messageType === "interactive"
+        ? { ...base, messageType: "interactive", text: payload.text, interactiveButtons: payload.interactiveButtons }
+        : {
+            ...base,
+            messageType: payload.messageType,
+            mediaId: await uploadMedia(String(activeConversation.id), payload.file, payload.messageType),
+            caption: payload.caption,
+            filename: payload.filename,
+          };
+      const newMsg = await sendToMeta(outgoing);
       setMessagesMap((prev) => ({
         ...prev,
         [String(activeId)]: [...(prev[String(activeId)] || []), newMsg],
@@ -305,6 +346,24 @@ export function UnifiedInbox({
       alert(`Error sending rich media: ${err.message}`);
     }
   };
+
+  async function assignActive(authUserId: string | null) {
+    if (!activeConversation) return;
+    const conversationId = String(activeConversation.id);
+    setAssignError("");
+    try {
+      const response = await fetch("/api/inbox/assignment", {
+        method: "PATCH", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ conversationId, assigneeAuthUserId: authUserId }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Could not assign conversation");
+      setConversations((prev) => prev.map((c) => String(c.id) === conversationId
+        ? { ...c, assignedAuthUserId: result.data.assignedAuthUserId } : c));
+    } catch (error) {
+      setAssignError(error instanceof Error ? error.message : "Could not assign conversation");
+    }
+  }
 
   const [detailsBusy, setDetailsBusy] = useState(false);
   const [detailsError, setDetailsError] = useState("");
@@ -327,11 +386,21 @@ export function UnifiedInbox({
     <div className="relative flex min-h-0 flex-1 overflow-hidden h-full">
       {/* 1. Conversations Column */}
       <div className={`${mobileThreadOpen ? "hidden" : "flex"} min-h-0 w-full md:flex md:w-80 md:shrink-0`}>
+      <div className="flex min-h-0 w-full flex-col">
+      <div role="tablist" aria-label="Conversation scope" className="flex gap-1 border-b border-[var(--border)] p-2 text-xs">
+        {([["all", "All"], ["mine", "Mine"], ["unassigned", "Unassigned"]] as const).map(([value, label]) => (
+          <button key={value} type="button" role="tab" aria-selected={scope === value} onClick={() => setScope(value)}
+            className={`min-h-9 flex-1 rounded-lg px-2 font-semibold ${scope === value ? "bg-white/10" : "text-[var(--muted)]"}`}>{label}</button>
+        ))}
+        <button type="button" onClick={() => exportConversations(visibleConversations)}
+          className="min-h-9 rounded-lg px-2 text-[var(--muted)] hover:text-white">Export</button>
+      </div>
       <ConversationList
-        conversations={conversations}
+        conversations={visibleConversations}
         activeConversationId={activeId}
         onSelectConversation={(id) => { setActiveId(id); setMobileThreadOpen(true); setContactPanelOpen(false); }}
       />
+      </div>
       </div>
 
       {/* 2. Middle Chat Thread Column */}
@@ -394,6 +463,7 @@ export function UnifiedInbox({
             onSendMessage={handleSendMessage}
             onOpenTemplateModal={() => setIsTemplateModalOpen(true)}
             onOpenMediaModal={() => setIsMediaModalOpen(true)}
+            canManageQuickReplies={currentRole === "owner" || currentRole === "admin"}
           />
         </div>
       ) : (
@@ -412,6 +482,9 @@ export function UnifiedInbox({
           error={detailsError}
           onUpdateTags={handleUpdateTags}
           onUpdateStatus={handleUpdateStatus}
+          assignees={assignees}
+          onAssign={(authUserId) => { void assignActive(authUserId); }}
+          notes={<><AgentNotesPanel key={String(activeId)} conversationId={String(activeId)} labelFor={labelFor} />{assignError && <p role="alert" className="text-xs text-red-300">{assignError}</p>}</>}
         />
         </section>
       )}
@@ -437,4 +510,20 @@ export function UnifiedInbox({
       )}
     </div>
   );
+}
+
+// Exports the rows currently in view as CSV, for hand-over or reporting. No message bodies are included.
+function exportConversations(rows: Conversation[]) {
+  const header = ["Name", "Phone", "Status", "Assigned user id", "Last message at", "Unread"];
+  const escape = (value: string | number) => `"${String(value).replace(/"/g, '""')}"`;
+  const lines = rows.map((c) => [
+    c.contact.name, c.contact.phoneNumber, c.status, c.assignedAuthUserId || "", c.lastMessageAt, c.unreadCount,
+  ].map(escape).join(","));
+  const blob = new Blob([[header.join(","), ...lines].join("\n")], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `conversations-${new Date().toISOString().slice(0, 10)}.csv`;
+  link.click();
+  URL.revokeObjectURL(url);
 }
