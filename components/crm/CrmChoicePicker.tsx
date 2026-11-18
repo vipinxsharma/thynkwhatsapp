@@ -71,7 +71,11 @@ export function CrmChoicePicker({
               className={`flex flex-col rounded-3xl border bg-[var(--surface)] p-7 ${selected ? "border-[var(--accent)]" : "border-[var(--border)]"}`}
             >
               <div className="flex items-start justify-between gap-3">
-                <h2 className="text-xl font-bold text-[var(--heading)]">{option.name}</h2>
+                <div className="flex items-center gap-3">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={option.logoSrc} alt={option.logoAlt} width={40} height={40} className="size-10 rounded-lg object-contain" />
+                  <h2 className="text-xl font-bold text-[var(--heading)]">{option.name}</h2>
+                </div>
                 {selected && (
                   <span className="rounded-full bg-[var(--accent)] px-3 py-1 text-xs font-bold text-[#0b132a]">Your choice</span>
                 )}
