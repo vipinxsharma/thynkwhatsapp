@@ -16,7 +16,7 @@ export interface BillingPlan {
 }
 
 // Shown on every plan: the CRM offer described on /crm.
-export const crmOfferFeature = "Free CRM: Coldcall.in (1 user + 1 web admin) or SuperCRM";
+export const crmOfferFeature = "CRM of your choice: Coldcall.in free (1 user + 1 web admin) or a SuperCRM free trial";
 
 export const billingPlans: BillingPlan[] = [
   {

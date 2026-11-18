@@ -10,6 +10,7 @@ export interface CrmOption {
   included: string[];
   // Where the customer finishes sign-up. Undefined means access is arranged by the Xeccel team.
   signupUrl?: string;
+  signupLabel: string;
 }
 
 function httpsUrl(value: string | undefined): string | undefined {
@@ -29,14 +30,16 @@ export const crmOptions: CrmOption[] = [
     offer: "Free with your Xeccel plan",
     included: ["1 user", "1 web admin access"],
     signupUrl: httpsUrl(process.env.NEXT_PUBLIC_COLDCALL_SIGNUP_URL) ?? "https://coldcall.in",
+    signupLabel: "Sign up for free",
   },
   {
     code: "supercrm",
     name: "SuperCRM",
-    tagline: "Customer relationship management for your sales pipeline.",
-    offer: "Free sign-up",
-    included: [],
-    signupUrl: httpsUrl(process.env.NEXT_PUBLIC_SUPERCRM_SIGNUP_URL),
+    tagline: "A configurable sales execution platform for Indian B2B teams, from thynkWISE.",
+    offer: "Free 21-day Full Access trial",
+    included: ["No payment card required", "Access sent after a thynkWISE specialist reviews your application"],
+    signupUrl: httpsUrl(process.env.NEXT_PUBLIC_SUPERCRM_SIGNUP_URL) ?? "https://thynkwise.co.in/supercrm#start-trial",
+    signupLabel: "Apply for the free trial",
   },
 ];
 

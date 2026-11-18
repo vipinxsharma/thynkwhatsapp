@@ -47,7 +47,7 @@ export function CrmChoicePicker({
       <p className="text-xs font-bold uppercase tracking-widest text-[var(--accent-text)]">CRM</p>
       <h1 className="mt-3 text-3xl font-bold tracking-tight text-[var(--heading)]">Choose your CRM</h1>
       <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--muted)]">
-        Your Xeccel plan works with a CRM of your choice. Pick one and sign up for free. You can change your choice until your access is set up.
+        Your Xeccel plan works with a CRM of your choice. Pick one and sign up at no cost. You can change your choice until your access is set up.
       </p>
 
       {unavailable && (
@@ -97,7 +97,7 @@ export function CrmChoicePicker({
                       rel="noopener noreferrer"
                       className="inline-flex min-h-12 w-full items-center justify-center rounded-full bg-[var(--accent)] px-6 py-3 text-sm font-bold text-[#0b132a] hover:bg-[var(--accent-hover)]"
                     >
-                      Sign up for free
+                      {option.signupLabel}
                     </a>
                   ) : (
                     <p className="text-sm leading-6 text-[var(--muted)]">We will email your sign-up details for {option.name}.</p>

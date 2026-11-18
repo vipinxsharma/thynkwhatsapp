@@ -39,6 +39,12 @@ describe("CRM options", () => {
     expect(coldcall?.signupUrl).toMatch(/^https:\/\//);
   });
 
+  it("sends SuperCRM sign-ups to the thynkWISE trial application", () => {
+    const supercrm = findCrmOption("supercrm");
+    expect(supercrm?.signupUrl).toBe("https://thynkwise.co.in/supercrm#start-trial");
+    expect(supercrm?.offer).toMatch(/21-day/);
+  });
+
   it("lists the CRM offer on every plan", () => {
     for (const plan of billingPlans) expect(plan.features).toContain(crmOfferFeature);
   });
