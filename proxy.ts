@@ -15,7 +15,9 @@ function isPublicPath(pathname: string): boolean {
     pathname.startsWith("/auth/") ||
     pathname.startsWith("/api/auth/") ||
     pathname === "/api/webhooks/meta" ||
-    pathname === "/api/webhooks/support-email"
+    pathname === "/api/webhooks/support-email" ||
+    // Scheduled job: the route itself requires the CRON_SECRET bearer token.
+    pathname === "/api/cron/meta-token-refresh"
   );
 }
 

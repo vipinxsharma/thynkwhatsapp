@@ -4,11 +4,13 @@ import { NextRequest } from "next/server";
 const mocks = vi.hoisted(() => ({
   auth: vi.fn(), exchange: vi.fn(), granted: vi.fn(), numbers: vi.fn(), verify: vi.fn(),
   subscribe: vi.fn(), registration: vi.fn(), register: vi.fn(), save: vi.fn(),
+  inspect: vi.fn(), recordState: vi.fn(),
 }));
 
 vi.mock("@/lib/auth/session", () => ({ requireApiSession: mocks.auth }));
 vi.mock("@/lib/meta/connections", () => ({
   saveMetaConnection: mocks.save,
+  recordTokenState: mocks.recordState,
   validMetaIdentifier: (value: string) => /^\d{5,30}$/.test(value),
 }));
 vi.mock("@/lib/meta/encryption", () => ({
@@ -23,6 +25,7 @@ vi.mock("@/lib/meta/client", () => ({
     subscribeWabaToWebhook = mocks.subscribe;
     getPhoneRegistration = mocks.registration;
     registerPhoneNumber = mocks.register;
+    inspectToken = mocks.inspect;
   },
 }));
 
@@ -50,6 +53,8 @@ beforeEach(() => {
   mocks.registration.mockResolvedValue({ registered: false });
   mocks.register.mockResolvedValue(undefined);
   mocks.save.mockResolvedValue(undefined);
+  mocks.inspect.mockResolvedValue({ isValid: true, expiresAt: new Date("2027-01-17T00:00:00Z"), wabaIds: [] });
+  mocks.recordState.mockResolvedValue(undefined);
 });
 
 describe("Embedded Signup onboarding route", () => {
@@ -120,5 +125,13 @@ describe("Embedded Signup onboarding route", () => {
     expect((await POST(request({ wabaId, phoneNumberId, channelName: "Support" }))).status).toBe(400);
     expect((await POST(request({ code: "abc", wabaId, channelName: "Support" }))).status).toBe(400);
     expect(mocks.exchange).not.toHaveBeenCalled();
+  });
+
+  it("records the token expiry and still succeeds when that record fails", async () => {
+    const ok = await POST(request({ code: "abc", wabaId, phoneNumberId, channelName: "Support" }));
+    expect(ok.status).toBe(200);
+    expect(mocks.recordState).toHaveBeenCalledWith({ wabaId, expiresAt: new Date("2027-01-17T00:00:00Z") });
+    mocks.recordState.mockRejectedValue(new Error("column does not exist"));
+    expect((await POST(request({ code: "abc", wabaId, phoneNumberId, channelName: "Support" }))).status).toBe(200);
   });
 });
