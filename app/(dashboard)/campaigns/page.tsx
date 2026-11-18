@@ -1,20 +1,12 @@
 import { requirePageSession } from "@/lib/auth/session";
 import { listWhatsAppChannels } from "@/lib/meta/connections";
-import { StrapiClient } from "@/lib/strapi/client";
-import { selectableTemplates } from "@/components/campaigns/campaign-helpers";
 import { CampaignsScreen } from "@/components/campaigns/CampaignsScreen";
 
 export const dynamic = "force-dynamic";
 
 export default async function CampaignsPage() {
   const session = await requirePageSession();
-
-  // Channels come from the connected-number store; templates from the synced template cache.
-  // The campaign API re-checks the template with Meta when a draft is created.
-  const [channels, templates] = await Promise.all([
-    listWhatsAppChannels(session.tenantId).catch(() => []),
-    new StrapiClient(session.tenantId).getTemplates().catch(() => []),
-  ]);
+  const channels = await listWhatsAppChannels(session.tenantId).catch(() => []);
 
   return (
     <CampaignsScreen
@@ -27,7 +19,6 @@ export default async function CampaignsPage() {
         enabled: channel.enabled,
         isDefault: channel.isDefault,
       }))}
-      templates={selectableTemplates(templates)}
     />
   );
 }

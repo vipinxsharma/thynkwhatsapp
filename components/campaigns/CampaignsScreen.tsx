@@ -24,7 +24,12 @@ export interface ChannelOption {
 interface Props {
   role: string;
   channels: ChannelOption[];
-  templates: SelectableTemplate[];
+}
+
+interface ConsentSummary {
+  contacts: number;
+  optedIn: number;
+  truncated: boolean;
 }
 
 interface CampaignDetailData {
@@ -38,7 +43,7 @@ async function readJson(response: Response): Promise<unknown> {
   return response.json().catch(() => null);
 }
 
-export function CampaignsScreen({ role, channels, templates }: Props) {
+export function CampaignsScreen({ role, channels }: Props) {
   const canManage = canManageCampaigns(role);
   const roleNote = roleLimitMessage(role);
   const [tab, setTab] = useState<"campaigns" | "consent">("campaigns");
@@ -49,7 +54,11 @@ export function CampaignsScreen({ role, channels, templates }: Props) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const [contacts, setContacts] = useState<ConsentContact[] | null>(null);
+  const [consentSummary, setConsentSummary] = useState<ConsentSummary | null>(null);
   const [consentError, setConsentError] = useState<string | null>(null);
+
+  const [templates, setTemplates] = useState<SelectableTemplate[]>([]);
+  const [templatesError, setTemplatesError] = useState<string | null>(null);
 
   const loadCampaigns = useCallback(async () => {
     try {
@@ -69,16 +78,30 @@ export function CampaignsScreen({ role, channels, templates }: Props) {
       const body = await readJson(response);
       if (!response.ok) throw new Error(errorFromBody(body, "Contacts are unavailable right now."));
       setContacts((body as { data: ConsentContact[] }).data);
+      setConsentSummary((body as { summary: ConsentSummary }).summary);
       setConsentError(null);
     } catch (error) {
       setConsentError(error instanceof Error ? error.message : "Contacts are unavailable right now.");
     }
   }, []);
 
+  const loadTemplates = useCallback(async () => {
+    try {
+      const response = await fetch("/api/campaigns/templates", { cache: "no-store" });
+      const body = await readJson(response);
+      if (!response.ok) throw new Error(errorFromBody(body, "Templates are unavailable right now."));
+      setTemplates((body as { data: SelectableTemplate[] }).data);
+      setTemplatesError(null);
+    } catch (error) {
+      setTemplatesError(error instanceof Error ? error.message : "Templates are unavailable right now.");
+    }
+  }, []);
+
   useEffect(() => {
     void loadCampaigns();
     void loadConsent();
-  }, [loadCampaigns, loadConsent]);
+    void loadTemplates();
+  }, [loadCampaigns, loadConsent, loadTemplates]);
 
   // Keep the list in step while any campaign is sending.
   const anySending = campaigns?.some((campaign) => shouldPoll(campaign.status)) ?? false;
@@ -186,6 +209,7 @@ export function CampaignsScreen({ role, channels, templates }: Props) {
       {tab === "consent" && (
         <ConsentPanel
           contacts={contacts}
+          summary={consentSummary}
           error={consentError}
           canManage={canManage}
           onChanged={() => void loadConsent()}
@@ -481,12 +505,12 @@ function CampaignDetail({ campaignId, canManage, onChanged }: { campaignId: stri
       });
       const body = await readJson(response);
       if (!response.ok) throw new Error(errorFromBody(body, "The campaign action could not be completed."));
-      if (action === "send_batch") {
-        const result = (body as { data: { summary: BatchSummary } }).data;
-        setBatch(result.summary);
-      }
+      const result = (body as { data: { summary?: BatchSummary; campaign: Campaign; problems: RecipientProblem[] } }).data;
+      if (action === "send_batch" && result.summary) setBatch(result.summary);
       setConfirming(null);
-      await load();
+      // Actions now return the campaign and its problems, so no second request is needed.
+      if (result.campaign) setData({ campaign: result.campaign, problems: result.problems });
+      else await load();
       onChanged();
     } catch (caught) {
       setNotice(caught instanceof Error ? caught.message : "The campaign action could not be completed.");
@@ -628,9 +652,10 @@ function ActionButton({ label, onClick, disabled, busy, tone }: { label: string;
 // ------------------------------------------------------------------ consent
 
 function ConsentPanel({
-  contacts, error, canManage, onChanged,
+  contacts, summary, error, canManage, onChanged,
 }: {
   contacts: ConsentContact[] | null;
+  summary: ConsentSummary | null;
   error: string | null;
   canManage: boolean;
   onChanged: () => void;
@@ -690,13 +715,13 @@ function ConsentPanel({
   if (error && !contacts) return <p role="alert" className="text-sm text-red-300">{error}</p>;
   if (!contacts) return <p className="text-sm text-gray-400">Loading contacts…</p>;
 
-  const optedIn = contacts.filter((contact) => contact.consent === "opted_in").length;
+  const totals = summary ?? { contacts: contacts.length, optedIn: contacts.filter((contact) => contact.consent === "opted_in").length, truncated: false };
 
   return (
     <div className="space-y-5">
       <p className="text-sm text-gray-300">
-        {formatCount(optedIn)} of {formatCount(contacts.length)} contacts are opted in to marketing messages. Only opted-in contacts receive campaigns.
-        The list shows up to 5,000 contacts.
+        {formatCount(totals.optedIn)} of {formatCount(totals.contacts)} contacts are opted in to marketing messages. Only opted-in contacts receive campaigns.
+        {totals.truncated && " The list shows the first 5,000 contacts; narrow it with the filters."}
       </p>
 
       <div className="flex flex-wrap gap-3">
