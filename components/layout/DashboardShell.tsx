@@ -5,6 +5,7 @@ import { useState } from "react";
 import { usePathname } from "next/navigation";
 import type { AppSession } from "@/lib/auth/session";
 import { signOutAction } from "@/app/auth/actions";
+import { SubmitButton } from "@/components/auth/SubmitButton";
 import type { WorkspaceMembership } from "@/lib/workspaces/store";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { XeccelLogo } from "@/components/brand/XeccelLogo";
@@ -164,13 +165,13 @@ export function DashboardShell({
             <span className="capitalize">Role: {session.role}</span>
           </div>
           <form action={signOutAction}>
-            <button
-              type="submit"
-              aria-label="Sign out of Xeccel"
-              className="flex min-h-11 w-full cursor-pointer items-center rounded-lg px-2 text-left text-xs font-medium text-[var(--muted)] transition-colors hover:bg-surface-200 hover:text-[var(--foreground)]"
+            <SubmitButton
+              pendingLabel="Signing out…"
+              ariaLabel="Sign out of Xeccel"
+              className="flex min-h-11 w-full cursor-pointer items-center gap-2 rounded-lg px-2 text-left text-xs font-medium text-[var(--muted)] transition-colors hover:bg-surface-200 hover:text-[var(--foreground)] disabled:cursor-wait disabled:opacity-70"
             >
               Sign out
-            </button>
+            </SubmitButton>
           </form>
         </div>
       </aside>

@@ -4,11 +4,18 @@ import { neonAuthConfigured } from "@/lib/auth/config";
 import { createSessionToken, SESSION_COOKIE_NAME, type AppSession } from "@/lib/auth/token";
 import { ensureWorkspaceForUser } from "@/lib/workspaces/store";
 
-export async function issueApplicationSession(): Promise<AppSession> {
+export type AuthenticatedIdentity = { id: string; email: string; name?: string | null };
+
+/**
+ * Pass the user returned by the sign-in / sign-up call that ran in this same
+ * request. neonAuth.getSession() reads cookies from the incoming request
+ * headers, so it cannot see a session cookie that was only just set on the
+ * response: from a signed-out browser it returns no user.
+ */
+export async function issueApplicationSession(authenticated?: AuthenticatedIdentity | null): Promise<AppSession> {
   if (!neonAuthConfigured()) throw new Error("Neon Auth is not configured");
 
-  const { data } = await neonAuth.getSession();
-  const user = data?.user;
+  const user = authenticated ?? (await neonAuth.getSession()).data?.user;
   if (!user?.id || !user.email) throw new Error("Authentication required");
 
   const membership = await ensureWorkspaceForUser({
