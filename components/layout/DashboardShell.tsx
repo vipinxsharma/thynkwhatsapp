@@ -22,6 +22,7 @@ import {
   MessageSquare,
   Send,
   Settings,
+  Network,
   ShieldCheck,
   Users,
   LifeBuoy,
@@ -46,6 +47,7 @@ const navigation = [
   { name: "Message templates", href: "/templates", icon: FileText },
   { name: "Analytics", href: "/analytics", icon: BarChart3 },
   { name: "Channels", href: "/settings/waba", icon: Settings },
+  { name: "Partner solutions", href: "/partner-solutions", icon: Network },
   { name: "Support", href: "/support", icon: LifeBuoy },
 ];
 
