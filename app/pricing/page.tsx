@@ -24,23 +24,23 @@ const plans: Plan[] = [
     id: "sales-accelerator",
     term: "Yearly",
     days: "365 Days",
-    name: "Sales Accelerator: WhatsApp + CRM",
+    name: "Sales Accelerator – WhatsApp + CRM – Yearly",
     price: 20000,
     period: "year",
     description:
-      "The ultimate solution for scaling your business. Includes CRM tools, advanced automation, and deeper insights to close more deals.",
+      "The complete solution for scaling your business. This plan includes the Xeccel CRM, giving you customer relationship management tools, advanced automation, and deeper insights to close more deals.",
     popular: true,
-    features: ["Official WhatsApp Cloud API integration", "Multi-agent shared team inbox", "CRM tools and advanced automation"],
+    features: ["Official WhatsApp Cloud API Integration", "Multi-Agent Shared Team Inbox"],
   },
   {
     id: "lead-automation-suite",
     term: "Yearly",
     days: "365 Days",
-    name: "Always-On Lead Automation Suite",
+    name: "Always-On Lead Automation Suite – Yearly",
     price: 12500,
     period: "year",
-    description: "Everything you need to get started with WhatsApp lead automation.",
-    features: ["Official WhatsApp Cloud API integration", "Multi-agent shared team inbox"],
+    description: "Everything you need to get started with your business on WhatsApp.",
+    features: ["Official WhatsApp Cloud API Integration", "Multi-Agent Shared Team Inbox"],
   },
   {
     id: "whats-crm-monthly",
@@ -49,18 +49,18 @@ const plans: Plan[] = [
     name: "Whats+CRM Monthly",
     price: 2000,
     period: "month",
-    description: "WhatsApp messaging with CRM, billed monthly.",
-    features: ["Official WhatsApp Cloud API integration", "Multi-agent shared team inbox", "CRM tools"],
+    description: "WhatsApp and the Xeccel CRM together, billed monthly.",
+    features: ["Official WhatsApp Cloud API Integration", "Multi-Agent Shared Team Inbox"],
   },
   {
     id: "growth-booster",
     term: "Monthly",
     days: "30 Days",
-    name: "Growth Booster: WhatsApp Automation",
+    name: "Growth Booster – WhatsApp Automation – Monthly",
     price: 1250,
     period: "month",
-    description: "A complete monthly solution to manage customers, track payments, and boost engagement.",
-    features: ["Official WhatsApp Cloud API integration", "Multi-agent shared team inbox"],
+    description: "A comprehensive monthly solution for your business. Manage customers, track payments, and boost engagement on one platform built to accelerate your growth.",
+    features: ["Official WhatsApp Cloud API Integration", "Multi-Agent Shared Team Inbox"],
   },
 ];
 
@@ -118,7 +118,7 @@ export default function PricingPage() {
             Simple, Transparent Pricing Built for Growth
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-base leading-8 text-[var(--muted)]">
-            Automate customer conversations, run broadcasts, and scale your sales from one workspace.
+            Automate customer conversations, run high-converting broadcasts, and scale your sales with WhatsApp tools built for your team.
           </p>
 
           <div role="tablist" aria-label="Pricing duration filter" className="mx-auto mt-10 inline-flex flex-wrap justify-center gap-2 rounded-full border border-[var(--border)] bg-[var(--surface)] p-1">
@@ -162,12 +162,11 @@ export default function PricingPage() {
                 <span className="text-4xl font-bold text-[var(--heading)]">₹{plan.price.toLocaleString("en-IN")}</span>
                 <span className="text-sm font-semibold text-[var(--muted)]">/ {plan.period}</span>
               </p>
-              <p className="mt-1 text-xs text-[var(--muted)]">+ GST applicable</p>
+              <p className="mt-1 text-xs text-[var(--muted)]">+ 18% GST applicable</p>
 
               <h3 className="mt-6 text-xs font-bold uppercase tracking-widest text-[var(--muted)]">Plan capabilities</h3>
-              <p className="mt-2 text-sm leading-6 text-[var(--muted)]">{plan.description}</p>
               <ul className="mt-4 space-y-3">
-                {plan.features.map((feature) => (
+                {[plan.description, ...plan.features].map((feature) => (
                   <li key={feature} className="flex gap-3 text-sm leading-6">
                     <Check className="mt-1 size-4 shrink-0 text-[var(--accent-text)]" aria-hidden="true" />
                     {feature}
