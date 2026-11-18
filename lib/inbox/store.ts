@@ -1,6 +1,20 @@
 import { randomUUID } from "node:crypto";
 import { neon } from "@neondatabase/serverless";
 import type { Contact, Conversation, Message, PhoneNumber, WABAAccount } from "@/types/strapi";
+import { emitWebhookEvent } from "@/lib/developer/webhook-delivery";
+
+// Outbound webhook events are emitted from the writes below, so every caller (Meta webhook,
+// dashboard send, developer API) gets them without extra wiring.
+function contactEventPayload(contact: Contact) {
+  return {
+    id: contact.id,
+    waId: contact.waId,
+    phoneNumber: contact.phoneNumber,
+    name: contact.name,
+    tags: contact.tags,
+    customAttributes: contact.customAttributes,
+  };
+}
 
 function database() {
   if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL is not configured");
@@ -186,6 +200,14 @@ export async function ensureContactConversation(input: {
   const conversationId = (conversationRows[0] as { id: string }).id;
   const conversation = await getConversation(input.workspaceId, conversationId);
   if (!conversation) throw new Error("Conversation was not persisted");
+  if (contactRow.created) {
+    await emitWebhookEvent({
+      workspaceId: input.workspaceId,
+      eventType: "contact.created",
+      eventId: `contact.created:${conversation.contact.id}`,
+      data: { contact: contactEventPayload(conversation.contact) },
+    });
+  }
   return { contact: conversation.contact, conversation, created: contactRow.created };
 }
 
@@ -225,19 +247,62 @@ export async function recordMessage(
       message.type, message.body, JSON.stringify(message.rawPayload || {}), message.status, message.timestamp]
   );
   if (!rows[0]) throw new Error("Message was not persisted in the selected workspace conversation");
-  return rows[0] as Message;
+  const recorded = rows[0] as Message;
+  if (message.direction === "inbound") {
+    // The id is the same whether this call inserted the row or found it, so a repeated webhook
+    // from Meta queues the event only once.
+    const conversation = await getConversation(workspaceId, conversationId);
+    await emitWebhookEvent({
+      workspaceId,
+      eventType: "message.received",
+      eventId: `message.received:${recorded.id}`,
+      data: {
+        message: {
+          id: recorded.id,
+          wamId: recorded.wamId,
+          type: recorded.type,
+          body: recorded.body,
+          status: recorded.status,
+          timestamp: recorded.timestamp,
+          conversationId,
+        },
+        contact: conversation ? contactEventPayload(conversation.contact) : null,
+      },
+    });
+  }
+  return recorded;
 }
 
 export async function updateMessageStatus(workspaceId: string, wamId: string, status: Message["status"]): Promise<void> {
-  await database().query(
+  const rows = await database().query(
     `UPDATE app_inbox_messages SET status = $3
      WHERE workspace_id = $1::uuid AND wam_id = $2
        AND (CASE status WHEN 'received' THEN 0 WHEN 'queued' THEN 1 WHEN 'sent' THEN 2
          WHEN 'delivered' THEN 3 WHEN 'read' THEN 4 ELSE 0 END)
          < (CASE $3 WHEN 'received' THEN 0 WHEN 'queued' THEN 1 WHEN 'sent' THEN 2
-           WHEN 'delivered' THEN 3 WHEN 'read' THEN 4 ELSE 5 END)`,
+           WHEN 'delivered' THEN 3 WHEN 'read' THEN 4 ELSE 5 END)
+     RETURNING id, wam_id AS "wamId", conversation_id AS "conversationId", direction, type`,
     [workspaceId, wamId, status]
   );
+  // Only a status that actually advanced is emitted; a stale or repeated receipt changes nothing.
+  const changed = rows[0] as { id: string; wamId: string; conversationId: string; direction: string; type: string } | undefined;
+  if (changed) {
+    await emitWebhookEvent({
+      workspaceId,
+      eventType: "message.status_changed",
+      eventId: `message.status_changed:${wamId}:${status}`,
+      data: {
+        message: {
+          id: changed.id,
+          wamId,
+          direction: changed.direction,
+          type: changed.type,
+          status,
+          conversationId: changed.conversationId,
+        },
+      },
+    });
+  }
 }
 
 export async function updateContact(
@@ -410,4 +475,45 @@ export async function deleteQuickReply(workspaceId: string, quickReplyId: string
     [workspaceId, quickReplyId],
   );
   return rows.length > 0;
+}
+
+/**
+ * Creates or updates a contact by phone number for the developer API. Omitted fields keep their
+ * stored values. `tags` replaces the list when given. `customAttributes` is merged key by key.
+ */
+export async function upsertContactByPhone(input: {
+  workspaceId: string;
+  phoneNumber: string;
+  name?: string;
+  tags?: string[];
+  customAttributes?: Record<string, unknown>;
+}): Promise<{ contact: Contact; created: boolean }> {
+  const waId = input.phoneNumber.replace(/\D/g, "");
+  if (waId.length < 8 || waId.length > 15) throw new Error("Invalid international phone number");
+  const name = input.name?.trim() || "";
+  const rows = await database().query(
+    `INSERT INTO app_inbox_contacts
+       (id, workspace_id, wa_id, phone_number, name, tags, custom_attributes)
+     VALUES ($1::uuid, $2::uuid, $3, $4::text, COALESCE(NULLIF($5::text, ''), $4::text), $6::jsonb, $7::jsonb)
+     ON CONFLICT (workspace_id, wa_id) DO UPDATE SET
+       name = COALESCE(NULLIF($5::text, ''), app_inbox_contacts.name),
+       tags = CASE WHEN $8::boolean THEN $6::jsonb ELSE app_inbox_contacts.tags END,
+       custom_attributes = app_inbox_contacts.custom_attributes || $7::jsonb,
+       updated_at = now()
+     RETURNING id, wa_id AS "waId", phone_number AS "phoneNumber", name, tags,
+       custom_attributes AS "customAttributes", last_seen_at AS "lastSeenAt", (xmax = 0) AS created`,
+    [randomUUID(), input.workspaceId, waId, `+${waId}`, name,
+      JSON.stringify(input.tags || []), JSON.stringify(input.customAttributes || {}), Boolean(input.tags)],
+  );
+  const row = rows[0] as ContactRow & { created: boolean };
+  const contact = contactFromRow(row);
+  if (row.created) {
+    await emitWebhookEvent({
+      workspaceId: input.workspaceId,
+      eventType: "contact.created",
+      eventId: `contact.created:${contact.id}`,
+      data: { contact: contactEventPayload(contact) },
+    });
+  }
+  return { contact, created: row.created };
 }
