@@ -43,6 +43,9 @@ export interface Contact {
   customAttributes: Record<string, any>;
   lastSeenAt?: string;
   tenantId?: string;
+  consentStatus?: "subscribed" | "unsubscribed";
+  consentUpdatedAt?: string | null;
+  groupIds?: string[];
 }
 
 export interface Conversation {
@@ -53,6 +56,7 @@ export interface Conversation {
   unreadCount: number;
   contact: Contact;
   phoneNumber: PhoneNumber;
+  assignedAuthUserId?: string | null;
   assignedAgent?: {
     id: number | string;
     username: string;
