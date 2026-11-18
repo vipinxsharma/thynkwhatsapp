@@ -36,10 +36,10 @@ export const crmOptions: CrmOption[] = [
     code: "supercrm",
     name: "SuperCRM",
     tagline: "A configurable sales execution platform for Indian B2B teams, from thynkWISE.",
-    offer: "Free 21-day Full Access trial",
-    included: ["No payment card required", "Access sent after a thynkWISE specialist reviews your application"],
+    offer: "Free with your Xeccel plan",
+    included: ["SuperCRM basic plan", "Access sent after a thynkWISE specialist reviews your application"],
     signupUrl: httpsUrl(process.env.NEXT_PUBLIC_SUPERCRM_SIGNUP_URL) ?? "https://thynkwise.co.in/supercrm#start-trial",
-    signupLabel: "Apply for the free trial",
+    signupLabel: "Sign up for free",
   },
 ];
 

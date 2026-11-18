@@ -42,7 +42,7 @@ describe("CRM options", () => {
   it("sends SuperCRM sign-ups to the thynkWISE trial application", () => {
     const supercrm = findCrmOption("supercrm");
     expect(supercrm?.signupUrl).toBe("https://thynkwise.co.in/supercrm#start-trial");
-    expect(supercrm?.offer).toMatch(/21-day/);
+    expect(supercrm?.included).toContain("SuperCRM basic plan");
   });
 
   it("lists the CRM offer on every plan", () => {
