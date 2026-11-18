@@ -4,6 +4,7 @@ import { XeccelLogo } from "@/components/brand/XeccelLogo";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { workspaceAccessConfigured } from "@/lib/auth/config";
 import { customerSetupSteps } from "@/lib/product/customer-journeys";
+import { partnerCodeFrom } from "@/lib/partner-solutions/journeys";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
@@ -12,8 +13,10 @@ export const metadata: Metadata = {
   alternates: { canonical: "https://xeccel.com/getting-started" },
 };
 
-export default function GettingStartedPage() {
+export default async function GettingStartedPage({ searchParams }: { searchParams: Promise<{ partner?: string }> }) {
+  const partner = partnerCodeFrom((await searchParams).partner);
   const accessReady = workspaceAccessConfigured();
+  const signupHref = partner ? `/login?mode=signup&partner=${encodeURIComponent(partner)}` : "/login?mode=signup";
   return (
     <main className="min-h-screen bg-[var(--background)] text-[var(--foreground)]">
       <div className="mx-auto max-w-6xl px-6 sm:px-10">
@@ -31,7 +34,7 @@ export default function GettingStartedPage() {
             <article className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6">
               <h2 className="font-semibold text-[var(--heading)]">New to Xeccel?</h2>
               <p className="mt-3 text-sm leading-6 text-[var(--muted)]">{accessReady ? "Create your account and begin workspace setup." : "Contact our team for help setting up your account. Self-service registration is temporarily unavailable."}</p>
-              <a href={accessReady ? "/login?mode=signup" : "mailto:partner@thynkwise.co.in?subject=Xeccel%20account%20setup"} className="mt-5 inline-flex min-h-12 items-center rounded-full bg-[var(--accent)] px-5 text-sm font-bold text-[#0b132a]">{accessReady ? "Create workspace" : "Start assisted setup"}</a>
+              <a href={accessReady ? signupHref : "mailto:partner@thynkwise.co.in?subject=Xeccel%20account%20setup"} className="mt-5 inline-flex min-h-12 items-center rounded-full bg-[var(--accent)] px-5 text-sm font-bold text-[#0b132a]">{accessReady ? "Create workspace" : "Start assisted setup"}</a>
             </article>
             <article className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6">
               <h2 className="font-semibold text-[var(--heading)]">Already have an account?</h2>

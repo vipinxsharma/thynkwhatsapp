@@ -31,3 +31,10 @@ export function buildPartnerSignupLink(baseUrl: string, code: string): string | 
   url.searchParams.set("partner", code);
   return url.toString();
 }
+
+/** Returns the partner code from a query or form value, or null when it is missing or unsafe. */
+export function partnerCodeFrom(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const code = value.trim();
+  return isValidPartnerCode(code) ? code : null;
+}

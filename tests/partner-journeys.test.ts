@@ -28,3 +28,13 @@ describe("partner signup code migration", () => {
     expect(sql).toMatch(/PRIMARY KEY/);
   });
 });
+
+describe("partner code from a request", () => {
+  it("accepts a valid code and ignores anything else", async () => {
+    const { partnerCodeFrom } = await import("../lib/partner-solutions/journeys");
+    expect(partnerCodeFrom(" acme-partner ")).toBe("acme-partner");
+    expect(partnerCodeFrom("Acme Partner")).toBeNull();
+    expect(partnerCodeFrom(["acme"])).toBeNull();
+    expect(partnerCodeFrom(undefined)).toBeNull();
+  });
+});

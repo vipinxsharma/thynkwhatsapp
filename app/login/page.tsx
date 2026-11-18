@@ -1,3 +1,4 @@
+import { partnerCodeFrom } from "@/lib/partner-solutions/journeys";
 import Link from "next/link";
 import { signInAction, signUpAction } from "@/app/auth/actions";
 import { SubmitButton } from "@/components/auth/SubmitButton";
@@ -25,10 +26,11 @@ const notices: Record<string, string> = {
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ mode?: string; error?: string; notice?: string }>;
+  searchParams: Promise<{ mode?: string; error?: string; notice?: string; partner?: string }>;
 }) {
   const params = await searchParams;
   const signingUp = params.mode === "signup";
+  const partner = partnerCodeFrom(params.partner);
   const accessReady = workspaceAccessConfigured();
   return (
     <main className="min-h-screen bg-[var(--background)] text-[var(--foreground)] flex items-center justify-center p-6">
@@ -50,6 +52,7 @@ export default async function LoginPage({
         )}
 
         {accessReady ? <form action={signingUp ? signUpAction : signInAction} className="mt-6 space-y-4">
+            {signingUp && partner ? <input type="hidden" name="partner" value={partner} /> : null}
           {signingUp && (
             <label className="block text-xs text-[var(--muted)]">
               Name

@@ -3,6 +3,8 @@
 import { redirect } from "next/navigation";
 import { issueApplicationSession, clearApplicationSession } from "@/lib/auth/bootstrap";
 import { neonAuth } from "@/lib/auth/neon";
+import { partnerCodeFrom } from "@/lib/partner-solutions/journeys";
+import { recordPartnerSignupCode } from "@/lib/partner-solutions/signup-code-store";
 import { neonAuthConfigured, workspaceAccessConfigured } from "@/lib/auth/config";
 
 function configuredOrRedirect(): void {
@@ -36,7 +38,15 @@ export async function signUpAction(formData: FormData) {
 
   // No token means no session was started (email verification is pending).
   if (!data?.token || !data.user) redirect("/login?notice=verify-email");
-  await issueApplicationSession(data.user);
+  const session = await issueApplicationSession(data.user);
+  const partner = partnerCodeFrom(formData.get("partner"));
+  if (partner) {
+    try {
+      await recordPartnerSignupCode(session.tenantId, partner);
+    } catch {
+      // Attribution is best-effort: a failed write must not block the new account.
+    }
+  }
   redirect("/billing?welcome=1");
 }
 
