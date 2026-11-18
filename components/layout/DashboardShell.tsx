@@ -32,6 +32,7 @@ import {
   UserPlus,
   Shield,
   type LucideIcon,
+  MessageSquareText,
 } from "lucide-react";
 
 type NavigationItem = { name: string; href: string; icon: LucideIcon };
@@ -82,7 +83,7 @@ export function DashboardShell({
   }
 
   const visibleNavigation: NavigationItem[] = session.role === "owner" || session.role === "admin"
-    ? [...navigation, { name: "Team", href: "/settings/team", icon: UserPlus }]
+    ? [...navigation, { name: "Chat settings", href: "/settings/chat", icon: MessageSquareText }, { name: "Team", href: "/settings/team", icon: UserPlus }]
     : navigation;
   if (platformSuperadmin) visibleNavigation.push({ name: "Platform admin", href: "/platform/admin", icon: Shield });
 

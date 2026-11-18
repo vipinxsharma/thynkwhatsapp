@@ -5,7 +5,7 @@ import { StrapiClient, isDurableInboxEnabled } from "@/lib/strapi/client";
 import { emitMessageStatusUpdate, emitNewInboundMessage } from "@/lib/events/emitter";
 import { getMetaConnectionForWaba, markWabaDisconnected } from "@/lib/meta/connections";
 import { getConversationForSender } from "@/lib/inbox/store";
-import { routeInboundMessage } from "@/lib/automations/store";
+import { handleInboundAutomation } from "@/lib/automations/inbound";
 
 // account_update events after which the stored business token no longer works for the WABA.
 const ACCOUNT_DISCONNECT_EVENTS = new Set(["PARTNER_REMOVED", "PARTNER_APP_UNINSTALLED", "ACCOUNT_DELETED"]);
@@ -173,8 +173,14 @@ async function processWebhookEntries(entries: MetaWebhookPayload["entry"]) {
                 status: "received",
                 timestamp: new Date(parseInt(msg.timestamp, 10) * 1000).toISOString(),
               });
-              if (isDurableInboxEnabled() && msg.type === "text") {
-                await routeInboundMessage(tenantId, String(matchedConv.id), msg.id, connection.phoneNumberId, bodyText);
+              if (isDurableInboxEnabled()) {
+                // Automation failures are logged, not retried: the message is already stored.
+                await handleInboundAutomation({
+                  workspaceId: tenantId, conversationId: String(matchedConv.id), wamId: msg.id,
+                  waId: msg.from, phoneNumberId: connection.phoneNumberId, messageType: msg.type,
+                  text: bodyText, conversationStatus: matchedConv.status,
+                  contactName: value.contacts?.find((contact) => contact.wa_id === msg.from)?.profile.name || "",
+                }).catch((error) => console.error("[Webhook Automation Error]", error));
               }
               emitNewInboundMessage(tenantId, matchedConv.id, recorded);
               console.log(
