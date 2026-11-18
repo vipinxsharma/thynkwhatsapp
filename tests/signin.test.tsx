@@ -110,7 +110,7 @@ describe("signUpAction", () => {
   it("signs the new user in when sign-up returns a session token", async () => {
     mocks.signUpEmail.mockResolvedValue({ data: { token: "t", user }, error: null });
 
-    await expect(signUpAction(credentials({ name: "Owner" }))).rejects.toThrow("REDIRECT:/dashboard");
+    await expect(signUpAction(credentials({ name: "Owner" }))).rejects.toThrow("REDIRECT:/billing?welcome=1");
     expect(mocks.getSession).not.toHaveBeenCalled();
     expect(mocks.cookieSet).toHaveBeenCalledOnce();
   });

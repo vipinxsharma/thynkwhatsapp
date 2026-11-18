@@ -37,7 +37,7 @@ export async function signUpAction(formData: FormData) {
   // No token means no session was started (email verification is pending).
   if (!data?.token || !data.user) redirect("/login?notice=verify-email");
   await issueApplicationSession(data.user);
-  redirect("/dashboard");
+  redirect("/billing?welcome=1");
 }
 
 export async function requestPasswordResetAction(formData: FormData) {
