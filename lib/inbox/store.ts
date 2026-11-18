@@ -15,6 +15,7 @@ function contactEventPayload(contact: Contact) {
     customAttributes: contact.customAttributes,
   };
 }
+import { isMediaMessageType, type MediaMessageType } from "./media";
 
 function database() {
   if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL is not configured");
@@ -151,6 +152,33 @@ export async function getMessagePage(
     before ? [workspaceId, conversationId, before.timestamp, before.id] : [workspaceId, conversationId]
   );
   return { messages: (rows.slice(0, 50) as Message[]).reverse(), hasMore: rows.length > 50 };
+}
+
+/**
+ * The Meta media ID behind a stored image/video/document message, plus the sender number that
+ * can read it. Only the message's own workspace is searched.
+ */
+export async function getMessageMedia(
+  workspaceId: string,
+  messageId: string,
+): Promise<{ type: MediaMessageType; mediaId: string; filename: string | null; phoneNumberId: string } | null> {
+  const rows = await database().query(
+    `SELECT m.type, m.raw_payload AS "rawPayload", c.phone_number_id AS "phoneNumberId"
+     FROM app_inbox_messages m
+     JOIN app_inbox_conversations c ON c.workspace_id = m.workspace_id AND c.id = m.conversation_id
+     WHERE m.workspace_id = $1::uuid AND m.id = $2::uuid LIMIT 1`,
+    [workspaceId, messageId]
+  );
+  const row = rows[0] as { type: string; rawPayload: Record<string, any> | null; phoneNumberId: string } | undefined;
+  if (!row || !isMediaMessageType(row.type)) return null;
+  const part = row.rawPayload?.[row.type];
+  if (typeof part?.id !== "string" || !/^\d{5,30}$/.test(part.id)) return null;
+  return {
+    type: row.type,
+    mediaId: part.id,
+    filename: typeof part.filename === "string" ? part.filename : null,
+    phoneNumberId: row.phoneNumberId || "",
+  };
 }
 
 export async function ensureContactConversation(input: {
