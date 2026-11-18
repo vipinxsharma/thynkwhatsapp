@@ -111,6 +111,7 @@ export default function HomePage() {
             <a className="hover:text-[var(--heading)]" href="#platform">Platform</a>
             <a className="hover:text-[var(--heading)]" href="#how-it-works">How it works</a>
             <a className="hover:text-[var(--heading)]" href="#customer-journeys">Customer journeys</a>
+            <a className="hover:text-[var(--heading)]" href="/pricing">Pricing</a>
             <a className="hover:text-[var(--heading)]" href="#questions">Questions</a>
             <a className="hover:text-[var(--heading)]" href="#policies">Policies</a>
           </nav>
