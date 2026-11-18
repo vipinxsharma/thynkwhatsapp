@@ -5,6 +5,7 @@ import { encryptToken, decryptToken } from "../lib/meta/encryption";
 import { GET, POST } from "../app/api/webhooks/meta/route";
 import { NextRequest } from "next/server";
 import { StrapiClient } from "../lib/strapi/client";
+import { markWabaDisconnected } from "../lib/meta/connections";
 
 vi.mock("@/lib/meta/connections", () => ({
   getMetaConnectionForWaba: vi.fn(async () => ({
@@ -14,6 +15,7 @@ vi.mock("@/lib/meta/connections", () => ({
     verifiedName: "Test",
   })),
   getMetaConnectionForWorkspace: vi.fn(),
+  markWabaDisconnected: vi.fn(async () => "webhook-test-tenant"),
 }));
 
 const TEST_META_SECRET = "my_meta_app_secret_test_123";
@@ -126,6 +128,31 @@ describe("POST /api/webhooks/meta (Incoming Message Ingestion)", () => {
       },
     });
   }
+
+  function accountUpdate(event: string) {
+    return {
+      object: "whatsapp_business_account",
+      entry: [{
+        id: "109823485723910",
+        changes: [{ field: "account_update", value: { event, waba_info: { waba_id: "109823485723910" } } }],
+      }],
+    };
+  }
+
+  it("marks the connection disconnected when the customer removes the app", async () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    const res = await POST(signedWebhook(accountUpdate("PARTNER_APP_UNINSTALLED")));
+    expect(res.status).toBe(200);
+    expect(markWabaDisconnected).toHaveBeenCalledWith("109823485723910");
+  });
+
+  it("leaves the connection alone for informational account updates", async () => {
+    vi.mocked(markWabaDisconnected).mockClear();
+    vi.spyOn(console, "log").mockImplementation(() => {});
+    const res = await POST(signedWebhook(accountUpdate("PARTNER_ADDED")));
+    expect(res.status).toBe(200);
+    expect(markWabaDisconnected).not.toHaveBeenCalled();
+  });
 
   function inboundPayload(sender: string, messageId: string) {
     return {

@@ -218,3 +218,17 @@ export async function syncWhatsAppChannelStatus(input: {
   );
   return rows.length > 0;
 }
+
+/**
+ * Marks a WABA connection as no longer usable after Meta reports that the customer removed
+ * the app, unshared the account, or deleted it. Returns the affected workspace, if any.
+ */
+export async function markWabaDisconnected(wabaId: string): Promise<string | null> {
+  if (!validMetaIdentifier(wabaId)) return null;
+  const rows = await database().query(
+    `UPDATE app_waba_connections SET status = 'disconnected', webhook_subscribed = false, updated_at = now()
+     WHERE waba_id = $1 AND status <> 'disconnected' RETURNING workspace_id AS "workspaceId"`,
+    [wabaId]
+  );
+  return (rows[0] as { workspaceId: string } | undefined)?.workspaceId ?? null;
+}
