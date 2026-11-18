@@ -13,6 +13,7 @@ describe("Meta Embedded Signup session message", () => {
       kind: "finish",
       wabaId: "123456789",
       phoneNumberId: "987654321",
+      finishType: "cloud_api",
     });
     expect(parseSignupSessionEvent("https://web.facebook.com", finish)).toMatchObject({
       kind: "finish",
@@ -55,5 +56,35 @@ describe("Meta Embedded Signup session message", () => {
   it("recognizes cancellation and error without treating them as success", () => {
     expect(parseSignupSessionEvent("https://www.facebook.com", { type: "WA_EMBEDDED_SIGNUP", event: "CANCEL" })).toEqual({ kind: "cancel" });
     expect(parseSignupSessionEvent("https://www.facebook.com", { type: "WA_EMBEDDED_SIGNUP", event: "ERROR" })).toEqual({ kind: "error" });
+  });
+
+  it("marks WhatsApp Business app onboarding and keeps the customer's business ID", () => {
+    expect(parseSignupSessionEvent("https://www.facebook.com", {
+      ...finish,
+      event: "FINISH_WHATSAPP_BUSINESS_APP_ONBOARDING",
+      data: { ...finish.data, business_id: "2729063490586005" },
+    })).toEqual({
+      kind: "finish",
+      wabaId: "123456789",
+      phoneNumberId: "987654321",
+      finishType: "business_app",
+      businessId: "2729063490586005",
+    });
+  });
+
+  it("carries Meta's abandoned step and reported error details", () => {
+    expect(parseSignupSessionEvent("https://www.facebook.com", {
+      type: "WA_EMBEDDED_SIGNUP", event: "CANCEL", data: { current_step: "PHONE_NUMBER_SETUP" },
+    })).toEqual({ kind: "cancel", currentStep: "PHONE_NUMBER_SETUP" });
+    expect(parseSignupSessionEvent("https://www.facebook.com", {
+      type: "WA_EMBEDDED_SIGNUP",
+      event: "ERROR",
+      data: { error_message: "Your verified name violates WhatsApp guidelines.", error_code: 524126, session_id: "f34b51dab5e0498" },
+    })).toEqual({
+      kind: "error",
+      errorMessage: "Your verified name violates WhatsApp guidelines.",
+      errorCode: "524126",
+      sessionId: "f34b51dab5e0498",
+    });
   });
 });

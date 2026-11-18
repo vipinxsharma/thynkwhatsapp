@@ -1,4 +1,5 @@
 import {
+  MetaDebugTokenResponse,
   MetaSendMessagePayload,
   MetaSendMessageResponse,
   MetaTokenExchangeResponse,
@@ -9,6 +10,21 @@ const GRAPH_API_BASE_URL = `https://graph.facebook.com/${GRAPH_API_VERSION}`;
 
 function metaMocksEnabled(): boolean {
   return process.env.NODE_ENV !== "production" && process.env.ALLOW_META_MOCKS === "true";
+}
+
+/** Meta's own error message, without echoing request URLs (which can carry the app secret). */
+async function describeMetaError(res: Response): Promise<string> {
+  try {
+    const payload = (await res.json()) as { error?: { message?: string; code?: number; error_subcode?: number } };
+    const error = payload?.error;
+    if (error?.message) {
+      const code = [error.code, error.error_subcode].filter((part) => part !== undefined).join("/");
+      return code ? `${error.message} (code ${code})` : error.message;
+    }
+  } catch {
+    // fall through to the status line
+  }
+  return `HTTP ${res.status}`;
 }
 
 export class MetaGraphClient {
@@ -29,12 +45,11 @@ export class MetaGraphClient {
       throw new Error("Missing NEXT_PUBLIC_META_APP_ID or META_APP_SECRET in environment");
     }
 
-    const url = `${GRAPH_API_BASE_URL}/oauth/access_token?client_id=${appId}&client_secret=${appSecret}&code=${code}`;
-
-    const res = await fetch(url, { method: "GET" });
+    // Meta documents this exchange as a GET; keep the secret out of logs and encode every value.
+    const query = new URLSearchParams({ client_id: appId, client_secret: appSecret, code });
+    const res = await fetch(`${GRAPH_API_BASE_URL}/oauth/access_token?${query}`, { method: "GET" });
     if (!res.ok) {
-      const errorText = await res.text();
-      throw new Error(`Failed to exchange code with Meta Graph API: ${errorText}`);
+      throw new Error(`Meta rejected the signup code: ${await describeMetaError(res)}`);
     }
 
     return (await res.json()) as MetaTokenExchangeResponse;
@@ -53,11 +68,69 @@ export class MetaGraphClient {
     });
 
     if (!res.ok) {
-      const error = await res.text();
-      throw new Error(`Failed to subscribe WABA ${wabaId} to webhooks: ${error}`);
+      throw new Error(`Failed to subscribe WABA ${wabaId} to webhooks: ${await describeMetaError(res)}`);
     }
 
     return (await res.json()) as { success: boolean };
+  }
+
+  /**
+   * Lists the WhatsApp Business accounts a customer's business token was granted, read from
+   * the token itself. Used when Meta returns a code without the Embedded Signup session event.
+   */
+  public async listGrantedWabaIds(): Promise<string[]> {
+    const appId = process.env.NEXT_PUBLIC_META_APP_ID;
+    const appSecret = process.env.META_APP_SECRET;
+    if (!appId || !appSecret) {
+      throw new Error("Missing NEXT_PUBLIC_META_APP_ID or META_APP_SECRET in environment");
+    }
+    if (!this.accessToken) throw new Error("A live Meta access token is required");
+    const query = new URLSearchParams({ input_token: this.accessToken });
+    const res = await fetch(`${GRAPH_API_BASE_URL}/debug_token?${query}`, {
+      headers: { Authorization: `Bearer ${appId}|${appSecret}` },
+    });
+    if (!res.ok) throw new Error(`Unable to inspect the Meta token: ${await describeMetaError(res)}`);
+    const payload = (await res.json()) as MetaDebugTokenResponse;
+    const ids = new Set<string>();
+    for (const grant of payload.data?.granular_scopes || []) {
+      if (grant.scope !== "whatsapp_business_management" && grant.scope !== "whatsapp_business_messaging") continue;
+      for (const id of grant.target_ids || []) if (/^\d{5,30}$/.test(String(id))) ids.add(String(id));
+    }
+    return [...ids];
+  }
+
+  /**
+   * Reads whether a business phone number is already registered for Cloud API use.
+   */
+  public async getPhoneRegistration(phoneNumberId: string): Promise<{ registered: boolean; status?: string; platformType?: string }> {
+    if (!this.accessToken) throw new Error("A live Meta access token is required");
+    const res = await fetch(`${GRAPH_API_BASE_URL}/${phoneNumberId}?fields=status,platform_type`, {
+      headers: { Authorization: `Bearer ${this.accessToken}` },
+    });
+    if (!res.ok) throw new Error(`Unable to read the phone number from Meta: ${await describeMetaError(res)}`);
+    const phone = (await res.json()) as { status?: string; platform_type?: string };
+    return {
+      registered: phone.platform_type === "CLOUD_API" && phone.status === "CONNECTED",
+      status: phone.status,
+      platformType: phone.platform_type,
+    };
+  }
+
+  /**
+   * Registers a customer's business phone number for Cloud API use (Tech Provider onboarding step 3).
+   * The PIN becomes the number's two-step verification PIN.
+   */
+  public async registerPhoneNumber(phoneNumberId: string, pin: string): Promise<void> {
+    if (!this.accessToken) throw new Error("A live Meta access token is required");
+    if (!/^\d{6}$/.test(pin)) throw new Error("The registration PIN must be 6 digits");
+    const res = await fetch(`${GRAPH_API_BASE_URL}/${phoneNumberId}/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${this.accessToken}` },
+      body: JSON.stringify({ messaging_product: "whatsapp", pin }),
+    });
+    if (!res.ok) throw new Error(`Meta could not register the phone number: ${await describeMetaError(res)}`);
+    const payload = (await res.json()) as { success?: boolean };
+    if (!payload.success) throw new Error("Meta did not confirm phone number registration");
   }
 
   public async verifyPhoneOwnership(

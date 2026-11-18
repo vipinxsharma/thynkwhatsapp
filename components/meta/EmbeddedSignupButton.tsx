@@ -9,6 +9,17 @@ interface EmbeddedSignupButtonProps {
   onSuccess?: (data: { wabaId: string; phoneNumberId: string }) => void;
 }
 
+// Shown when Meta finishes the popup without a WhatsApp Business account for this login.
+export const NO_WABA_MAPPED_MESSAGE =
+  "This Meta account doesn't have a WhatsApp Business account mapped to it, so it can't be connected. " +
+  "In Meta Business Settings, add or share a WhatsApp Business account with this login, then try again.";
+
+// Meta sends the account IDs just before the code. If they have not arrived shortly after
+// the code, ask the server to recover the account from the token instead of failing.
+const SESSION_GRACE_MS = 4_000;
+// FB.init only versions the SDK's own calls; Meta asks for the latest Graph API version here.
+const SDK_GRAPH_VERSION = process.env.NEXT_PUBLIC_META_GRAPH_API_VERSION || "v27.0";
+
 declare global {
   interface Window {
     fbAsyncInit?: () => void;
@@ -20,13 +31,15 @@ export function EmbeddedSignupButton({ channelName = "", onSuccess }: EmbeddedSi
   const [loading, setLoading] = useState(false);
   const [connected, setConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   const META_APP_ID = process.env.NEXT_PUBLIC_META_APP_ID;
   const CONFIG_ID = process.env.NEXT_PUBLIC_META_CONFIG_ID;
   const activeRef = useRef(false);
   const submittingRef = useRef(false);
   const codeRef = useRef<string | null>(null);
-  const idsRef = useRef<{ wabaId: string; phoneNumberId: string } | null>(null);
+  const idsRef = useRef<{ wabaId: string; phoneNumberId: string; finishType: string } | null>(null);
+  const allowRecoveryRef = useRef(false);
   const channelNameRef = useRef("");
   const onSuccessRef = useRef(onSuccess);
   onSuccessRef.current = onSuccess;
@@ -44,6 +57,7 @@ export function EmbeddedSignupButton({ channelName = "", onSuccess }: EmbeddedSi
       submittingRef.current = false;
       codeRef.current = null;
       idsRef.current = null;
+      allowRecoveryRef.current = false;
       setLoading(false);
       setError(message);
     },
@@ -53,7 +67,8 @@ export function EmbeddedSignupButton({ channelName = "", onSuccess }: EmbeddedSi
   const submitIfReady = useCallback(async () => {
     const code = codeRef.current;
     const ids = idsRef.current;
-    if (!activeRef.current || submittingRef.current || !code || !ids) return;
+    if (!activeRef.current || submittingRef.current || !code) return;
+    if (!ids && !allowRecoveryRef.current) return;
 
     submittingRef.current = true;
     stopWaiting();
@@ -61,12 +76,13 @@ export function EmbeddedSignupButton({ channelName = "", onSuccess }: EmbeddedSi
       const res = await fetch("/api/meta/embedded-signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code, ...ids, channelName: channelNameRef.current }),
+        body: JSON.stringify({ code, ...(ids || {}), channelName: channelNameRef.current }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to link WABA");
 
       activeRef.current = false;
+      setNotice(typeof data.data?.warning === "string" ? data.data.warning : null);
       setConnected(true);
       setLoading(false);
       onSuccessRef.current?.(data.data);
@@ -84,7 +100,7 @@ export function EmbeddedSignupButton({ channelName = "", onSuccess }: EmbeddedSi
             appId: META_APP_ID,
             cookie: true,
             xfbml: true,
-            version: "v21.0",
+            version: SDK_GRAPH_VERSION,
           });
         };
 
@@ -103,14 +119,29 @@ export function EmbeddedSignupButton({ channelName = "", onSuccess }: EmbeddedSi
         if (!activeRef.current || submittingRef.current) return;
         const session = parseSignupSessionEvent(event.origin, event.data);
         if (!session) return;
-        if (session.kind === "cancel") return fail("Meta Embedded Signup was cancelled.");
+        if (session.kind === "cancel") {
+          return fail(
+            session.currentStep
+              ? `Meta Embedded Signup was cancelled at step ${session.currentStep}.`
+              : "Meta Embedded Signup was cancelled."
+          );
+        }
         if (session.kind === "error") {
-          return fail("Meta Embedded Signup reported an error. Please try again.");
+          const reference = [session.errorCode && `code ${session.errorCode}`, session.sessionId && `session ${session.sessionId}`]
+            .filter(Boolean).join(", ");
+          return fail(
+            (session.errorMessage || "Meta Embedded Signup reported an error. Please try again.") +
+            (reference ? ` (${reference})` : "")
+          );
         }
         if (session.kind === "incomplete") {
-          return fail("Meta did not return a phone number. Complete phone setup and try again.");
+          return fail(NO_WABA_MAPPED_MESSAGE);
         }
-        idsRef.current = { wabaId: session.wabaId, phoneNumberId: session.phoneNumberId };
+        idsRef.current = {
+          wabaId: session.wabaId,
+          phoneNumberId: session.phoneNumberId,
+          finishType: session.finishType,
+        };
         void submitIfReady();
       };
 
@@ -142,8 +173,10 @@ export function EmbeddedSignupButton({ channelName = "", onSuccess }: EmbeddedSi
     submittingRef.current = false;
     codeRef.current = null;
     idsRef.current = null;
+    allowRecoveryRef.current = false;
     setLoading(true);
     setError(null);
+    setNotice(null);
 
     window.FB.login(
       (response: { authResponse?: { code?: string } }) => {
@@ -154,14 +187,17 @@ export function EmbeddedSignupButton({ channelName = "", onSuccess }: EmbeddedSi
         void submitIfReady();
         if (!idsRef.current) {
           waitTimerRef.current = setTimeout(() => {
-            fail("Meta did not return account details. Please retry the signup.");
-          }, 20_000);
+            allowRecoveryRef.current = true;
+            void submitIfReady();
+          }, SESSION_GRACE_MS);
         }
       },
       {
         config_id: CONFIG_ID,
         response_type: "code",
         override_default_response_type: true,
+        // Requests are served as Embedded Signup v4, which returns session info for every flow.
+        // These extras are the set proven in production; v4 treats them as optional.
         extras: {
           setup: {},
           featureType: "",
@@ -176,7 +212,10 @@ export function EmbeddedSignupButton({ channelName = "", onSuccess }: EmbeddedSi
       {connected ? (
         <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-lg bg-whatsapp-light/10 border border-whatsapp-light/20 text-whatsapp-light text-sm font-medium">
           <CheckCircle2 className="w-4 h-4 text-whatsapp-light" />
-          <span>Number saved. Check Meta status and live delivery separately.</span>
+          <span>
+            Number saved. Add a payment method for it in WhatsApp Manager before sending, then check Meta
+            status and live delivery.
+          </span>
         </div>
       ) : (
         <button
@@ -199,6 +238,12 @@ export function EmbeddedSignupButton({ channelName = "", onSuccess }: EmbeddedSi
             </>
           )}
         </button>
+      )}
+
+      {notice && (
+        <p className="text-xs text-amber-300 bg-amber-950/40 p-2 rounded border border-amber-800/40">
+          {notice}
+        </p>
       )}
 
       {error && (

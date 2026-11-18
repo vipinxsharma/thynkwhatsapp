@@ -3,9 +3,12 @@ import { verifyMetaWebhookSignature } from "@/lib/meta/signature";
 import { MetaWebhookPayload, WebhookChangeValue } from "@/types/meta-webhook";
 import { StrapiClient, isDurableInboxEnabled } from "@/lib/strapi/client";
 import { emitMessageStatusUpdate, emitNewInboundMessage } from "@/lib/events/emitter";
-import { getMetaConnectionForWaba } from "@/lib/meta/connections";
+import { getMetaConnectionForWaba, markWabaDisconnected } from "@/lib/meta/connections";
 import { getConversationForSender } from "@/lib/inbox/store";
 import { routeInboundMessage } from "@/lib/automations/store";
+
+// account_update events after which the stored business token no longer works for the WABA.
+const ACCOUNT_DISCONNECT_EVENTS = new Set(["PARTNER_REMOVED", "PARTNER_APP_UNINSTALLED", "ACCOUNT_DELETED"]);
 
 /**
  * 1. GET: Webhook Challenge Verification
@@ -180,6 +183,23 @@ async function processWebhookEntries(entries: MetaWebhookPayload["entry"]) {
 
             }
           }
+        }
+      }
+
+      // Account lifecycle: the customer removed the app, unshared the account, or deleted it.
+      if (change.field === "account_update") {
+        const accountEvent = String((value as { event?: unknown }).event || "");
+        const affectedWaba = String(
+          (value as { waba_info?: { waba_id?: unknown } }).waba_info?.waba_id || wabaId
+        );
+        if (ACCOUNT_DISCONNECT_EVENTS.has(accountEvent)) {
+          const workspaceId = await markWabaDisconnected(affectedWaba);
+          console.warn(
+            `[Webhook Account Update] ${accountEvent} for WABA ${affectedWaba}; ` +
+            (workspaceId ? `workspace ${workspaceId} marked disconnected` : "no connected workspace")
+          );
+        } else {
+          console.log(`[Webhook Account Update] ${accountEvent || "unknown event"} for WABA ${affectedWaba}`);
         }
       }
 
