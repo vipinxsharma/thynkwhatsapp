@@ -6,6 +6,7 @@ import { emitMessageStatusUpdate, emitNewInboundMessage } from "@/lib/events/emi
 import { getMetaConnectionForWaba, markWabaDisconnected } from "@/lib/meta/connections";
 import { getConversationForSender } from "@/lib/inbox/store";
 import { handleInboundAutomation } from "@/lib/automations/inbound";
+import { captureLeadFromInbound } from "@/lib/leads/capture";
 
 // account_update events after which the stored business token no longer works for the WABA.
 const ACCOUNT_DISCONNECT_EVENTS = new Set(["PARTNER_REMOVED", "PARTNER_APP_UNINSTALLED", "ACCOUNT_DELETED"]);
@@ -181,6 +182,9 @@ async function processWebhookEntries(entries: MetaWebhookPayload["entry"]) {
                   text: bodyText, conversationStatus: matchedConv.status,
                   contactName: value.contacts?.find((contact) => contact.wa_id === msg.from)?.profile.name || "",
                 }).catch((error) => console.error("[Webhook Automation Error]", error));
+              }
+              if (isDurableInboxEnabled()) {
+                await captureLeadFromInbound(tenantId, String(matchedConv.contact.id), msg);
               }
               emitNewInboundMessage(tenantId, matchedConv.id, recorded);
               console.log(
