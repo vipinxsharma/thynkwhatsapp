@@ -15,6 +15,9 @@ export interface BillingPlan {
   features: string[];
 }
 
+// Shown on every plan: the CRM offer described on /crm.
+export const crmOfferFeature = "Free CRM: Coldcall.in (1 user + 1 web admin) or SuperCRM";
+
 export const billingPlans: BillingPlan[] = [
   {
     id: "sales-accelerator",
@@ -24,9 +27,9 @@ export const billingPlans: BillingPlan[] = [
     priceInr: 20000,
     period: "year",
     description:
-      "The complete solution for scaling your business. This plan includes the Xeccel CRM, giving you customer relationship management tools, advanced automation, and deeper insights to close more deals.",
+      "The complete solution for scaling your business. This plan includes your choice of CRM, Coldcall.in or SuperCRM, with advanced automation and deeper insights to close more deals.",
     popular: true,
-    features: ["Official WhatsApp Cloud API Integration", "Multi-Agent Shared Team Inbox"],
+    features: ["Official WhatsApp Cloud API Integration", "Multi-Agent Shared Team Inbox", crmOfferFeature],
   },
   {
     id: "lead-automation-suite",
@@ -36,7 +39,7 @@ export const billingPlans: BillingPlan[] = [
     priceInr: 12500,
     period: "year",
     description: "Everything you need to get started with your business on WhatsApp.",
-    features: ["Official WhatsApp Cloud API Integration", "Multi-Agent Shared Team Inbox"],
+    features: ["Official WhatsApp Cloud API Integration", "Multi-Agent Shared Team Inbox", crmOfferFeature],
   },
   {
     id: "whats-crm-monthly",
@@ -45,8 +48,8 @@ export const billingPlans: BillingPlan[] = [
     name: "Whats+CRM Monthly",
     priceInr: 2000,
     period: "month",
-    description: "WhatsApp and the Xeccel CRM together, billed monthly.",
-    features: ["Official WhatsApp Cloud API Integration", "Multi-Agent Shared Team Inbox"],
+    description: "WhatsApp and your choice of CRM, Coldcall.in or SuperCRM, billed monthly.",
+    features: ["Official WhatsApp Cloud API Integration", "Multi-Agent Shared Team Inbox", crmOfferFeature],
   },
   {
     id: "growth-booster",
@@ -57,7 +60,7 @@ export const billingPlans: BillingPlan[] = [
     period: "month",
     description:
       "A comprehensive monthly solution for your business. Manage customers, track payments, and boost engagement on one platform built to accelerate your growth.",
-    features: ["Official WhatsApp Cloud API Integration", "Multi-Agent Shared Team Inbox"],
+    features: ["Official WhatsApp Cloud API Integration", "Multi-Agent Shared Team Inbox", crmOfferFeature],
   },
 ];
 
