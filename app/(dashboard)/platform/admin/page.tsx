@@ -1,6 +1,7 @@
 import { requirePageSession } from "@/lib/auth/session";
 import { requirePlatformSuperadmin } from "@/lib/auth/platform-admin";
 import { listPlatformWorkspaceSummaries } from "@/lib/workspaces/store";
+import { PartnerSignupLinks } from "@/components/platform/PartnerSignupLinks";
 
 export const dynamic = "force-dynamic";
 
@@ -44,6 +45,7 @@ export default async function PlatformAdminPage() {
             </tbody>
           </table>
         </div>
+        <PartnerSignupLinks baseUrl={process.env.NEXT_PUBLIC_APP_URL || "https://xeccel.com"} />
       </div>
     </main>
   );
