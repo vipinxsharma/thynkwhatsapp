@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { signInAction, signUpAction } from "@/app/auth/actions";
+import { SubmitButton } from "@/components/auth/SubmitButton";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { XeccelLogo } from "@/components/brand/XeccelLogo";
 import { workspaceAccessConfigured } from "@/lib/auth/config";
@@ -18,6 +19,7 @@ const notices: Record<string, string> = {
   "verify-email": "Check your email to verify the account, then sign in.",
   "reset-sent": "If the account exists, password-reset instructions have been sent.",
   "password-reset": "Password updated. You can now sign in.",
+  "signed-out": "You have been signed out.",
 };
 
 export default async function LoginPage({
@@ -62,9 +64,9 @@ export default async function LoginPage({
             Password
             <input name="password" type="password" autoComplete={signingUp ? "new-password" : "current-password"} required minLength={12} className="mt-1 min-h-12 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-muted)] px-3 py-2 text-sm" />
           </label>
-          <button className="min-h-12 w-full rounded-full bg-whatsapp px-4 py-2.5 text-sm font-semibold text-[#0b132a] shadow-glow hover:bg-whatsapp-dark">
+          <SubmitButton pendingLabel={signingUp ? "Creating workspace…" : "Signing in…"}>
             {signingUp ? "Create workspace" : "Sign in"}
-          </button>
+          </SubmitButton>
           {signingUp && <p className="text-xs leading-6 text-[var(--muted)]">Use at least 12 characters for your password. Account creation does not activate paid messaging. Review our <Link href="/legal/terms" className="underline">terms</Link> and <Link href="/legal/privacy" className="underline">privacy policy</Link>.</p>}
         </form> : <div className="mt-6 rounded-xl border border-[var(--border)] bg-[var(--surface-muted)] p-5">
           <h2 className="font-semibold text-[var(--heading)]">Let us help with your account</h2>

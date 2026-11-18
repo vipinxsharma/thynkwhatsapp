@@ -15,9 +15,11 @@ export async function signInAction(formData: FormData) {
   configuredOrRedirect();
   const email = String(formData.get("email") || "").trim().toLowerCase();
   const password = String(formData.get("password") || "");
-  const { error } = await neonAuth.signIn.email({ email, password });
-  if (error) redirect("/login?error=signin");
-  await issueApplicationSession();
+  const { data, error } = await neonAuth.signIn.email({ email, password });
+  if (error || !data?.user) redirect("/login?error=signin");
+  // Use the user from this sign-in response: the session cookie it set is not
+  // readable through getSession() until the next request.
+  await issueApplicationSession(data.user);
   redirect("/dashboard");
 }
 
@@ -29,12 +31,12 @@ export async function signUpAction(formData: FormData) {
   if (name.length < 2 || !email.includes("@") || password.length < 12) {
     redirect("/login?mode=signup&error=validation");
   }
-  const { error } = await neonAuth.signUp.email({ name, email, password });
+  const { data, error } = await neonAuth.signUp.email({ name, email, password });
   if (error) redirect("/login?mode=signup&error=signup");
 
-  const { data } = await neonAuth.getSession();
-  if (!data?.user) redirect("/login?notice=verify-email");
-  await issueApplicationSession();
+  // No token means no session was started (email verification is pending).
+  if (!data?.token || !data.user) redirect("/login?notice=verify-email");
+  await issueApplicationSession(data.user);
   redirect("/billing?welcome=1");
 }
 
