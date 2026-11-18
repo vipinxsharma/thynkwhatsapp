@@ -66,6 +66,7 @@ jobs:
             -f db/migrations/0015_campaign_sending.sql
           psql -v ON_ERROR_STOP=1 -f db/verify_schema.sql
           psql -v ON_ERROR_STOP=1 -f db/tests/automation_routing.sql
+          psql -v ON_ERROR_STOP=1 -f db/tests/campaign_sending.sql
 
   test-build-audit:
     name: Test, build, and audit

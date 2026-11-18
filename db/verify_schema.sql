@@ -23,7 +23,10 @@ BEGIN
     'app_whatsapp_channels',
     'app_workspace_channel_defaults',
     'app_automation_rules',
-    'app_automation_runs'
+    'app_automation_runs',
+    'app_contact_marketing_consent',
+    'app_campaigns',
+    'app_campaign_recipients'
   ] LOOP
     IF to_regclass('public.' || expected_table) IS NULL THEN
       RAISE EXCEPTION 'Missing application table: %', expected_table;
@@ -47,4 +50,17 @@ BEGIN
   ) THEN
     RAISE EXCEPTION 'Pending invitation uniqueness index is missing';
   END IF;
+
+  FOREACH expected_table IN ARRAY ARRAY[
+    'app_campaigns_workspace_idx',
+    'app_campaigns_active_idx',
+    'app_campaign_recipients_status_idx',
+    'app_campaign_recipients_wam_idx'
+  ] LOOP
+    IF NOT EXISTS (
+      SELECT 1 FROM pg_indexes WHERE schemaname = 'public' AND indexname = expected_table
+    ) THEN
+      RAISE EXCEPTION 'Campaign index is missing: %', expected_table;
+    END IF;
+  END LOOP;
 END $$;
