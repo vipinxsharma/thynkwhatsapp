@@ -7,37 +7,76 @@ import { ThemeToggle } from "@/components/theme/ThemeToggle";
 export const metadata: Metadata = {
   title: "Pricing | Xeccel",
   description:
-    "Simple, per-number pricing for Xeccel. One workspace for WhatsApp conversations, messaging workflows, and customer support.",
+    "Xeccel pricing for WhatsApp conversations, messaging workflows, and customer support. Annual and monthly plans.",
   alternates: { canonical: "https://xeccel.com/pricing" },
 };
 
-// Placeholder commercial values. Confirm before publishing.
-// The per-number price matches the billing default in lib/billing/config.ts (₹699/month).
-const PRICE_PER_NUMBER_INR = 699;
+// Prices in INR, excluding GST. Each figure is the competitor list price plus 25%.
+type Plan = {
+  id: string;
+  term: "Yearly" | "Monthly";
+  name: string;
+  price: number;
+  period: "year" | "month";
+  description: string;
+  highlight?: boolean;
+  features: string[];
+};
 
-const included = [
-  "Shared customer inbox for your whole team",
-  "WhatsApp Cloud API connection through Meta",
-  "Messaging workflows, templates, and campaigns",
-  "AI-assisted support with a path to human review",
-  "Team access and workspace controls",
-];
-
-const addOns = [
-  "Additional WhatsApp numbers, billed per number",
-  "Onboarding help from our team",
+const plans: Plan[] = [
+  {
+    id: "sales-accelerator",
+    term: "Yearly",
+    name: "Sales Accelerator: WhatsApp + CRM",
+    price: 20000,
+    period: "year",
+    description:
+      "For teams that want to scale. Includes customer relationship management tools, advanced automation, and deeper insights to close more deals.",
+    highlight: true,
+    features: [
+      "Official WhatsApp Cloud API integration",
+      "Multi-agent shared team inbox",
+      "CRM tools and advanced automation",
+    ],
+  },
+  {
+    id: "lead-automation-suite",
+    term: "Yearly",
+    name: "Always-On Lead Automation Suite",
+    price: 12500,
+    period: "year",
+    description: "Everything you need to get started with WhatsApp lead automation.",
+    features: ["Official WhatsApp Cloud API integration", "Multi-agent shared team inbox"],
+  },
+  {
+    id: "whats-crm-monthly",
+    term: "Monthly",
+    name: "Whats+CRM Monthly",
+    price: 2000,
+    period: "month",
+    description: "WhatsApp messaging with CRM, billed monthly.",
+    features: ["Official WhatsApp Cloud API integration", "Multi-agent shared team inbox", "CRM tools"],
+  },
+  {
+    id: "growth-booster",
+    term: "Monthly",
+    name: "Growth Booster: WhatsApp Automation",
+    price: 1250,
+    period: "month",
+    description: "A complete monthly solution to manage customers, track payments, and boost engagement.",
+    features: ["Official WhatsApp Cloud API integration", "Multi-agent shared team inbox"],
+  },
 ];
 
 const faqs = [
   {
-    question: "How is pricing calculated?",
-    answer:
-      "You pay per connected WhatsApp number, billed monthly. Taxes and any usage charges from Meta are shown before you pay.",
-  },
-  {
     question: "Are Meta conversation charges included?",
     answer:
       "No. WhatsApp conversation charges are set by Meta and are billed separately at Meta's current rates for your country and message category.",
+  },
+  {
+    question: "Is GST included?",
+    answer: "Prices shown exclude GST. Applicable GST is added at checkout.",
   },
   {
     question: "Can I cancel or change my plan?",
@@ -67,45 +106,49 @@ export default function PricingPage() {
             Simple pricing for every customer conversation.
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-base leading-8 text-[var(--muted)]">
-            Pay per WhatsApp number. Add your team, workflows, and support tools without separate subscriptions.
+            Choose an annual or monthly plan. Add your team, workflows, and support tools in one workspace.
           </p>
         </section>
 
-        <section aria-label="Plan" className="mx-auto max-w-xl pb-16">
-          <article className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-8 md:p-10">
-            <h2 className="text-xl font-bold text-[var(--heading)]">Xeccel Workspace</h2>
-            <p className="mt-2 text-sm text-[var(--muted)]">For teams serving customers on WhatsApp.</p>
-            <p className="mt-6 flex items-baseline gap-2">
-              <span className="text-5xl font-bold text-[var(--heading)]">₹{PRICE_PER_NUMBER_INR}</span>
-              <span className="text-sm font-semibold text-[var(--muted)]">per number / month</span>
-            </p>
-            <p className="mt-2 text-xs text-[var(--muted)]">Plus applicable taxes.</p>
-
-            <ul className="mt-8 space-y-3">
-              {included.map((item) => (
-                <li key={item} className="flex gap-3 text-sm leading-6 text-[var(--foreground)]">
-                  <Check className="mt-1 size-4 shrink-0 text-[var(--accent-text)]" aria-hidden="true" />
-                  {item}
-                </li>
-              ))}
-            </ul>
-
-            <Link
-              href="/getting-started"
-              className="mt-8 inline-flex min-h-12 w-full items-center justify-center rounded-full bg-[var(--accent)] px-6 py-3 text-sm font-bold text-[#0b132a] hover:bg-[var(--accent-hover)]"
+        <section aria-label="Plans" className="grid gap-6 pb-16 md:grid-cols-2">
+          {plans.map((plan) => (
+            <article
+              key={plan.id}
+              className={`flex flex-col rounded-3xl border bg-[var(--surface)] p-8 ${
+                plan.highlight ? "border-[var(--accent)]" : "border-[var(--border)]"
+              }`}
             >
-              Get started
-            </Link>
-          </article>
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-xs font-bold uppercase tracking-widest text-[var(--muted)]">{plan.term}</p>
+                {plan.highlight ? (
+                  <span className="rounded-full bg-[var(--accent)] px-3 py-1 text-xs font-bold text-[#0b132a]">Most popular</span>
+                ) : null}
+              </div>
+              <h2 className="mt-3 text-xl font-bold text-[var(--heading)]">{plan.name}</h2>
+              <p className="mt-2 text-sm leading-6 text-[var(--muted)]">{plan.description}</p>
+              <p className="mt-6 flex items-baseline gap-2">
+                <span className="text-4xl font-bold text-[var(--heading)]">₹{plan.price.toLocaleString("en-IN")}</span>
+                <span className="text-sm font-semibold text-[var(--muted)]">/ {plan.period}</span>
+              </p>
+              <p className="mt-1 text-xs text-[var(--muted)]">Plus applicable GST</p>
 
-          <div className="mt-6 rounded-2xl border border-[var(--border)] p-6">
-            <h3 className="text-sm font-bold text-[var(--heading)]">Also included or billed separately</h3>
-            <ul className="mt-3 space-y-2 text-sm text-[var(--muted)]">
-              {addOns.map((item) => (
-                <li key={item}>• {item}</li>
-              ))}
-            </ul>
-          </div>
+              <ul className="mt-6 space-y-3">
+                {plan.features.map((feature) => (
+                  <li key={feature} className="flex gap-3 text-sm leading-6">
+                    <Check className="mt-1 size-4 shrink-0 text-[var(--accent-text)]" aria-hidden="true" />
+                    {feature}
+                  </li>
+                ))}
+              </ul>
+
+              <Link
+                href="/getting-started"
+                className="mt-8 inline-flex min-h-12 w-full items-center justify-center rounded-full bg-[var(--accent)] px-6 py-3 text-sm font-bold text-[#0b132a] hover:bg-[var(--accent-hover)]"
+              >
+                Get started
+              </Link>
+            </article>
+          ))}
         </section>
 
         <section aria-labelledby="pricing-faq" className="border-t border-[var(--border)] py-16">
