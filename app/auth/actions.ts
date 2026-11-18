@@ -35,7 +35,7 @@ export async function signUpAction(formData: FormData) {
   const { data } = await neonAuth.getSession();
   if (!data?.user) redirect("/login?notice=verify-email");
   await issueApplicationSession();
-  redirect("/dashboard");
+  redirect("/billing?welcome=1");
 }
 
 export async function requestPasswordResetAction(formData: FormData) {

@@ -6,63 +6,11 @@ import { Check } from "lucide-react";
 import { XeccelLogo } from "@/components/brand/XeccelLogo";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 
-// Prices in INR, excluding GST. Each figure is the reference list price plus 25%.
-type Plan = {
-  id: string;
-  term: "Yearly" | "Monthly";
-  days: "365 Days" | "30 Days";
-  name: string;
-  price: number;
-  period: "year" | "month";
-  description: string;
-  popular?: boolean;
-  features: string[];
-};
+import { billingPlans } from "@/lib/billing/plans";
 
-const plans: Plan[] = [
-  {
-    id: "sales-accelerator",
-    term: "Yearly",
-    days: "365 Days",
-    name: "Sales Accelerator – WhatsApp + CRM – Yearly",
-    price: 20000,
-    period: "year",
-    description:
-      "The complete solution for scaling your business. This plan includes the Xeccel CRM, giving you customer relationship management tools, advanced automation, and deeper insights to close more deals.",
-    popular: true,
-    features: ["Official WhatsApp Cloud API Integration", "Multi-Agent Shared Team Inbox"],
-  },
-  {
-    id: "lead-automation-suite",
-    term: "Yearly",
-    days: "365 Days",
-    name: "Always-On Lead Automation Suite – Yearly",
-    price: 12500,
-    period: "year",
-    description: "Everything you need to get started with your business on WhatsApp.",
-    features: ["Official WhatsApp Cloud API Integration", "Multi-Agent Shared Team Inbox"],
-  },
-  {
-    id: "whats-crm-monthly",
-    term: "Monthly",
-    days: "30 Days",
-    name: "Whats+CRM Monthly",
-    price: 2000,
-    period: "month",
-    description: "WhatsApp and the Xeccel CRM together, billed monthly.",
-    features: ["Official WhatsApp Cloud API Integration", "Multi-Agent Shared Team Inbox"],
-  },
-  {
-    id: "growth-booster",
-    term: "Monthly",
-    days: "30 Days",
-    name: "Growth Booster – WhatsApp Automation – Monthly",
-    price: 1250,
-    period: "month",
-    description: "A comprehensive monthly solution for your business. Manage customers, track payments, and boost engagement on one platform built to accelerate your growth.",
-    features: ["Official WhatsApp Cloud API Integration", "Multi-Agent Shared Team Inbox"],
-  },
-];
+// Plan data lives in lib/billing/plans.ts so the price shown here is the price checkout charges.
+const plans = billingPlans.map((plan) => ({ ...plan, price: plan.priceInr }));
+type Plan = (typeof plans)[number];
 
 // Meta's list rates for India (INR per delivered template message), rounded to two decimals.
 // Meta sets and changes these; check the rate card before editing.
