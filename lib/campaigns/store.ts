@@ -420,3 +420,53 @@ export async function applyDeliveryReceipt(
     [workspaceId, wamId, status, error ? error.slice(0, 500) : null]
   );
 }
+
+// ------------------------------------------------------------ pacing and send log
+
+/** The quality rating last synced from Meta for a workspace's WhatsApp number, or null if none is recorded. */
+export async function getChannelQualityRating(workspaceId: string, phoneNumberId: string): Promise<string | null> {
+  const rows = await database().query(
+    `SELECT quality_rating AS "qualityRating" FROM app_whatsapp_channels
+     WHERE workspace_id = $1::uuid AND phone_number_id = $2 LIMIT 1`,
+    [workspaceId, phoneNumberId]
+  );
+  const row = rows[0] as { qualityRating: string | null } | undefined;
+  return row?.qualityRating ?? null;
+}
+
+/**
+ * Sends from one WhatsApp number in the rolling window that Meta accepted or left uncertain.
+ * Rejected attempts are not counted because Meta did not start a conversation for them.
+ */
+export async function countNumberSendsInWindow(workspaceId: string, phoneNumberId: string, hours: number): Promise<number> {
+  const rows = await database().query(
+    `SELECT count(*)::int AS sends FROM app_campaign_send_attempts a
+     WHERE a.campaign_id IN (
+         SELECT c.id FROM app_campaigns c WHERE c.workspace_id = $1::uuid AND c.phone_number_id = $2
+       )
+       AND a.outcome IN ('accepted', 'uncertain')
+       AND a.attempted_at > now() - make_interval(hours => $3::int)`,
+    [workspaceId, phoneNumberId, hours]
+  );
+  return Number((rows[0] as { sends: number } | undefined)?.sends ?? 0);
+}
+
+export type SendOutcome = "accepted" | "rejected" | "uncertain";
+
+/** Durable log of one send attempt. Written after the recipient's status is settled. */
+export async function recordSendAttempt(input: {
+  campaignId: string;
+  recipientId: string;
+  outcome: SendOutcome;
+  httpStatus: number | null;
+  metaCode: number | null;
+  error: string | null;
+}): Promise<void> {
+  await database().query(
+    `INSERT INTO app_campaign_send_attempts
+       (campaign_id, recipient_id, outcome, http_status, meta_code, error)
+     VALUES ($1::uuid, $2::uuid, $3, $4, $5, $6)`,
+    [input.campaignId, input.recipientId, input.outcome, input.httpStatus, input.metaCode,
+      input.error ? input.error.slice(0, 500) : null]
+  );
+}
