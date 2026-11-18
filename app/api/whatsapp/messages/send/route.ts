@@ -5,6 +5,7 @@ import { MetaSendMessagePayload } from "@/types/meta-api";
 import { requireApiSession } from "@/lib/auth/session";
 import { getMetaConnectionForWorkspace, getMetaConnectionForNumber } from "@/lib/meta/connections";
 import { getConversation } from "@/lib/inbox/store";
+import { MAX_MEDIA_CAPTION_LENGTH, isMediaMessageType, safeMediaFilename } from "@/lib/inbox/media";
 import { evaluateEntitlement, getEntitlementSnapshot } from "@/lib/billing/entitlements";
 import {
   acceptOutboundRequest,
@@ -51,6 +52,7 @@ export async function POST(request: NextRequest) {
       templateLanguage = "en_US",
       templateVariables = [],
       mediaUrl,
+      mediaId,
       caption,
       filename,
       interactiveButtons = [],
@@ -62,7 +64,7 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-    if (durable && !["text", "template"].includes(messageType)) {
+    if (durable && !["text", "template", "image", "video", "document"].includes(messageType)) {
       return NextResponse.json({ error: "This message type is not yet available for live delivery" }, { status: 501 });
     }
     if (messageType === "text" && (typeof text !== "string" || !text.trim())) {
@@ -70,6 +72,16 @@ export async function POST(request: NextRequest) {
     }
     if (messageType === "template" && (!templateName || typeof templateName !== "string")) {
       return NextResponse.json({ error: "Template name is required" }, { status: 400 });
+    }
+    const isMedia = isMediaMessageType(messageType);
+    if (isMedia && caption !== undefined && (typeof caption !== "string" || caption.length > MAX_MEDIA_CAPTION_LENGTH)) {
+      return NextResponse.json(
+        { error: `Captions must be text of ${MAX_MEDIA_CAPTION_LENGTH} characters or fewer` },
+        { status: 400 }
+      );
+    }
+    if (isMedia && durable && (typeof mediaId !== "string" || !/^\d{5,30}$/.test(mediaId))) {
+      return NextResponse.json({ error: "Upload the file first; a media ID is required" }, { status: 400 });
     }
 
     // 1. Check conversation and 24-Hour Customer Care Window
@@ -137,19 +149,31 @@ export async function POST(request: NextRequest) {
         to: normalizedPhone,
         type: "image",
         image: {
-          link: mediaUrl,
+          ...(durable ? { id: mediaId } : { link: mediaUrl }),
+          caption: caption || undefined,
+        },
+      };
+    } else if (messageType === "video") {
+      savedBody = caption ? `${caption}` : "[Video Attachment]";
+      metaPayload = {
+        messaging_product: "whatsapp",
+        to: normalizedPhone,
+        type: "video",
+        video: {
+          ...(durable ? { id: mediaId } : { link: mediaUrl }),
           caption: caption || undefined,
         },
       };
     } else if (messageType === "document") {
-      savedBody = filename ? `[Document: ${filename}] ${caption || ""}` : (caption || "[Document Attachment]");
+      const displayName = safeMediaFilename(filename, "document.pdf");
+      savedBody = `[Document: ${displayName}] ${caption || ""}`.trimEnd();
       metaPayload = {
         messaging_product: "whatsapp",
         to: normalizedPhone,
         type: "document",
         document: {
-          link: mediaUrl,
-          filename: filename || "document.pdf",
+          ...(durable ? { id: mediaId } : { link: mediaUrl }),
+          filename: displayName,
           caption: caption || undefined,
         },
       };
