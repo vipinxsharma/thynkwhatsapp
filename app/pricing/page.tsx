@@ -64,6 +64,15 @@ const plans: Plan[] = [
   },
 ];
 
+// Meta's list rates for India (INR per delivered template message), rounded to two decimals.
+// Meta sets and changes these; check the rate card before editing.
+const META_PRICING_URL = "https://business.whatsapp.com/products/platform-pricing#rates";
+const metaRates = [
+  { label: "Authentication", value: "₹0.12" },
+  { label: "Utility", value: "₹0.12" },
+  { label: "Marketing", value: "₹0.87" },
+];
+
 const tabs = [
   { id: "all", label: "All Plans" },
   { id: "annual", label: "Annual Plans" },
@@ -174,9 +183,27 @@ export default function PricingPage() {
                 ))}
               </ul>
 
+              <div className="mt-auto pt-8">
+                <div className="rounded-2xl border border-dashed border-[var(--border)] p-5">
+                  <h3 className="text-xs font-bold uppercase tracking-widest text-[var(--muted)]">Meta conversation rates</h3>
+                  <dl className="mt-3 space-y-2 text-sm">
+                    {metaRates.map((rate) => (
+                      <div key={rate.label} className="flex items-center justify-between">
+                        <dt className="text-[var(--muted)]">{rate.label}</dt>
+                        <dd className="font-bold text-[var(--heading)]">{rate.value}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                  <p className="mt-3 text-xs leading-5 text-[var(--muted)]">
+                    Per message in India, rounded. Charged by Meta and billed separately.{" "}
+                    <a className="underline" href={META_PRICING_URL} target="_blank" rel="noopener noreferrer">See Meta&apos;s rate card</a>.
+                  </p>
+                </div>
+              </div>
+
               <Link
                 href="/getting-started"
-                className="mt-8 inline-flex min-h-12 w-full items-center justify-center rounded-full bg-[var(--accent)] px-6 py-3 text-sm font-bold text-[#0b132a] hover:bg-[var(--accent-hover)]"
+                className="mt-6 inline-flex min-h-12 w-full items-center justify-center rounded-full bg-[var(--accent)] px-6 py-3 text-sm font-bold text-[#0b132a] hover:bg-[var(--accent-hover)]"
               >
                 Get started
               </Link>
