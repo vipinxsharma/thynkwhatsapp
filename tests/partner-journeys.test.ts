@@ -19,3 +19,12 @@ describe("partner signup links", () => {
     expect(buildPartnerSignupLink("not a url", "acme")).toBeNull();
   });
 });
+
+describe("partner signup code migration", () => {
+  it("keeps the code check in the schema as well as in code", async () => {
+    const { readFileSync } = await import("node:fs");
+    const sql = readFileSync("db/migrations/0015_partner_signup_codes.sql", "utf8");
+    expect(sql).toMatch(/CHECK \(partner_code ~ '\^\[a-z0-9\]\[a-z0-9-\]\{1,39\}\$'\)/);
+    expect(sql).toMatch(/PRIMARY KEY/);
+  });
+});
