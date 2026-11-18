@@ -1,25 +1,21 @@
-import type { Metadata } from "next";
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
 import { Check } from "lucide-react";
 import { XeccelLogo } from "@/components/brand/XeccelLogo";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 
-export const metadata: Metadata = {
-  title: "Pricing | Xeccel",
-  description:
-    "Xeccel pricing for WhatsApp conversations, messaging workflows, and customer support. Annual and monthly plans.",
-  alternates: { canonical: "https://xeccel.com/pricing" },
-};
-
-// Prices in INR, excluding GST. Each figure is the competitor list price plus 25%.
+// Prices in INR, excluding GST. Each figure is the reference list price plus 25%.
 type Plan = {
   id: string;
   term: "Yearly" | "Monthly";
+  days: "365 Days" | "30 Days";
   name: string;
   price: number;
   period: "year" | "month";
   description: string;
-  highlight?: boolean;
+  popular?: boolean;
   features: string[];
 };
 
@@ -27,21 +23,19 @@ const plans: Plan[] = [
   {
     id: "sales-accelerator",
     term: "Yearly",
+    days: "365 Days",
     name: "Sales Accelerator: WhatsApp + CRM",
     price: 20000,
     period: "year",
     description:
-      "For teams that want to scale. Includes customer relationship management tools, advanced automation, and deeper insights to close more deals.",
-    highlight: true,
-    features: [
-      "Official WhatsApp Cloud API integration",
-      "Multi-agent shared team inbox",
-      "CRM tools and advanced automation",
-    ],
+      "The ultimate solution for scaling your business. Includes CRM tools, advanced automation, and deeper insights to close more deals.",
+    popular: true,
+    features: ["Official WhatsApp Cloud API integration", "Multi-agent shared team inbox", "CRM tools and advanced automation"],
   },
   {
     id: "lead-automation-suite",
     term: "Yearly",
+    days: "365 Days",
     name: "Always-On Lead Automation Suite",
     price: 12500,
     period: "year",
@@ -51,6 +45,7 @@ const plans: Plan[] = [
   {
     id: "whats-crm-monthly",
     term: "Monthly",
+    days: "30 Days",
     name: "Whats+CRM Monthly",
     price: 2000,
     period: "month",
@@ -60,6 +55,7 @@ const plans: Plan[] = [
   {
     id: "growth-booster",
     term: "Monthly",
+    days: "30 Days",
     name: "Growth Booster: WhatsApp Automation",
     price: 1250,
     period: "month",
@@ -67,6 +63,14 @@ const plans: Plan[] = [
     features: ["Official WhatsApp Cloud API integration", "Multi-agent shared team inbox"],
   },
 ];
+
+const tabs = [
+  { id: "all", label: "All Plans" },
+  { id: "annual", label: "Annual Plans" },
+  { id: "monthly", label: "Monthly & Trial" },
+] as const;
+
+type TabId = (typeof tabs)[number]["id"];
 
 const faqs = [
   {
@@ -80,12 +84,20 @@ const faqs = [
   },
   {
     question: "Can I cancel or change my plan?",
-    answer:
-      "Yes. See our refunds and cancellation policy for how to stop a future renewal or raise an incorrect charge.",
+    answer: "Yes. See our refunds and cancellation policy for how to stop a future renewal or raise an incorrect charge.",
   },
 ];
 
+function visiblePlans(tab: TabId): Plan[] {
+  if (tab === "annual") return plans.filter((plan) => plan.term === "Yearly");
+  if (tab === "monthly") return plans.filter((plan) => plan.term === "Monthly");
+  return plans;
+}
+
 export default function PricingPage() {
+  const [activeTab, setActiveTab] = useState<TabId>("all");
+  const shown = visiblePlans(activeTab);
+
   return (
     <main className="min-h-screen bg-[var(--background)] text-[var(--foreground)]">
       <div className="mx-auto max-w-6xl px-6 sm:px-10">
@@ -100,39 +112,61 @@ export default function PricingPage() {
           </nav>
         </header>
 
-        <section className="py-16 text-center md:py-20">
-          <p className="text-xs font-bold uppercase tracking-widest text-[var(--accent-text)]">Pricing</p>
+        <section className="py-14 text-center md:py-16">
+          <p className="text-xs font-bold uppercase tracking-widest text-[var(--accent-text)]">Official Meta Tech Provider &amp; WhatsApp Automation</p>
           <h1 className="mx-auto mt-4 max-w-3xl text-4xl font-bold tracking-tight text-[var(--heading)] sm:text-5xl">
-            Simple pricing for every customer conversation.
+            Simple, Transparent Pricing Built for Growth
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-base leading-8 text-[var(--muted)]">
-            Choose an annual or monthly plan. Add your team, workflows, and support tools in one workspace.
+            Automate customer conversations, run broadcasts, and scale your sales from one workspace.
           </p>
+
+          <div role="tablist" aria-label="Pricing duration filter" className="mx-auto mt-10 inline-flex flex-wrap justify-center gap-2 rounded-full border border-[var(--border)] bg-[var(--surface)] p-1">
+            {tabs.map((tab) => {
+              const selected = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={selected}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`rounded-full px-5 py-2 text-sm font-semibold transition ${
+                    selected ? "bg-[var(--accent)] text-[#0b132a]" : "text-[var(--muted)] hover:text-[var(--heading)]"
+                  }`}
+                >
+                  {tab.label}
+                  {tab.id === "annual" ? <span className="ml-2 text-xs font-bold">Save Big</span> : null}
+                </button>
+              );
+            })}
+          </div>
         </section>
 
-        <section aria-label="Plans" className="grid gap-6 pb-16 md:grid-cols-2">
-          {plans.map((plan) => (
+        <section aria-label="Available subscription plans" className="grid gap-6 pb-16 md:grid-cols-2">
+          {shown.map((plan) => (
             <article
               key={plan.id}
-              className={`flex flex-col rounded-3xl border bg-[var(--surface)] p-8 ${
-                plan.highlight ? "border-[var(--accent)]" : "border-[var(--border)]"
+              className={`relative flex flex-col rounded-3xl border bg-[var(--surface)] p-8 ${
+                plan.popular ? "border-[var(--accent)]" : "border-[var(--border)]"
               }`}
             >
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-xs font-bold uppercase tracking-widest text-[var(--muted)]">{plan.term}</p>
-                {plan.highlight ? (
-                  <span className="rounded-full bg-[var(--accent)] px-3 py-1 text-xs font-bold text-[#0b132a]">Most popular</span>
-                ) : null}
-              </div>
+              {plan.popular ? (
+                <span className="absolute right-6 top-0 -translate-y-1/2 rounded-full bg-[var(--accent)] px-3 py-1 text-xs font-bold uppercase tracking-wide text-[#0b132a]">
+                  Most Popular
+                </span>
+              ) : null}
+              <p className="text-xs font-bold uppercase tracking-widest text-[var(--muted)]">{plan.days}</p>
               <h2 className="mt-3 text-xl font-bold text-[var(--heading)]">{plan.name}</h2>
-              <p className="mt-2 text-sm leading-6 text-[var(--muted)]">{plan.description}</p>
               <p className="mt-6 flex items-baseline gap-2">
                 <span className="text-4xl font-bold text-[var(--heading)]">₹{plan.price.toLocaleString("en-IN")}</span>
                 <span className="text-sm font-semibold text-[var(--muted)]">/ {plan.period}</span>
               </p>
-              <p className="mt-1 text-xs text-[var(--muted)]">Plus applicable GST</p>
+              <p className="mt-1 text-xs text-[var(--muted)]">+ GST applicable</p>
 
-              <ul className="mt-6 space-y-3">
+              <h3 className="mt-6 text-xs font-bold uppercase tracking-widest text-[var(--muted)]">Plan capabilities</h3>
+              <p className="mt-2 text-sm leading-6 text-[var(--muted)]">{plan.description}</p>
+              <ul className="mt-4 space-y-3">
                 {plan.features.map((feature) => (
                   <li key={feature} className="flex gap-3 text-sm leading-6">
                     <Check className="mt-1 size-4 shrink-0 text-[var(--accent-text)]" aria-hidden="true" />
@@ -149,6 +183,7 @@ export default function PricingPage() {
               </Link>
             </article>
           ))}
+          {shown.length === 0 ? <p className="text-sm text-[var(--muted)]">No plans in this tab.</p> : null}
         </section>
 
         <section aria-labelledby="pricing-faq" className="border-t border-[var(--border)] py-16">
