@@ -5,7 +5,8 @@ import { Conversation, Message, MessageTemplate } from "@/types/strapi";
 import { ConversationList } from "./ConversationList";
 import { MessageThread } from "./MessageThread";
 import { MessageInput } from "./MessageInput";
-import { ContactDetailsSidebar } from "./ContactDetailsSidebar";
+import { ContactDetailsSidebar, type AssigneeOption } from "./ContactDetailsSidebar";
+import { AgentNotesPanel } from "./AgentNotesPanel";
 import { TemplateSelectorModal } from "./TemplateSelectorModal";
 import { MediaAttachmentModal } from "./MediaAttachmentModal";
 import { ArrowLeft, User, X, Sparkles, Phone, Video, MoreVertical } from "lucide-react";
@@ -15,13 +16,25 @@ interface UnifiedInboxProps {
   initialConversations: Conversation[];
   initialMessages: Record<string, Message[]>;
   templates: MessageTemplate[];
+  currentUserId: string;
+  currentRole: string;
+  assignees: AssigneeOption[];
 }
+
+type Scope = "all" | "mine" | "unassigned";
 
 export function UnifiedInbox({
   initialConversations,
   initialMessages,
   templates,
+  currentUserId,
+  currentRole,
+  assignees,
 }: UnifiedInboxProps) {
+  const [scope, setScope] = useState<Scope>("all");
+  const [assignError, setAssignError] = useState("");
+  const labelFor = (authUserId: string) =>
+    assignees.find((member) => member.authUserId === authUserId)?.label || "Former member";
   const [conversations, setConversations] = useState<Conversation[]>(initialConversations);
   const [messagesMap, setMessagesMap] = useState<Record<string, Message[]>>(initialMessages);
   const [hasOlderMap, setHasOlderMap] = useState<Record<string, boolean>>({});
@@ -131,6 +144,11 @@ export function UnifiedInbox({
     };
   }, []);
 
+  const visibleConversations = conversations.filter((conversation) => {
+    if (scope === "mine") return conversation.assignedAuthUserId === currentUserId;
+    if (scope === "unassigned") return !conversation.assignedAuthUserId;
+    return true;
+  });
   const activeConversation = conversations.find((c) => String(c.id) === String(activeId));
   const activeMessages = messagesMap[String(activeId)] || [];
 
@@ -306,6 +324,24 @@ export function UnifiedInbox({
     }
   };
 
+  async function assignActive(authUserId: string | null) {
+    if (!activeConversation) return;
+    const conversationId = String(activeConversation.id);
+    setAssignError("");
+    try {
+      const response = await fetch("/api/inbox/assignment", {
+        method: "PATCH", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ conversationId, assigneeAuthUserId: authUserId }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Could not assign conversation");
+      setConversations((prev) => prev.map((c) => String(c.id) === conversationId
+        ? { ...c, assignedAuthUserId: result.data.assignedAuthUserId } : c));
+    } catch (error) {
+      setAssignError(error instanceof Error ? error.message : "Could not assign conversation");
+    }
+  }
+
   const [detailsBusy, setDetailsBusy] = useState(false);
   const [detailsError, setDetailsError] = useState("");
   const saveDetails = async (updates: {tags?: string[]; status?: Conversation["status"]}) => {
@@ -327,11 +363,21 @@ export function UnifiedInbox({
     <div className="relative flex min-h-0 flex-1 overflow-hidden h-full">
       {/* 1. Conversations Column */}
       <div className={`${mobileThreadOpen ? "hidden" : "flex"} min-h-0 w-full md:flex md:w-80 md:shrink-0`}>
+      <div className="flex min-h-0 w-full flex-col">
+      <div role="tablist" aria-label="Conversation scope" className="flex gap-1 border-b border-[var(--border)] p-2 text-xs">
+        {([["all", "All"], ["mine", "Mine"], ["unassigned", "Unassigned"]] as const).map(([value, label]) => (
+          <button key={value} type="button" role="tab" aria-selected={scope === value} onClick={() => setScope(value)}
+            className={`min-h-9 flex-1 rounded-lg px-2 font-semibold ${scope === value ? "bg-white/10" : "text-[var(--muted)]"}`}>{label}</button>
+        ))}
+        <button type="button" onClick={() => exportConversations(visibleConversations)}
+          className="min-h-9 rounded-lg px-2 text-[var(--muted)] hover:text-white">Export</button>
+      </div>
       <ConversationList
-        conversations={conversations}
+        conversations={visibleConversations}
         activeConversationId={activeId}
         onSelectConversation={(id) => { setActiveId(id); setMobileThreadOpen(true); setContactPanelOpen(false); }}
       />
+      </div>
       </div>
 
       {/* 2. Middle Chat Thread Column */}
@@ -394,6 +440,7 @@ export function UnifiedInbox({
             onSendMessage={handleSendMessage}
             onOpenTemplateModal={() => setIsTemplateModalOpen(true)}
             onOpenMediaModal={() => setIsMediaModalOpen(true)}
+            canManageQuickReplies={currentRole === "owner" || currentRole === "admin"}
           />
         </div>
       ) : (
@@ -412,6 +459,9 @@ export function UnifiedInbox({
           error={detailsError}
           onUpdateTags={handleUpdateTags}
           onUpdateStatus={handleUpdateStatus}
+          assignees={assignees}
+          onAssign={(authUserId) => { void assignActive(authUserId); }}
+          notes={<><AgentNotesPanel key={String(activeId)} conversationId={String(activeId)} labelFor={labelFor} />{assignError && <p role="alert" className="text-xs text-red-300">{assignError}</p>}</>}
         />
         </section>
       )}
@@ -437,4 +487,20 @@ export function UnifiedInbox({
       )}
     </div>
   );
+}
+
+// Exports the rows currently in view as CSV, for hand-over or reporting. No message bodies are included.
+function exportConversations(rows: Conversation[]) {
+  const header = ["Name", "Phone", "Status", "Assigned user id", "Last message at", "Unread"];
+  const escape = (value: string | number) => `"${String(value).replace(/"/g, '""')}"`;
+  const lines = rows.map((c) => [
+    c.contact.name, c.contact.phoneNumber, c.status, c.assignedAuthUserId || "", c.lastMessageAt, c.unreadCount,
+  ].map(escape).join(","));
+  const blob = new Blob([[header.join(","), ...lines].join("\n")], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `conversations-${new Date().toISOString().slice(0, 10)}.csv`;
+  link.click();
+  URL.revokeObjectURL(url);
 }

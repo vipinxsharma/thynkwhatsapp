@@ -53,6 +53,7 @@ export interface Conversation {
   unreadCount: number;
   contact: Contact;
   phoneNumber: PhoneNumber;
+  assignedAuthUserId?: string | null;
   assignedAgent?: {
     id: number | string;
     username: string;
