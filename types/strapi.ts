@@ -43,6 +43,9 @@ export interface Contact {
   customAttributes: Record<string, any>;
   lastSeenAt?: string;
   tenantId?: string;
+  consentStatus?: "subscribed" | "unsubscribed";
+  consentUpdatedAt?: string | null;
+  groupIds?: string[];
 }
 
 export interface Conversation {

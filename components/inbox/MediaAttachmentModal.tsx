@@ -1,32 +1,56 @@
 "use client";
 
 import { useState } from "react";
-import { X, Image, FileText, MousePointerClick, Send, Loader2, Sparkles, Paperclip } from "lucide-react";
+import { X, Image, Video, FileText, MousePointerClick, Send, Loader2, Paperclip } from "lucide-react";
+import {
+  MAX_MEDIA_CAPTION_LENGTH,
+  MAX_MEDIA_UPLOAD_BYTES,
+  mediaAcceptAttribute,
+  type MediaMessageType,
+  validateMediaFile,
+} from "@/lib/inbox/media";
+
+export type MediaSendPayload =
+  | {
+      messageType: MediaMessageType;
+      file: File;
+      caption?: string;
+      filename?: string;
+    }
+  | {
+      messageType: "interactive";
+      text: string;
+      interactiveButtons: Array<{ id: string; title: string }>;
+    };
 
 interface MediaAttachmentModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSendMedia: (payload: {
-    messageType: "image" | "document" | "interactive";
-    mediaUrl?: string;
-    caption?: string;
-    filename?: string;
-    interactiveButtons?: Array<{ id: string; title: string }>;
-    text?: string;
-  }) => Promise<void>;
+  onSendMedia: (payload: MediaSendPayload) => Promise<void>;
 }
+
+type Tab = MediaMessageType | "interactive";
+
+const TABS: Array<{ id: Tab; label: string; icon: typeof Image }> = [
+  { id: "image", label: "Image", icon: Image },
+  { id: "video", label: "Video", icon: Video },
+  { id: "document", label: "Document", icon: FileText },
+  { id: "interactive", label: "CTA Buttons", icon: MousePointerClick },
+];
+
+const MAX_MB = Math.floor(MAX_MEDIA_UPLOAD_BYTES / (1024 * 1024));
 
 export function MediaAttachmentModal({
   isOpen,
   onClose,
   onSendMedia,
 }: MediaAttachmentModalProps) {
-  const [activeTab, setActiveTab] = useState<"image" | "document" | "interactive">("image");
-  const [mediaUrl, setMediaUrl] = useState("https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&w=800&q=80");
-  const [caption, setCaption] = useState("Here is the updated product catalog brochure.");
+  const [activeTab, setActiveTab] = useState<Tab>("image");
+  const [file, setFile] = useState<File | null>(null);
+  const [fileError, setFileError] = useState<string | null>(null);
+  const [caption, setCaption] = useState("");
   const [filename, setFilename] = useState("");
-  const [docUrl, setDocUrl] = useState("https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf");
-  
+
   // Interactive buttons
   const [interactiveBody, setInteractiveBody] = useState("Thank you for reaching out! Would you like to schedule an onboarding call?");
   const [btn1, setBtn1] = useState("Yes, Schedule Call");
@@ -37,25 +61,31 @@ export function MediaAttachmentModal({
 
   if (!isOpen) return null;
 
+  const switchTab = (tab: Tab) => {
+    setActiveTab(tab);
+    setFile(null);
+    setFileError(null);
+  };
+
+  const chooseFile = (picked: File | null) => {
+    setFileError(null);
+    setFile(null);
+    if (!picked || activeTab === "interactive") return;
+    const problem = validateMediaFile(picked, activeTab);
+    if (problem) {
+      setFileError(problem);
+      return;
+    }
+    setFile(picked);
+    if (activeTab === "document") setFilename(picked.name);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      if (activeTab === "image") {
-        await onSendMedia({
-          messageType: "image",
-          mediaUrl: mediaUrl.trim(),
-          caption: caption.trim(),
-        });
-      } else if (activeTab === "document") {
-        await onSendMedia({
-          messageType: "document",
-          mediaUrl: docUrl.trim(),
-          filename: filename.trim(),
-          caption: caption.trim(),
-        });
-      } else if (activeTab === "interactive") {
+      if (activeTab === "interactive") {
         const buttons = [
           btn1 ? { id: "btn_1", title: btn1.trim() } : null,
           btn2 ? { id: "btn_2", title: btn2.trim() } : null,
@@ -67,6 +97,14 @@ export function MediaAttachmentModal({
           text: interactiveBody.trim(),
           interactiveButtons: buttons,
         });
+      } else {
+        if (!file) return;
+        await onSendMedia({
+          messageType: activeTab,
+          file,
+          caption: caption.trim() || undefined,
+          filename: activeTab === "document" ? filename.trim() || undefined : undefined,
+        });
       }
 
       onClose();
@@ -74,6 +112,9 @@ export function MediaAttachmentModal({
       setLoading(false);
     }
   };
+
+  const inputClass =
+    "w-full px-3.5 py-2.5 rounded-lg bg-black/40 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-whatsapp-light text-xs";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in duration-200">
@@ -86,7 +127,7 @@ export function MediaAttachmentModal({
             </div>
             <div>
               <h2 className="text-base font-bold text-white tracking-tight">Send Rich WhatsApp Message</h2>
-              <p className="text-xs text-gray-400">Dispatch media assets or interactive quick-reply buttons</p>
+              <p className="text-xs text-gray-400">Send a file from your device or interactive quick-reply buttons</p>
             </div>
           </div>
           <button
@@ -98,107 +139,76 @@ export function MediaAttachmentModal({
         </div>
 
         {/* Tab selection */}
-        <div className="grid grid-cols-3 border-b border-white/5 bg-black/30 p-1 text-xs">
-          <button
-            type="button"
-            onClick={() => setActiveTab("image")}
-            className={`py-2 flex items-center justify-center gap-1.5 font-semibold rounded-lg transition-all ${
-              activeTab === "image"
-                ? "bg-whatsapp/20 text-whatsapp-light border border-whatsapp/30"
-                : "text-gray-400 hover:text-white"
-            }`}
-          >
-            <Image className="w-4 h-4" />
-            <span>Image</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab("document")}
-            className={`py-2 flex items-center justify-center gap-1.5 font-semibold rounded-lg transition-all ${
-              activeTab === "document"
-                ? "bg-whatsapp/20 text-whatsapp-light border border-whatsapp/30"
-                : "text-gray-400 hover:text-white"
-            }`}
-          >
-            <FileText className="w-4 h-4" />
-            <span>Document / PDF</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab("interactive")}
-            className={`py-2 flex items-center justify-center gap-1.5 font-semibold rounded-lg transition-all ${
-              activeTab === "interactive"
-                ? "bg-whatsapp/20 text-whatsapp-light border border-whatsapp/30"
-                : "text-gray-400 hover:text-white"
-            }`}
-          >
-            <MousePointerClick className="w-4 h-4" />
-            <span>CTA Buttons</span>
-          </button>
+        <div className="grid grid-cols-4 border-b border-white/5 bg-black/30 p-1 text-xs">
+          {TABS.map((tab) => {
+            const Icon = tab.icon;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => switchTab(tab.id)}
+                className={`py-2 flex items-center justify-center gap-1.5 font-semibold rounded-lg transition-all ${
+                  activeTab === tab.id
+                    ? "bg-whatsapp/20 text-whatsapp-light border border-whatsapp/30"
+                    : "text-gray-400 hover:text-white"
+                }`}
+              >
+                <Icon className="w-4 h-4" />
+                <span>{tab.label}</span>
+              </button>
+            );
+          })}
         </div>
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4 text-xs">
-          {activeTab === "image" && (
+          {activeTab !== "interactive" && (
             <>
               <div>
-                <label className="block text-gray-300 font-semibold mb-1">Image URL *</label>
+                <label className="block text-gray-300 font-semibold mb-1">
+                  {activeTab === "image" ? "Image" : activeTab === "video" ? "Video" : "Document"} file *
+                </label>
                 <input
-                  type="url"
+                  key={activeTab}
+                  type="file"
                   required
-                  placeholder="https://..."
-                  value={mediaUrl}
-                  onChange={(e) => setMediaUrl(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-lg bg-black/40 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-whatsapp-light font-mono text-xs"
+                  accept={mediaAcceptAttribute(activeTab)}
+                  onChange={(e) => chooseFile(e.target.files?.[0] || null)}
+                  className="block w-full text-xs text-gray-300 file:mr-3 file:rounded-lg file:border-0 file:bg-white/10 file:px-3 file:py-2 file:text-white hover:file:bg-white/20"
                 />
+                <p className="mt-1 text-[10px] text-gray-500">
+                  Up to {MAX_MB} MB.{" "}
+                  {activeTab === "image" && "JPEG or PNG."}
+                  {activeTab === "video" && "MP4 or 3GP."}
+                  {activeTab === "document" && "PDF, Word, Excel, PowerPoint, text or CSV."}
+                </p>
+                {file && <p className="mt-1 text-[10px] text-emerald-300">{file.name}</p>}
+                {fileError && <p className="mt-1 text-[10px] text-red-400">{fileError}</p>}
               </div>
 
+              {activeTab === "document" && (
+                <div>
+                  <label className="block text-gray-300 font-semibold mb-1">Display Filename</label>
+                  <input
+                    type="text"
+                    maxLength={255}
+                    placeholder="e.g. product_catalog.pdf"
+                    value={filename}
+                    onChange={(e) => setFilename(e.target.value)}
+                    className={inputClass}
+                  />
+                </div>
+              )}
+
               <div>
-                <label className="block text-gray-300 font-semibold mb-1">Image Caption</label>
+                <label className="block text-gray-300 font-semibold mb-1">Caption</label>
                 <input
                   type="text"
-                  placeholder="Add a caption..."
-                  value={caption}
-                  onChange={(e) => setCaption(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-lg bg-black/40 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-whatsapp-light text-xs"
-                />
-              </div>
-            </>
-          )}
-
-          {activeTab === "document" && (
-            <>
-              <div>
-                <label className="block text-gray-300 font-semibold mb-1">Document URL (PDF / Doc) *</label>
-                <input
-                  type="url"
-                  required
-                  placeholder="https://.../proposal.pdf"
-                  value={docUrl}
-                  onChange={(e) => setDocUrl(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-lg bg-black/40 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-whatsapp-light font-mono text-xs"
-                />
-              </div>
-
-              <div>
-                <label className="block text-gray-300 font-semibold mb-1">Display Filename</label>
-                <input
-                  type="text"
-                  placeholder="e.g. product_catalog.pdf"
-                  value={filename}
-                  onChange={(e) => setFilename(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-lg bg-black/40 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-whatsapp-light text-xs"
-                />
-              </div>
-
-              <div>
-                <label className="block text-gray-300 font-semibold mb-1">Document Caption</label>
-                <input
-                  type="text"
+                  maxLength={MAX_MEDIA_CAPTION_LENGTH}
                   placeholder="Optional caption..."
                   value={caption}
                   onChange={(e) => setCaption(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-lg bg-black/40 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-whatsapp-light text-xs"
+                  className={inputClass}
                 />
               </div>
             </>
@@ -262,18 +272,18 @@ export function MediaAttachmentModal({
             </button>
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || (activeTab !== "interactive" && !file)}
               className="flex items-center gap-2 px-5 py-2 rounded-lg bg-whatsapp-light hover:brightness-110 active:scale-95 text-black font-bold transition-all shadow-glow disabled:opacity-50"
             >
               {loading ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Dispatching...</span>
+                  <span>Sending...</span>
                 </>
               ) : (
                 <>
                   <Send className="w-4 h-4" />
-                  <span>Send via Meta API</span>
+                  <span>Send via WhatsApp</span>
                 </>
               )}
             </button>

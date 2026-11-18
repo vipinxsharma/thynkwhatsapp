@@ -1,7 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, Edit3, Phone, Building, Tag, Loader2, Sparkles, Trash2 } from "lucide-react";
+import { X, Edit3, Phone, Building, Tag, Loader2, Sparkles, Trash2, Users } from "lucide-react";
+import { CustomFieldInputs, GroupCheckboxes } from "./CustomFieldInputs";
+import {
+  attributesToFormValues,
+  formValuesToAttributes,
+  useContactMeta,
+} from "./contact-meta";
 
 interface EditContactModalProps {
   isOpen: boolean;
@@ -22,9 +28,12 @@ export function EditContactModal({
   const [phoneNumber, setPhoneNumber] = useState("");
   const [company, setCompany] = useState("");
   const [tagsInput, setTagsInput] = useState("");
+  const [groupIds, setGroupIds] = useState<string[]>([]);
+  const [fieldValues, setFieldValues] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState("");
+  const { groups, fields, metaError } = useContactMeta(isOpen);
 
   useEffect(() => {
     if (contact) {
@@ -32,10 +41,21 @@ export function EditContactModal({
       setPhoneNumber(contact.phoneNumber || "");
       setCompany(contact.customAttributes?.company || "");
       setTagsInput((contact.tags || []).join(", "));
+      setGroupIds(contact.groupIds || []);
     }
   }, [contact]);
 
+  useEffect(() => {
+    if (contact) setFieldValues(attributesToFormValues(fields, contact.customAttributes));
+  }, [contact, fields]);
+
   if (!isOpen || !contact) return null;
+
+  const toggleGroup = (groupId: string) => {
+    setGroupIds((current) =>
+      current.includes(groupId) ? current.filter((id) => id !== groupId) : [...current, groupId]
+    );
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,6 +77,8 @@ export function EditContactModal({
           phoneNumber: phoneNumber.trim(),
           company: company.trim(),
           tags,
+          groupIds,
+          customAttributes: formValuesToAttributes(fields, fieldValues),
         }),
       });
 
@@ -98,7 +120,7 @@ export function EditContactModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="w-full max-w-lg rounded-2xl bg-[var(--surface)] border border-white/10 shadow-2xl overflow-hidden">
+      <div className="w-full max-w-lg rounded-2xl bg-[var(--surface)] border border-white/10 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
         {/* Header */}
         <div className="px-6 py-4 border-b border-white/5 flex items-center justify-between bg-surface-100/40">
           <div className="flex items-center gap-2.5">
@@ -119,10 +141,10 @@ export function EditContactModal({
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4 text-xs">
-          {error && (
+        <form onSubmit={handleSubmit} className="p-6 space-y-4 text-xs overflow-y-auto">
+          {(error || metaError) && (
             <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400">
-              {error}
+              {error || metaError}
             </div>
           )}
 
@@ -180,6 +202,25 @@ export function EditContactModal({
               />
             </div>
           </div>
+
+          <div>
+            <label className="flex items-center gap-1.5 text-gray-300 font-semibold mb-1">
+              <Users className="w-3.5 h-3.5 text-gray-400" />
+              Groups
+            </label>
+            <GroupCheckboxes groups={groups} selected={groupIds} onToggle={toggleGroup} />
+          </div>
+
+          {fields.length > 0 && (
+            <div className="pt-1 border-t border-white/5">
+              <p className="text-gray-300 font-semibold mb-3">Custom fields</p>
+              <CustomFieldInputs
+                fields={fields}
+                values={fieldValues}
+                onChange={(key, value) => setFieldValues((current) => ({ ...current, [key]: value }))}
+              />
+            </div>
+          )}
 
           <div className="flex items-center justify-between pt-3 border-t border-white/5">
             <button

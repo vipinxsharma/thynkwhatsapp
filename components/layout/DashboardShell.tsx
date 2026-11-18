@@ -30,9 +30,11 @@ import {
   ShoppingBag,
   Smartphone,
   Sparkles,
+  Target,
   UserPlus,
   Shield,
   type LucideIcon,
+  MessageSquareText,
 } from "lucide-react";
 
 type NavigationItem = { name: string; href: string; icon: LucideIcon };
@@ -44,6 +46,7 @@ const navigation = [
   { name: "CRM", href: "/crm", icon: Handshake },
   { name: "Automations", href: "/automations", icon: Bot },
   { name: "Campaigns", href: "/campaigns", icon: Send },
+  { name: "Leads", href: "/leads", icon: Target },
   { name: "Message templates", href: "/templates", icon: FileText },
   { name: "Analytics", href: "/analytics", icon: BarChart3 },
   { name: "Channels", href: "/settings/waba", icon: Settings },
@@ -84,7 +87,7 @@ export function DashboardShell({
   }
 
   const visibleNavigation: NavigationItem[] = session.role === "owner" || session.role === "admin"
-    ? [...navigation, { name: "Team", href: "/settings/team", icon: UserPlus }]
+    ? [...navigation, { name: "Chat settings", href: "/settings/chat", icon: MessageSquareText }, { name: "Team", href: "/settings/team", icon: UserPlus }]
     : navigation;
   if (platformSuperadmin) visibleNavigation.push({ name: "Platform admin", href: "/platform/admin", icon: Shield });
 
