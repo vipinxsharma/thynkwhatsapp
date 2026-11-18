@@ -158,6 +158,15 @@ export default function PricingPage() {
             </article>
           ))}
           {shown.length === 0 ? <p className="text-sm text-[var(--muted)]">No plans in this tab.</p> : null}
+          <article className="md:col-span-2 rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-8">
+            <h2 className="text-xl font-bold text-[var(--heading)]">Campaigns add-on</h2>
+            <p className="mt-2 text-sm text-[var(--muted)]">Send bulk WhatsApp campaigns to opted-in contacts, with delivery tracking and STOP handling.</p>
+            <p className="mt-4 flex items-baseline gap-2">
+              <span className="text-3xl font-bold text-[var(--heading)]">₹1,499</span>
+              <span className="text-sm font-semibold text-[var(--muted)]">/ month</span>
+            </p>
+            <p className="mt-2 text-sm text-[var(--muted)]">Includes 10,000 campaign sends a month. Each send above that is ₹0.10. Meta&apos;s message charges are billed separately. Plus applicable GST.</p>
+          </article>
         </section>
 
         <section aria-labelledby="pricing-faq" className="border-t border-[var(--border)] py-16">
