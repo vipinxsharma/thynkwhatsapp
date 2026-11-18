@@ -5,7 +5,7 @@ import {
   MetaTokenExchangeResponse,
 } from "@/types/meta-api";
 
-const GRAPH_API_VERSION = process.env.META_GRAPH_API_VERSION || "v21.0";
+const GRAPH_API_VERSION = process.env.META_GRAPH_API_VERSION || "v27.0";
 const GRAPH_API_BASE_URL = `https://graph.facebook.com/${GRAPH_API_VERSION}`;
 
 function metaMocksEnabled(): boolean {
