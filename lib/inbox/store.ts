@@ -20,6 +20,7 @@ type ContactRow = {
 type ConversationRow = ContactRow & {
   conversationId: string;
   status: Conversation["status"];
+  assignedAuthUserId: string | null;
   phoneNumberId: string;
   displayPhoneNumber: string | null;
   verifiedName: string | null;
@@ -56,6 +57,7 @@ function conversationFromRow(row: ConversationRow): Conversation {
   return {
     id: row.conversationId,
     status: row.status,
+    assignedAuthUserId: row.assignedAuthUserId || null,
     windowExpiresAt: row.windowExpiresAt,
     lastMessageAt: row.lastMessageAt,
     unreadCount: row.unreadCount,
@@ -68,7 +70,7 @@ function conversationFromRow(row: ConversationRow): Conversation {
 const conversationSelect = `
   SELECT c.id AS "conversationId", c.status, c.phone_number_id AS "phoneNumberId",
     c.window_expires_at AS "windowExpiresAt", c.last_message_at AS "lastMessageAt",
-    c.unread_count AS "unreadCount", contact.id, contact.wa_id AS "waId",
+    c.unread_count AS "unreadCount", c.assigned_auth_user_id AS "assignedAuthUserId", contact.id, contact.wa_id AS "waId",
     contact.phone_number AS "phoneNumber", contact.name, contact.tags,
     contact.custom_attributes AS "customAttributes", contact.last_seen_at AS "lastSeenAt",
     w.display_phone_number AS "displayPhoneNumber", w.verified_name AS "verifiedName",
@@ -334,4 +336,78 @@ export async function updateConversationDetails(workspaceId: string, userId: str
   ) SELECT c.id,c.status,t.tags FROM updated_conversation c CROSS JOIN updated_contact t`,
     [workspaceId,conversationId,input.status || null,input.tags ? JSON.stringify(input.tags):null,randomUUID(),userId,JSON.stringify(input)]);
   return rows[0] as { id: string; status: Conversation["status"]; tags: string[] } | undefined;
+}
+
+export type InboxNote = { id: string; body: string; authorAuthUserId: string; createdAt: string };
+export type QuickReply = { id: string; title: string; body: string; createdAt: string };
+
+export async function assignConversation(
+  workspaceId: string, userId: string, conversationId: string, assigneeAuthUserId: string | null,
+): Promise<{ id: string; assignedAuthUserId: string | null } | undefined> {
+  const rows = await database().query(
+    `WITH updated AS (
+       UPDATE app_inbox_conversations SET assigned_auth_user_id = $3, updated_at = now()
+       WHERE workspace_id = $1::uuid AND id = $2::uuid
+       RETURNING id, assigned_auth_user_id
+     ), audit AS (
+       INSERT INTO app_audit_logs(id, workspace_id, auth_user_id, action, resource_type, resource_id, metadata)
+       SELECT $4::uuid, $1::uuid, $5, 'conversation.assigned', 'conversation', id::text,
+         jsonb_build_object('assignee', assigned_auth_user_id) FROM updated
+     )
+     SELECT id, assigned_auth_user_id AS "assignedAuthUserId" FROM updated`,
+    [workspaceId, conversationId, assigneeAuthUserId, randomUUID(), userId],
+  );
+  return rows[0] as { id: string; assignedAuthUserId: string | null } | undefined;
+}
+
+export async function listNotes(workspaceId: string, conversationId: string): Promise<InboxNote[]> {
+  const rows = await database().query(
+    `SELECT id, body, author_auth_user_id AS "authorAuthUserId", created_at AS "createdAt"
+     FROM app_inbox_notes WHERE workspace_id = $1::uuid AND conversation_id = $2::uuid
+     ORDER BY created_at ASC LIMIT 200`,
+    [workspaceId, conversationId],
+  );
+  return rows as InboxNote[];
+}
+
+export async function addNote(
+  workspaceId: string, userId: string, conversationId: string, body: string,
+): Promise<InboxNote | undefined> {
+  const rows = await database().query(
+    `INSERT INTO app_inbox_notes (id, workspace_id, conversation_id, author_auth_user_id, body)
+     SELECT $1::uuid, $2::uuid, c.id, $4, $5 FROM app_inbox_conversations c
+     WHERE c.workspace_id = $2::uuid AND c.id = $3::uuid
+     RETURNING id, body, author_auth_user_id AS "authorAuthUserId", created_at AS "createdAt"`,
+    [randomUUID(), workspaceId, conversationId, userId, body],
+  );
+  return rows[0] as InboxNote | undefined;
+}
+
+export async function listQuickReplies(workspaceId: string): Promise<QuickReply[]> {
+  const rows = await database().query(
+    `SELECT id, title, body, created_at AS "createdAt" FROM app_inbox_quick_replies
+     WHERE workspace_id = $1::uuid ORDER BY title ASC LIMIT 200`,
+    [workspaceId],
+  );
+  return rows as QuickReply[];
+}
+
+export async function createQuickReply(
+  workspaceId: string, userId: string, title: string, body: string,
+): Promise<QuickReply | undefined> {
+  const rows = await database().query(
+    `INSERT INTO app_inbox_quick_replies (id, workspace_id, title, body, created_by_auth_user_id)
+     VALUES ($1::uuid, $2::uuid, $3, $4, $5)
+     RETURNING id, title, body, created_at AS "createdAt"`,
+    [randomUUID(), workspaceId, title, body, userId],
+  );
+  return rows[0] as QuickReply | undefined;
+}
+
+export async function deleteQuickReply(workspaceId: string, quickReplyId: string): Promise<boolean> {
+  const rows = await database().query(
+    `DELETE FROM app_inbox_quick_replies WHERE workspace_id = $1::uuid AND id = $2::uuid RETURNING id`,
+    [workspaceId, quickReplyId],
+  );
+  return rows.length > 0;
 }
