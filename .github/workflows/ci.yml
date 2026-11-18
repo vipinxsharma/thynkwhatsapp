@@ -59,7 +59,8 @@ jobs:
             -f db/migrations/0008_sms_dlt_drafts.sql \
             -f db/migrations/0009_subscription_entitlements.sql \
             -f db/migrations/0010_whatsapp_channels.sql \
-            -f db/migrations/0011_automation_routing.sql
+            -f db/migrations/0011_automation_routing.sql \
+            -f db/migrations/0012_meta_token_expiry.sql
           psql -v ON_ERROR_STOP=1 -f db/verify_schema.sql
           psql -v ON_ERROR_STOP=1 -f db/tests/automation_routing.sql
 

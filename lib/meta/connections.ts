@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 import { neon } from "@neondatabase/serverless";
-import { decryptToken, type EncryptedData } from "@/lib/meta/encryption";
+import { decryptToken, encryptToken, type EncryptedData } from "@/lib/meta/encryption";
 
 export interface MetaPhoneOwnership {
   wabaId: string;
@@ -231,4 +231,74 @@ export async function markWabaDisconnected(wabaId: string): Promise<string | nul
     [wabaId]
   );
   return (rows[0] as { workspaceId: string } | undefined)?.workspaceId ?? null;
+}
+
+export interface TokenCheckCandidate {
+  wabaId: string;
+  workspaceId: string;
+  accessToken: string;
+  expiresAt: Date | null;
+}
+
+/**
+ * Connected WABAs whose token has never been checked, or expires before `before`.
+ * Tokens Meta reported as never expiring (checked, no expiry) are skipped.
+ */
+export async function listTokensToCheck(before: Date, limit: number): Promise<TokenCheckCandidate[]> {
+  const rows = (await database().query(
+    `SELECT waba_id AS "wabaId", workspace_id AS "workspaceId", encrypted_access_token AS ciphertext,
+       access_token_iv AS iv, access_token_tag AS "authTag", token_expires_at AS "expiresAt"
+     FROM app_waba_connections
+     WHERE status = 'connected'
+       AND (token_checked_at IS NULL OR token_expires_at < $1::timestamptz)
+     ORDER BY token_expires_at ASC NULLS FIRST LIMIT $2`,
+    [before.toISOString(), limit]
+  )) as Array<{ wabaId: string; workspaceId: string; ciphertext: string; iv: string; authTag: string; expiresAt: string | Date | null }>;
+  return rows.map((row) => ({
+    wabaId: row.wabaId,
+    workspaceId: row.workspaceId,
+    accessToken: decryptToken({ ciphertext: row.ciphertext, iv: row.iv, authTag: row.authTag }),
+    expiresAt: row.expiresAt ? new Date(row.expiresAt) : null,
+  }));
+}
+
+/** Records what Meta reported about a stored token, optionally replacing the token itself. */
+export async function recordTokenState(input: {
+  wabaId: string;
+  expiresAt: Date | null;
+  newAccessToken?: string;
+  error?: string | null;
+}): Promise<void> {
+  const encrypted = input.newAccessToken ? encryptToken(input.newAccessToken) : null;
+  await database().query(
+    `UPDATE app_waba_connections SET
+       token_expires_at = $2::timestamptz,
+       token_checked_at = now(),
+       token_refresh_error = $3,
+       encrypted_access_token = COALESCE($4, encrypted_access_token),
+       access_token_iv = COALESCE($5, access_token_iv),
+       access_token_tag = COALESCE($6, access_token_tag),
+       updated_at = now()
+     WHERE waba_id = $1`,
+    [
+      input.wabaId,
+      input.expiresAt ? input.expiresAt.toISOString() : null,
+      input.error ? input.error.slice(0, 500) : null,
+      encrypted?.ciphertext ?? null,
+      encrypted?.iv ?? null,
+      encrypted?.authTag ?? null,
+    ]
+  );
+}
+
+/**
+ * Records a failed check without touching the stored token, its known expiry or
+ * token_checked_at, so an unchecked connection is retried on the next run.
+ */
+export async function recordTokenError(wabaId: string, error: string): Promise<void> {
+  await database().query(
+    `UPDATE app_waba_connections SET token_refresh_error = $2, updated_at = now()
+     WHERE waba_id = $1`,
+    [wabaId, error.slice(0, 500)]
+  );
 }

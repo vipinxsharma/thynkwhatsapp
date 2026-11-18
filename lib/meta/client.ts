@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import {
   MetaDebugTokenResponse,
   MetaSendMessagePayload,
@@ -25,6 +26,12 @@ async function describeMetaError(res: Response): Promise<string> {
     // fall through to the status line
   }
   return `HTTP ${res.status}`;
+}
+
+export interface MetaTokenState {
+  isValid: boolean;
+  expiresAt: Date | null;
+  wabaIds: string[];
 }
 
 export class MetaGraphClient {
@@ -75,10 +82,10 @@ export class MetaGraphClient {
   }
 
   /**
-   * Lists the WhatsApp Business accounts a customer's business token was granted, read from
-   * the token itself. Used when Meta returns a code without the Embedded Signup session event.
+   * Reads a business token's own state from Meta: validity, expiry and the WhatsApp
+   * Business accounts it was granted. `expiresAt` is null for a token that never expires.
    */
-  public async listGrantedWabaIds(): Promise<string[]> {
+  public async inspectToken(): Promise<MetaTokenState> {
     const appId = process.env.NEXT_PUBLIC_META_APP_ID;
     const appSecret = process.env.META_APP_SECRET;
     if (!appId || !appSecret) {
@@ -96,7 +103,51 @@ export class MetaGraphClient {
       if (grant.scope !== "whatsapp_business_management" && grant.scope !== "whatsapp_business_messaging") continue;
       for (const id of grant.target_ids || []) if (/^\d{5,30}$/.test(String(id))) ids.add(String(id));
     }
-    return [...ids];
+    const expiresAt = Number(payload.data?.expires_at);
+    return {
+      isValid: payload.data?.is_valid === true,
+      expiresAt: Number.isFinite(expiresAt) && expiresAt > 0 ? new Date(expiresAt * 1000) : null,
+      wabaIds: [...ids],
+    };
+  }
+
+  /**
+   * Lists the WhatsApp Business accounts a customer's business token was granted, read from
+   * the token itself. Used when Meta returns a code without the Embedded Signup session event.
+   */
+  public async listGrantedWabaIds(): Promise<string[]> {
+    return (await this.inspectToken()).wabaIds;
+  }
+
+  /**
+   * Issues a fresh 60-day business token from the current one, using Meta's
+   * `/<CLIENT_BUSINESS_ID>/system_user_access_tokens` endpoint. The current token must
+   * still be valid; an expired token cannot be refreshed and the customer must reconnect.
+   */
+  public async refreshBusinessToken(): Promise<string> {
+    const appSecret = process.env.META_APP_SECRET;
+    if (!appSecret) throw new Error("Missing META_APP_SECRET in environment");
+    if (!this.accessToken) throw new Error("A live Meta access token is required");
+    const headers = { Authorization: `Bearer ${this.accessToken}` };
+
+    const me = await fetch(`${GRAPH_API_BASE_URL}/me?fields=client_business_id`, { headers });
+    if (!me.ok) throw new Error(`Unable to read the client business: ${await describeMetaError(me)}`);
+    const clientBusinessId = String(((await me.json()) as { client_business_id?: unknown }).client_business_id || "");
+    if (!/^\d{5,30}$/.test(clientBusinessId)) throw new Error("Meta did not return a client business ID for this token");
+
+    const body = new URLSearchParams({
+      appsecret_proof: crypto.createHmac("sha256", appSecret).update(this.accessToken).digest("hex"),
+      set_token_expires_in_60_days: "true",
+    });
+    const res = await fetch(`${GRAPH_API_BASE_URL}/${clientBusinessId}/system_user_access_tokens`, {
+      method: "POST",
+      headers: { ...headers, "Content-Type": "application/x-www-form-urlencoded" },
+      body,
+    });
+    if (!res.ok) throw new Error(`Meta did not issue a new token: ${await describeMetaError(res)}`);
+    const token = ((await res.json()) as { access_token?: unknown }).access_token;
+    if (typeof token !== "string" || !token) throw new Error("Meta returned no access token");
+    return token;
   }
 
   /**

@@ -2,7 +2,7 @@ import crypto from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { requireApiSession } from "@/lib/auth/session";
 import { MetaGraphClient } from "@/lib/meta/client";
-import { saveMetaConnection, validMetaIdentifier } from "@/lib/meta/connections";
+import { recordTokenState, saveMetaConnection, validMetaIdentifier } from "@/lib/meta/connections";
 import { encryptToken } from "@/lib/meta/encryption";
 
 interface EmbeddedSignupRequestBody {
@@ -94,6 +94,14 @@ export async function POST(request: NextRequest) {
       encryptedToken: encryptToken(accessToken),
       channelName: channelName.trim(),
     });
+
+    // Record when this token expires so the scheduled job can refresh it in time. Best effort:
+    // the job also backfills any connection whose expiry was never recorded.
+    try {
+      await recordTokenState({ wabaId, expiresAt: (await metaClient.inspectToken()).expiresAt });
+    } catch (error) {
+      console.error("[Embedded Signup Token Expiry Error]", error);
+    }
 
     // Tech Provider onboarding step 3: a new Cloud API number cannot send or receive until it
     // is registered. WhatsApp Business app (coexistence) numbers are already registered.
