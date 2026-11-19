@@ -4,6 +4,8 @@ import { listPlatformTenantHealth, listPlatformWorkspaceSummaries } from "@/lib/
 import { listPendingPartnerRequests } from "@/lib/partner/access";
 import { PartnerAccessQueue } from "@/components/platform/PartnerAccessQueue";
 import { TenantInviteForm } from "@/components/platform/TenantInviteForm";
+import { PlatformWhatsAppNumbers } from "@/components/platform/PlatformWhatsAppNumbers";
+import { listPlatformWhatsAppNumbers } from "@/lib/meta/connections";
 import { TenantHealthTable } from "@/components/platform/TenantHealthTable";
 
 export const dynamic = "force-dynamic";
@@ -11,9 +13,10 @@ export const dynamic = "force-dynamic";
 export default async function PlatformAdminPage() {
   const session = await requirePageSession();
   await requirePlatformSuperadmin(session);
-  const [workspaces, healthRows] = await Promise.all([
+  const [workspaces, healthRows, whatsappNumbers] = await Promise.all([
     listPlatformWorkspaceSummaries(),
     listPlatformTenantHealth(),
+    listPlatformWhatsAppNumbers(),
   ]);
   const pendingPartner = await listPendingPartnerRequests().catch(() => []);
   const healthById = new Map(healthRows.map((row) => [row.workspaceId, row]));
@@ -62,6 +65,7 @@ export default async function PlatformAdminPage() {
         </div>
         <PartnerAccessQueue initial={pendingPartner} />
         <TenantHealthTable rows={healthTable} />
+        <PlatformWhatsAppNumbers rows={whatsappNumbers} />
       </div>
     </main>
   );

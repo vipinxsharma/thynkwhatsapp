@@ -302,3 +302,56 @@ export async function recordTokenError(wabaId: string, error: string): Promise<v
     [wabaId, error.slice(0, 500)]
   );
 }
+
+export interface PlatformWhatsAppNumber {
+  workspaceId: string;
+  workspaceName: string;
+  wabaId: string;
+  phoneNumberId: string;
+  displayPhoneNumber: string | null;
+  enabled: boolean;
+}
+
+/** Platform admin view: every stored WhatsApp number across workspaces. Read-only listing. */
+export async function listPlatformWhatsAppNumbers(): Promise<PlatformWhatsAppNumber[]> {
+  const rows = await database().query(
+    `SELECT c.workspace_id AS "workspaceId", w.name AS "workspaceName", c.waba_id AS "wabaId",
+      c.phone_number_id AS "phoneNumberId", c.display_phone_number AS "displayPhoneNumber", c.enabled
+     FROM app_whatsapp_channels c
+     JOIN app_workspaces w ON w.id = c.workspace_id
+     ORDER BY w.name, c.phone_number_id`
+  );
+  return rows as unknown as PlatformWhatsAppNumber[];
+}
+
+/**
+ * Platform admin removal of a number from a workspace. Deletes the channel row and its default
+ * setting, and deletes the WABA connection only when no other number in that workspace uses it.
+ * Conversations, messages and automation rules are kept as history. One statement, so it is atomic.
+ */
+export async function removePlatformWhatsAppNumber(workspaceId: string, phoneNumberId: string): Promise<boolean> {
+  const rows = await database().query(
+    `WITH removed_channel AS (
+       DELETE FROM app_whatsapp_channels
+       WHERE workspace_id = $1::uuid AND phone_number_id = $2
+       RETURNING waba_id
+     ), removed_default AS (
+       DELETE FROM app_workspace_channel_defaults
+       WHERE workspace_id = $1::uuid AND phone_number_id = $2
+       RETURNING 1
+     ), removed_waba AS (
+       DELETE FROM app_waba_connections a
+       WHERE a.workspace_id = $1::uuid
+         AND a.waba_id IN (SELECT waba_id FROM removed_channel)
+         AND NOT EXISTS (
+           SELECT 1 FROM app_whatsapp_channels other
+           WHERE other.workspace_id = a.workspace_id AND other.waba_id = a.waba_id
+             AND other.phone_number_id <> $2
+         )
+       RETURNING 1
+     )
+     SELECT (SELECT COUNT(*) FROM removed_channel)::int AS removed`,
+    [workspaceId, phoneNumberId]
+  );
+  return Number((rows[0] as { removed: number } | undefined)?.removed ?? 0) > 0;
+}
