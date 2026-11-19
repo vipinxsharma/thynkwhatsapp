@@ -12,6 +12,7 @@ function isPublicPath(pathname: string): boolean {
     pathname === "/login" ||
     pathname === "/pricing" ||
     pathname === "/api/billing/webhook" ||
+    pathname === "/api/checkout/webhook" ||
     pathname === "/invite" ||
     pathname.startsWith("/auth/") ||
     pathname.startsWith("/api/auth/") ||
