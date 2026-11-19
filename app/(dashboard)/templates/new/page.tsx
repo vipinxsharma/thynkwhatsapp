@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { TemplateAssistant } from "@/components/templates/TemplateAssistant";
 import {
   ArrowLeft,
   Sparkles,
@@ -328,6 +329,28 @@ export default function NewTemplatePage() {
             </button>
           </div>
         </form>
+
+        <div className="flex flex-col gap-6">
+          <TemplateAssistant
+            draft={{
+              name,
+              category,
+              language,
+              headerText: headerType === "TEXT" ? headerText : undefined,
+              bodyText,
+              footerText,
+              buttonType,
+              buttonText,
+              buttonUrl,
+            }}
+            onApply={(changes) => {
+              if (changes.category) setCategory(changes.category as typeof category);
+              if (changes.headerText !== undefined && headerType === "TEXT") setHeaderText(changes.headerText);
+              if (changes.bodyText !== undefined) setBodyText(changes.bodyText);
+              if (changes.footerText !== undefined) setFooterText(changes.footerText);
+            }}
+          />
+        </div>
 
         {/* Real-time WhatsApp Device Preview Column */}
         <div className="flex flex-col items-center">

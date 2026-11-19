@@ -5,7 +5,11 @@ import { StrapiClient, isDurableInboxEnabled } from "@/lib/strapi/client";
 import { emitMessageStatusUpdate, emitNewInboundMessage } from "@/lib/events/emitter";
 import { getMetaConnectionForWaba, markWabaDisconnected } from "@/lib/meta/connections";
 import { getConversationForSender } from "@/lib/inbox/store";
-import { routeInboundMessage } from "@/lib/automations/store";
+import { applyDeliveryReceipt, recordOptOutByWaId } from "@/lib/campaigns/store";
+import { isOptOutMessage } from "@/lib/campaigns/template";
+import { handleInboundAutomation } from "@/lib/automations/inbound";
+import { captureLeadFromInbound } from "@/lib/leads/capture";
+import { maybeAutoReply } from "@/lib/ai/chat-auto-reply";
 
 // account_update events after which the stored business token no longer works for the WABA.
 const ACCOUNT_DISCONNECT_EVENTS = new Set(["PARTNER_REMOVED", "PARTNER_APP_UNINSTALLED", "ACCOUNT_DELETED"]);
@@ -114,6 +118,18 @@ async function processWebhookEntries(entries: MetaWebhookPayload["entry"]) {
           for (const statusUpdate of value.statuses) {
             await strapiClient.updateMessageStatus(statusUpdate.id, statusUpdate.status);
             emitMessageStatusUpdate(tenantId, statusUpdate.id, statusUpdate.status);
+            if (isDurableInboxEnabled()) {
+              // Campaign recipients track the same receipts; a failure here must not lose the inbox update.
+              try {
+                const receiptError = (statusUpdate as { errors?: Array<{ title?: string; message?: string; code?: number }> }).errors?.[0];
+                await applyDeliveryReceipt(
+                  tenantId, statusUpdate.id, statusUpdate.status,
+                  receiptError ? `${receiptError.title || receiptError.message || "Delivery failed"}${receiptError.code ? ` (#${receiptError.code})` : ""}` : undefined
+                );
+              } catch (error) {
+                console.error("[Webhook Campaign Receipt Error]", error);
+              }
+            }
             console.log(
               `[Webhook Status] Message ${statusUpdate.id} status updated to: ${statusUpdate.status}`
             );
@@ -173,8 +189,34 @@ async function processWebhookEntries(entries: MetaWebhookPayload["entry"]) {
                 status: "received",
                 timestamp: new Date(parseInt(msg.timestamp, 10) * 1000).toISOString(),
               });
+              if (isDurableInboxEnabled() && msg.type === "text" && isOptOutMessage(bodyText)) {
+                try {
+                  await recordOptOutByWaId(tenantId, msg.from);
+                } catch (error) {
+                  console.error("[Webhook Opt-out Error]", error);
+                }
+              }
+              if (isDurableInboxEnabled()) {
+                // Automation failures are logged, not retried: the message is already stored.
+                await handleInboundAutomation({
+                  workspaceId: tenantId, conversationId: String(matchedConv.id), wamId: msg.id,
+                  waId: msg.from, phoneNumberId: connection.phoneNumberId, messageType: msg.type,
+                  text: bodyText, conversationStatus: matchedConv.status,
+                  contactName: value.contacts?.find((contact) => contact.wa_id === msg.from)?.profile.name || "",
+                }).catch((error) => console.error("[Webhook Automation Error]", error));
+              }
+              if (isDurableInboxEnabled()) {
+                await captureLeadFromInbound(tenantId, String(matchedConv.contact.id), msg);
+              }
               if (isDurableInboxEnabled() && msg.type === "text") {
-                await routeInboundMessage(tenantId, String(matchedConv.id), msg.id, connection.phoneNumberId, bodyText);
+                try {
+                  await maybeAutoReply({
+                    workspaceId: tenantId, conversationId: String(matchedConv.id), wamId: msg.id,
+                    waId: msg.from, phoneNumberId: connection.phoneNumberId, messageType: msg.type, text: bodyText,
+                  });
+                } catch (error) {
+                  console.error("[Webhook AI Chat Error]", error);
+                }
               }
               emitNewInboundMessage(tenantId, matchedConv.id, recorded);
               console.log(

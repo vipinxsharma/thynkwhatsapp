@@ -8,7 +8,8 @@ import { MessageInput } from "./MessageInput";
 import { ContactDetailsSidebar, type AssigneeOption } from "./ContactDetailsSidebar";
 import { AgentNotesPanel } from "./AgentNotesPanel";
 import { TemplateSelectorModal } from "./TemplateSelectorModal";
-import { MediaAttachmentModal } from "./MediaAttachmentModal";
+import { MediaAttachmentModal, type MediaSendPayload } from "./MediaAttachmentModal";
+import type { MediaMessageType } from "@/lib/inbox/media";
 import { ArrowLeft, User, X, Sparkles, Phone, Video, MoreVertical } from "lucide-react";
 import { formatPhoneNumber } from "@/lib/utils";
 
@@ -50,6 +51,7 @@ export function UnifiedInbox({
   const [isLiveConnected, setIsLiveConnected] = useState(false);
   const pendingSendKeys = useRef(new Map<string, string>());
   const sendInFlight = useRef(false);
+  const mediaUploads = useRef(new WeakMap<File, { conversationId: string; messageType: MediaMessageType; mediaId: string }>());
 
   useEffect(() => {
     const controller = new AbortController();
@@ -285,24 +287,45 @@ export function UnifiedInbox({
     }
   };
 
-  // 3. Send Rich Media (Image, Document/PDF, Interactive buttons)
-  const handleSendMedia = async (payload: {
-    messageType: "image" | "document" | "interactive";
-    mediaUrl?: string;
-    caption?: string;
-    filename?: string;
-    interactiveButtons?: Array<{ id: string; title: string }>;
-    text?: string;
-  }) => {
+  // Stores the file with Meta and returns its media ID. The ID is remembered per file and conversation,
+  // so resending the same file after a failed send reuses it and the send keeps its idempotency key.
+  async function uploadMedia(conversationId: string, file: File, messageType: MediaMessageType): Promise<string> {
+    const cached = mediaUploads.current.get(file);
+    if (cached && cached.conversationId === conversationId && cached.messageType === messageType) {
+      return cached.mediaId;
+    }
+    const form = new FormData();
+    form.append("conversationId", conversationId);
+    form.append("messageType", messageType);
+    form.append("file", file);
+    const response = await fetch("/api/whatsapp/messages/media", { method: "POST", body: form });
+    const result = await response.json();
+    if (!response.ok || !result.success) throw new Error(result.error || "The file could not be uploaded");
+    const mediaId = String(result.data.mediaId);
+    mediaUploads.current.set(file, { conversationId, messageType, mediaId });
+    return mediaId;
+  }
+
+  // 3. Send a file (image, video, document) or interactive buttons
+  const handleSendMedia = async (payload: MediaSendPayload) => {
     if (!activeConversation) return;
 
     try {
-      const newMsg = await sendToMeta({
+      const base = {
           conversationId: activeConversation.id,
           recipientPhone: activeConversation.contact.phoneNumber,
           phoneNumberId: activeConversation.phoneNumber.phoneNumberId,
-          ...payload,
-      });
+      };
+      const outgoing = payload.messageType === "interactive"
+        ? { ...base, messageType: "interactive", text: payload.text, interactiveButtons: payload.interactiveButtons }
+        : {
+            ...base,
+            messageType: payload.messageType,
+            mediaId: await uploadMedia(String(activeConversation.id), payload.file, payload.messageType),
+            caption: payload.caption,
+            filename: payload.filename,
+          };
+      const newMsg = await sendToMeta(outgoing);
       setMessagesMap((prev) => ({
         ...prev,
         [String(activeId)]: [...(prev[String(activeId)] || []), newMsg],
