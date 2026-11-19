@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { XeccelLogo } from "@/components/brand/XeccelLogo";
+import CookieSettingsButton from "@/components/consent/CookieSettingsButton";
 import styles from "./HomePage.module.css";
 
 export const metadata: Metadata = {
@@ -337,6 +338,7 @@ export default function HomePage() {
             <a href="/legal/refunds-cancellations" className="hover:text-[var(--heading)]">Refunds & Cancellations</a>
             <a href="/legal/service-delivery" className="hover:text-[var(--heading)]">Service Delivery</a>
             <a href="/legal/cookies" className="hover:text-[var(--heading)]">Cookie Policy</a>
+            <CookieSettingsButton />
             <a href="/legal/messaging-use" className="hover:text-[var(--heading)]">Messaging Use</a>
             <a href="/legal" className="font-semibold text-[var(--accent-text)] hover:underline">Legal & Support Center</a>
             <a href="mailto:partner@thynkwise.co.in" className="hover:text-[var(--heading)]">Contact support</a>

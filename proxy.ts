@@ -19,6 +19,7 @@ function isPublicPath(pathname: string): boolean {
     pathname === "/api/webhooks/support-email" ||
     // Scheduled job: the route itself requires the CRON_SECRET bearer token.
     pathname === "/api/cron/meta-token-refresh" ||
+    pathname === "/api/cron/campaign-send" ||
     pathname === "/api/cron/webhook-deliveries" ||
     // Developer API: each route authenticates a workspace API key itself (lib/developer/api-gateway.ts).
     pathname.startsWith("/api/v1/")

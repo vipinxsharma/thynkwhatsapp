@@ -4,6 +4,7 @@ import { deleteRoutingRule, listRoutingRules, listRoutingRuns, saveRoutingRule }
 import { matchRoutingRule, parseRoutingRule, RuleValidationError } from "@/lib/automations/routing";
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 function failure(error: unknown) {
+  if (!(error instanceof RuleValidationError)) console.error("[automations] request failed", error);
   return NextResponse.json({ error: error instanceof RuleValidationError ? error.message : "Automation storage is unavailable. Please contact your administrator." },
     { status: error instanceof RuleValidationError ? 400 : 503, headers: { "Cache-Control": "no-store" } });
 }

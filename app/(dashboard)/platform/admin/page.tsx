@@ -1,13 +1,31 @@
 import { requirePageSession } from "@/lib/auth/session";
 import { requirePlatformSuperadmin } from "@/lib/auth/platform-admin";
-import { listPlatformWorkspaceSummaries } from "@/lib/workspaces/store";
+import { listPlatformTenantHealth, listPlatformWorkspaceSummaries } from "@/lib/workspaces/store";
+import { listPendingPartnerRequests } from "@/lib/partner/access";
+import { PartnerAccessQueue } from "@/components/platform/PartnerAccessQueue";
+import { TenantInviteForm } from "@/components/platform/TenantInviteForm";
+import { PlatformWhatsAppNumbers } from "@/components/platform/PlatformWhatsAppNumbers";
+import { listPlatformWhatsAppNumbers } from "@/lib/meta/connections";
+import { TenantHealthTable } from "@/components/platform/TenantHealthTable";
 
 export const dynamic = "force-dynamic";
 
 export default async function PlatformAdminPage() {
   const session = await requirePageSession();
   await requirePlatformSuperadmin(session);
-  const workspaces = await listPlatformWorkspaceSummaries();
+  const [workspaces, healthRows, whatsappNumbers] = await Promise.all([
+    listPlatformWorkspaceSummaries(),
+    listPlatformTenantHealth(),
+    listPlatformWhatsAppNumbers(),
+  ]);
+  const pendingPartner = await listPendingPartnerRequests().catch(() => []);
+  const healthById = new Map(healthRows.map((row) => [row.workspaceId, row]));
+  const healthTable = workspaces.map((workspace) => ({
+    workspaceId: workspace.workspaceId,
+    workspaceName: workspace.workspaceName,
+    createdAt: workspace.createdAt,
+    health: healthById.get(workspace.workspaceId),
+  }));
 
   return (
     <main className="flex-1 overflow-y-auto p-8">
@@ -17,6 +35,7 @@ export default async function PlatformAdminPage() {
         <p className="mb-6 mt-2 text-sm text-[var(--muted)]">
           Read-only directory of Xeccel workspaces. Customer conversations and workspace settings are not exposed here.
         </p>
+        <TenantInviteForm />
         <div className="overflow-x-auto rounded-xl border border-[var(--border)] bg-[var(--surface)]">
           <table className="w-full text-left text-sm">
             <thead className="border-b border-[var(--border)] text-[var(--muted)]">
@@ -44,6 +63,9 @@ export default async function PlatformAdminPage() {
             </tbody>
           </table>
         </div>
+        <PartnerAccessQueue initial={pendingPartner} />
+        <TenantHealthTable rows={healthTable} />
+        <PlatformWhatsAppNumbers rows={whatsappNumbers} />
       </div>
     </main>
   );

@@ -1,6 +1,27 @@
 "use client";
 
 import { useState } from "react";
+
+async function copyText(text: string): Promise<boolean> {
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch {
+    // Fall through to the textarea method below.
+  }
+  const area = document.createElement("textarea");
+  area.value = text;
+  area.setAttribute("readonly", "");
+  area.style.position = "fixed";
+  area.style.opacity = "0";
+  document.body.appendChild(area);
+  area.select();
+  const ok = document.execCommand("copy");
+  document.body.removeChild(area);
+  return ok;
+}
 import type { TeamMember, WorkspaceInvitation } from "@/lib/workspaces/team";
 import type { AppRole } from "@/lib/auth/token";
 
@@ -18,6 +39,7 @@ export function TeamSettings({
   const [role, setRole] = useState<"admin" | "agent" | "viewer">("agent");
   const [inviteUrl, setInviteUrl] = useState("");
   const [error, setError] = useState("");
+  const [copied, setCopied] = useState(false);
   const [pending, setPending] = useState(false);
 
   async function createInvite(event: React.FormEvent) {
@@ -59,7 +81,17 @@ export function TeamSettings({
           <div className="rounded-lg border border-whatsapp/20 bg-whatsapp/5 p-3">
             <p className="mb-2 text-xs text-gray-300">Share this link with the invited teammate:</p>
             <div className="break-all text-xs text-whatsapp-light">{inviteUrl}</div>
-            <button type="button" onClick={() => navigator.clipboard.writeText(inviteUrl)} className="mt-2 text-xs font-semibold text-white">Copy link</button>
+            <button
+              type="button"
+              onClick={async () => {
+                const ok = await copyText(inviteUrl);
+                setCopied(ok);
+                if (!ok) setError("Could not copy. Select the link and copy it manually.");
+              }}
+              className="mt-2 text-xs font-semibold text-white"
+            >
+              {copied ? "Copied" : "Copy link"}
+            </button>
           </div>
         )}
       </form>

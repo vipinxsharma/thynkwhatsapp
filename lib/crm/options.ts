@@ -11,6 +11,9 @@ export interface CrmOption {
   // Where the customer finishes sign-up. Undefined means access is arranged by the Xeccel team.
   signupUrl?: string;
   signupLabel: string;
+  // Logo shown on the choice card, served from /public.
+  logoSrc: string;
+  logoAlt: string;
 }
 
 function httpsUrl(value: string | undefined): string | undefined {
@@ -31,6 +34,8 @@ export const crmOptions: CrmOption[] = [
     included: ["1 user", "1 web admin access"],
     signupUrl: httpsUrl(process.env.NEXT_PUBLIC_COLDCALL_SIGNUP_URL) ?? "https://coldcall.in",
     signupLabel: "Sign up for free",
+    logoSrc: "/crm/coldcall.png",
+    logoAlt: "Coldcall.in logo",
   },
   {
     code: "supercrm",
@@ -40,6 +45,8 @@ export const crmOptions: CrmOption[] = [
     included: ["SuperCRM basic plan", "Access sent after a thynkWISE specialist reviews your application"],
     signupUrl: httpsUrl(process.env.NEXT_PUBLIC_SUPERCRM_SIGNUP_URL) ?? "https://thynkwise.co.in/supercrm#start-trial",
     signupLabel: "Sign up for free",
+    logoSrc: "/crm/supercrm.png",
+    logoAlt: "SuperCRM logo",
   },
 ];
 
