@@ -5,11 +5,11 @@ import { StrapiClient, isDurableInboxEnabled } from "@/lib/strapi/client";
 import { emitMessageStatusUpdate, emitNewInboundMessage } from "@/lib/events/emitter";
 import { getMetaConnectionForWaba, markWabaDisconnected } from "@/lib/meta/connections";
 import { getConversationForSender } from "@/lib/inbox/store";
+import { applyDeliveryReceipt, recordOptOutByWaId } from "@/lib/campaigns/store";
+import { isOptOutMessage } from "@/lib/campaigns/template";
 import { handleInboundAutomation } from "@/lib/automations/inbound";
 import { captureLeadFromInbound } from "@/lib/leads/capture";
 import { maybeAutoReply } from "@/lib/ai/chat-auto-reply";
-import { applyDeliveryReceipt, recordOptOutByWaId } from "@/lib/campaigns/store";
-import { isOptOutMessage } from "@/lib/campaigns/template";
 
 // account_update events after which the stored business token no longer works for the WABA.
 const ACCOUNT_DISCONNECT_EVENTS = new Set(["PARTNER_REMOVED", "PARTNER_APP_UNINSTALLED", "ACCOUNT_DELETED"]);
