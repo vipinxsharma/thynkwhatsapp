@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireApiSession } from "@/lib/auth/session";
 import { campaignAccessBlock } from "@/lib/campaigns/access";
-import { listConsentContacts, setMarketingConsent } from "@/lib/campaigns/store";
+import { countAudience, listConsentContacts, setMarketingConsent } from "@/lib/campaigns/store";
+
+// The contact list is capped at 5,000; the summary counts every contact in the workspace.
+const CONSENT_LIST_LIMIT = 5000;
 
 const noStore = { "Cache-Control": "no-store" };
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -12,7 +15,15 @@ export async function GET(request: NextRequest) {
   const blocked = await campaignAccessBlock(auth.session.tenantId, false);
   if (blocked) return blocked;
   try {
-    return NextResponse.json({ data: await listConsentContacts(auth.session.tenantId) }, { headers: noStore });
+    const workspaceId = auth.session.tenantId;
+    const [contacts, summary] = await Promise.all([
+      listConsentContacts(workspaceId),
+      countAudience(workspaceId, null),
+    ]);
+    return NextResponse.json(
+      { data: contacts, summary: { ...summary, truncated: contacts.length >= CONSENT_LIST_LIMIT } },
+      { headers: noStore }
+    );
   } catch (error) {
     console.error("[Consent List Error]", error);
     return NextResponse.json({ error: "Contacts are temporarily unavailable" }, { status: 503, headers: noStore });

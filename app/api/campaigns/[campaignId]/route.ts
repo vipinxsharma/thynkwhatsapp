@@ -50,13 +50,17 @@ export async function POST(request: NextRequest, context: Context) {
     if (action === "send_batch") {
       const summary = await sendCampaignBatch({ workspaceId, campaignId });
       if (summary.status === "not_found") return fail("Campaign not found", 404);
-      return NextResponse.json({ data: { summary, campaign: await getCampaign(workspaceId, campaignId) } }, { headers: noStore });
+      const batchCampaign = await getCampaign(workspaceId, campaignId);
+      const batchProblems = await listRecipientProblems(workspaceId, campaignId);
+      return NextResponse.json({ data: { summary, campaign: batchCampaign, problems: batchProblems } }, { headers: noStore });
     }
     const existing = await getCampaign(workspaceId, campaignId);
     if (!existing) return fail("Campaign not found", 404);
     const moved = await transitionCampaign(workspaceId, campaignId, action);
     if (!moved) return fail(`A ${existing.status} campaign cannot be changed this way`, 409);
-    return NextResponse.json({ data: { campaign: await getCampaign(workspaceId, campaignId) } }, { headers: noStore });
+    const campaign = await getCampaign(workspaceId, campaignId);
+    const problems = await listRecipientProblems(workspaceId, campaignId);
+    return NextResponse.json({ data: { campaign, problems } }, { headers: noStore });
   } catch (error) {
     console.error("[Campaign Action Error]", error);
     return fail("The campaign action could not be completed. Check its status before trying again.", 503);
