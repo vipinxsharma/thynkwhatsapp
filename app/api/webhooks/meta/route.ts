@@ -8,6 +8,8 @@ import { getConversationForSender } from "@/lib/inbox/store";
 import { handleInboundAutomation } from "@/lib/automations/inbound";
 import { captureLeadFromInbound } from "@/lib/leads/capture";
 import { maybeAutoReply } from "@/lib/ai/chat-auto-reply";
+import { applyDeliveryReceipt, recordOptOutByWaId } from "@/lib/campaigns/store";
+import { isOptOutMessage } from "@/lib/campaigns/template";
 
 // account_update events after which the stored business token no longer works for the WABA.
 const ACCOUNT_DISCONNECT_EVENTS = new Set(["PARTNER_REMOVED", "PARTNER_APP_UNINSTALLED", "ACCOUNT_DELETED"]);
@@ -116,6 +118,18 @@ async function processWebhookEntries(entries: MetaWebhookPayload["entry"]) {
           for (const statusUpdate of value.statuses) {
             await strapiClient.updateMessageStatus(statusUpdate.id, statusUpdate.status);
             emitMessageStatusUpdate(tenantId, statusUpdate.id, statusUpdate.status);
+            if (isDurableInboxEnabled()) {
+              // Campaign recipients track the same receipts; a failure here must not lose the inbox update.
+              try {
+                const receiptError = (statusUpdate as { errors?: Array<{ title?: string; message?: string; code?: number }> }).errors?.[0];
+                await applyDeliveryReceipt(
+                  tenantId, statusUpdate.id, statusUpdate.status,
+                  receiptError ? `${receiptError.title || receiptError.message || "Delivery failed"}${receiptError.code ? ` (#${receiptError.code})` : ""}` : undefined
+                );
+              } catch (error) {
+                console.error("[Webhook Campaign Receipt Error]", error);
+              }
+            }
             console.log(
               `[Webhook Status] Message ${statusUpdate.id} status updated to: ${statusUpdate.status}`
             );
@@ -175,6 +189,13 @@ async function processWebhookEntries(entries: MetaWebhookPayload["entry"]) {
                 status: "received",
                 timestamp: new Date(parseInt(msg.timestamp, 10) * 1000).toISOString(),
               });
+              if (isDurableInboxEnabled() && msg.type === "text" && isOptOutMessage(bodyText)) {
+                try {
+                  await recordOptOutByWaId(tenantId, msg.from);
+                } catch (error) {
+                  console.error("[Webhook Opt-out Error]", error);
+                }
+              }
               if (isDurableInboxEnabled()) {
                 // Automation failures are logged, not retried: the message is already stored.
                 await handleInboundAutomation({

@@ -64,6 +64,7 @@ jobs:
             -f db/migrations/0013_billing_checkout_orders.sql \
             -f db/migrations/0014_gst_invoices_credit_notes.sql \
             -f db/migrations/0014_workspace_crm_choice.sql \
+            -f db/migrations/0015_campaign_sending.sql \
             -f db/migrations/0016_inbox_agent_tools.sql \
             -f db/migrations/0017_auto_reply_chat_settings.sql \
             -f db/migrations/0018_contact_crm.sql \

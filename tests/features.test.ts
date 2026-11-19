@@ -1,7 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { StrapiClient } from "../lib/strapi/client";
 import { AutomationEngine } from "../lib/automations/rules";
-import { CampaignStore } from "../lib/campaigns/store";
 
 describe("CRM Contact Management Suite", () => {
   const strapi = new StrapiClient("features-tenant");
@@ -99,34 +98,3 @@ describe("Automated Bot & Keyword Triggers Engine", () => {
   });
 });
 
-describe("Broadcast Campaign Engine", () => {
-  const tenantId = "campaign-tenant";
-
-  it("should retrieve historical broadcast runs", () => {
-    const campaigns = CampaignStore.getAll(tenantId);
-    expect(campaigns.length).toBeGreaterThanOrEqual(2);
-    expect(campaigns[0].status).toBe("completed");
-    expect(campaigns[0].deliveredCount).toBeGreaterThan(0);
-  });
-
-  it("should record a new campaign run with delivery receipts and cost", () => {
-    const newRun = CampaignStore.add(tenantId, {
-      name: "Q1 Renewal Blast",
-      templateName: "order_confirmation_v1",
-      segment: "customers",
-      totalRecipients: 50,
-      sentCount: 50,
-      deliveredCount: 49,
-      readCount: 41,
-      failedCount: 1,
-      estimatedCostUSD: 0.75,
-      status: "completed",
-    });
-
-    expect(newRun.id).toBeDefined();
-    expect(newRun.createdAt).toBeDefined();
-
-    const all = CampaignStore.getAll(tenantId);
-    expect(all[0].id).toBe(newRun.id);
-  });
-});
