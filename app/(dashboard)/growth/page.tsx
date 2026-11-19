@@ -27,8 +27,10 @@ export default function GrowthPage() {
         },
         {
           title: "Revenue reporting",
-          description: "Planned: reconcile attributed conversations, orders and verified payments before reporting return on ad spend.",
-          status: "Planned",
+          description: "Reconciles click-to-WhatsApp referrals, checkout orders and verified payments per source. Only verified payments count as revenue. Ad spend is not synced, so return on ad spend is not shown.",
+          status: "Available foundation",
+          href: "/growth/revenue",
+          linkLabel: "View revenue report",
         },
       ]}
     />
