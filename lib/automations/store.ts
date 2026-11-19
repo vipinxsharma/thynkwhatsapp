@@ -117,7 +117,7 @@ export async function routeInboundMessage(
     JOIN app_inbox_messages m ON m.workspace_id=c.workspace_id AND m.conversation_id=c.id AND m.wam_id=$5 AND m.direction='inbound'
     WHERE c.workspace_id=$2::uuid AND c.id=$7::uuid AND c.phone_number_id=$10
       AND m.timestamp >= now() - interval '24 hours' AND m.timestamp <= now() + interval '5 minutes'
-      AND EXISTS (SELECT 1 FROM app_automation_rules r WHERE r.workspace_id=$2::uuid AND r.id=$3::uuid AND r.enabled AND r.updated_at=$11::timestamptz)
+      AND EXISTS (SELECT 1 FROM app_automation_rules r WHERE r.workspace_id=$2::uuid AND r.id=$3::uuid AND r.enabled AND date_trunc('milliseconds', r.updated_at)=date_trunc('milliseconds', $11::timestamptz))
     ON CONFLICT (workspace_id,wam_id) DO NOTHING RETURNING conversation_id
   ), updated_conversation AS (
     UPDATE app_inbox_conversations c SET status=COALESCE($8,status),updated_at=now()
