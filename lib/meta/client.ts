@@ -28,6 +28,14 @@ async function describeMetaError(res: Response): Promise<string> {
   return `HTTP ${res.status}`;
 }
 
+/** Meta answered a send request with an error. `code` is Meta's error code when it gave one. */
+export class MetaSendError extends Error {
+  constructor(message: string, public readonly httpStatus: number, public readonly code: number | null) {
+    super(message);
+    this.name = "MetaSendError";
+  }
+}
+
 export interface MetaTokenState {
   isValid: boolean;
   expiresAt: Date | null;
@@ -241,9 +249,11 @@ export class MetaGraphClient {
     });
 
     if (!res.ok) {
-      const error = await res.json();
-      throw new Error(
-        `Meta Cloud API send message error: ${error?.error?.message || JSON.stringify(error)}`
+      const error = await res.json().catch(() => null);
+      throw new MetaSendError(
+        `Meta Cloud API send message error: ${error?.error?.message || JSON.stringify(error)}`,
+        res.status,
+        Number.isFinite(Number(error?.error?.code)) ? Number(error.error.code) : null
       );
     }
 
