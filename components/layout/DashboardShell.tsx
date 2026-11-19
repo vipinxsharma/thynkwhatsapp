@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import type { AppSession } from "@/lib/auth/session";
 import { signOutAction } from "@/app/auth/actions";
 import { SubmitButton } from "@/components/auth/SubmitButton";
+import { visibleNavigation as visibleNavigationFor } from "@/lib/partner/navigation";
 import type { WorkspaceMembership } from "@/lib/workspaces/store";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { XeccelLogo } from "@/components/brand/XeccelLogo";
@@ -22,6 +23,7 @@ import {
   MessageSquare,
   Send,
   Settings,
+  Network,
   ShieldCheck,
   Users,
   LifeBuoy,
@@ -29,13 +31,14 @@ import {
   ShoppingBag,
   Smartphone,
   Sparkles,
+  Target,
   UserPlus,
   Shield,
   type LucideIcon,
   MessageSquareText,
 } from "lucide-react";
 
-type NavigationItem = { name: string; href: string; icon: LucideIcon };
+type NavigationItem = { name: string; href: string; icon: LucideIcon; partnerOnly?: boolean };
 
 const navigation = [
   { name: "Overview", href: "/dashboard", icon: LayoutDashboard },
@@ -44,9 +47,11 @@ const navigation = [
   { name: "CRM", href: "/crm", icon: Handshake },
   { name: "Automations", href: "/automations", icon: Bot },
   { name: "Campaigns", href: "/campaigns", icon: Send },
+  { name: "Leads", href: "/leads", icon: Target },
   { name: "Message templates", href: "/templates", icon: FileText },
   { name: "Analytics", href: "/analytics", icon: BarChart3 },
   { name: "Channels", href: "/settings/waba", icon: Settings },
+  { name: "Partner solutions", href: "/partner-solutions", icon: Network, partnerOnly: true },
   { name: "Support", href: "/support", icon: LifeBuoy },
 ];
 
@@ -63,11 +68,13 @@ export function DashboardShell({
   session,
   memberships,
   platformSuperadmin,
+  partnerEnabled = false, // true only after a platform superadmin approves partner access
 }: {
   children: React.ReactNode;
   session: AppSession;
   memberships: WorkspaceMembership[];
   platformSuperadmin: boolean;
+  partnerEnabled?: boolean;
 }) {
   const pathname = usePathname();
   const [mobileNavigationOpen, setMobileNavigationOpen] = useState(false);
@@ -82,9 +89,10 @@ export function DashboardShell({
     if (response.ok) window.location.assign("/dashboard");
   }
 
-  const visibleNavigation: NavigationItem[] = session.role === "owner" || session.role === "admin"
+  const roleNavigation: NavigationItem[] = session.role === "owner" || session.role === "admin"
     ? [...navigation, { name: "Chat settings", href: "/settings/chat", icon: MessageSquareText }, { name: "Team", href: "/settings/team", icon: UserPlus }]
     : navigation;
+  const visibleNavigation: NavigationItem[] = visibleNavigationFor(roleNavigation, partnerEnabled);
   if (platformSuperadmin) visibleNavigation.push({ name: "Platform admin", href: "/platform/admin", icon: Shield });
 
   return (

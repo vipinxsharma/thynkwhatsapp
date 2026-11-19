@@ -1,6 +1,8 @@
 import { requirePageSession } from "@/lib/auth/session";
 import { requirePlatformSuperadmin } from "@/lib/auth/platform-admin";
 import { listPlatformWorkspaceSummaries } from "@/lib/workspaces/store";
+import { listPendingPartnerRequests } from "@/lib/partner/access";
+import { PartnerAccessQueue } from "@/components/platform/PartnerAccessQueue";
 
 export const dynamic = "force-dynamic";
 
@@ -8,6 +10,7 @@ export default async function PlatformAdminPage() {
   const session = await requirePageSession();
   await requirePlatformSuperadmin(session);
   const workspaces = await listPlatformWorkspaceSummaries();
+  const pendingPartner = await listPendingPartnerRequests().catch(() => []);
 
   return (
     <main className="flex-1 overflow-y-auto p-8">
@@ -44,6 +47,7 @@ export default async function PlatformAdminPage() {
             </tbody>
           </table>
         </div>
+        <PartnerAccessQueue initial={pendingPartner} />
       </div>
     </main>
   );

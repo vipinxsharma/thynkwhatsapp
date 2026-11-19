@@ -58,8 +58,15 @@ export function MessageThread({ messages, customerName, loading = false }: Messa
         messages.map((msg) => {
           const isOutbound = msg.direction === "outbound";
           const raw = msg.rawPayload || {};
-          const isImage = msg.type === "image" || !!raw.image?.link || !!raw.mediaUrl?.match(/\.(jpeg|jpg|gif|png|webp)/i);
-          const isDoc = msg.type === "document" || !!raw.document?.link;
+          const mediaKind = (["image", "video", "document"] as const).find((kind) => msg.type === kind || raw[kind]) ?? null;
+          const mediaPart = mediaKind ? raw[mediaKind] : undefined;
+          // Files Meta holds are streamed through the app; older rows keep their stored link.
+          const mediaSrc = mediaPart?.id
+            ? `/api/whatsapp/messages/${msg.id}/media`
+            : (raw.mediaUrl || mediaPart?.link || null);
+          const isImage = mediaKind === "image";
+          const isVideo = mediaKind === "video";
+          const isDoc = mediaKind === "document";
           const isInteractive = msg.type === "interactive" || !!raw.interactive?.action?.buttons || !!raw.buttons;
 
           return (
@@ -85,12 +92,26 @@ export function MessageThread({ messages, customerName, loading = false }: Messa
                 {/* Image Media Rendering */}
                 {isImage && (
                   <div className="mb-2 rounded-xl overflow-hidden border border-white/10 bg-black/40">
-                    {/* eslint-disable-next-js-image */}
-                    <img
-                      src={raw.mediaUrl || raw.image?.link || "https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&w=800&q=80"}
-                      alt="WhatsApp Media Asset"
-                      className="max-h-60 w-full object-cover hover:opacity-95 transition-opacity"
-                    />
+                    {mediaSrc ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={mediaSrc}
+                        alt={mediaPart?.caption || "WhatsApp image"}
+                        className="max-h-60 w-full object-cover hover:opacity-95 transition-opacity"
+                      />
+                    ) : (
+                      <p className="p-6 text-center text-xs text-gray-400">Image unavailable</p>
+                    )}
+                  </div>
+                )}
+
+                {isVideo && (
+                  <div className="mb-2 rounded-xl overflow-hidden border border-white/10 bg-black/40">
+                    {mediaSrc ? (
+                      <video src={mediaSrc} controls preload="metadata" className="max-h-60 w-full" />
+                    ) : (
+                      <p className="p-6 text-center text-xs text-gray-400">Video unavailable</p>
+                    )}
                   </div>
                 )}
 
@@ -103,14 +124,14 @@ export function MessageThread({ messages, customerName, loading = false }: Messa
                       </div>
                       <div className="min-w-0">
                         <p className="text-xs font-semibold text-white truncate">
-                          {raw.filename || raw.document?.filename || "WhatsApp_Attachment.pdf"}
+                          {raw.filename || mediaPart?.filename || "Document"}
                         </p>
-                        <p className="text-[10px] text-gray-400">PDF Document • Ready to view</p>
+                        <p className="text-[10px] text-gray-400">{mediaSrc ? "Document" : "Document unavailable"}</p>
                       </div>
                     </div>
-                    {(raw.mediaUrl || raw.document?.link) && (
+                    {mediaSrc && (
                       <a
-                        href={raw.mediaUrl || raw.document?.link}
+                        href={mediaSrc}
                         target="_blank"
                         rel="noreferrer"
                         className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-all flex-shrink-0"
