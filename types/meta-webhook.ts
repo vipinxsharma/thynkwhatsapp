@@ -99,7 +99,22 @@ export interface WebhookMessage {
     from?: string;
     id?: string; // Replied-to wamid
   };
+  // Present on the first message after a click-to-WhatsApp ad or post.
+  referral?: WebhookReferral;
   errors?: WebhookError[];
+}
+
+export interface WebhookReferral {
+  source_url?: string;
+  source_type?: "ad" | "post" | string;
+  source_id?: string;
+  headline?: string;
+  body?: string;
+  media_type?: string;
+  image_url?: string;
+  video_url?: string;
+  thumbnail_url?: string;
+  ctwa_clid?: string;
 }
 
 export interface WebhookMedia {

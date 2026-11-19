@@ -6,7 +6,7 @@ export default function GrowthPage() {
       eyebrow="Commerce and acquisition"
       title="Growth channels"
       description="Catalog, shopping and click-to-WhatsApp acquisition are distinct from core messaging and require their own connections and measurement."
-      notice="Commerce and ads are roadmap sections, not connected services. The WhatsApp catalog foundation stays off until Meta catalog sync is enabled. No checkout, ad account or revenue attribution is active in this workspace."
+      notice="Commerce and ads are roadmap sections, not connected services. No catalog, checkout or revenue attribution is active in this workspace. No ad account is connected unless a workspace owner or admin completes the read-only connection."
       capabilities={[
         {
           title: "WhatsApp catalog",
@@ -15,18 +15,22 @@ export default function GrowthPage() {
         },
         {
           title: "Checkout and payments",
-          description: "Planned: order-to-payment lifecycle with a supported provider and verified payment events. This is separate from Xeccel subscription billing.",
-          status: "Planned",
+          description: "Orders raised from a conversation, Cashfree payment links, and paid status set only from a verified Cashfree payment. Separate from Xeccel subscription billing.",
+          status: "Available foundation",
         },
         {
           title: "Click-to-WhatsApp ads",
-          description: "Planned: opt-in ad account connection, lead source capture and campaign attribution without implying ad delivery or spend control.",
-          status: "Planned",
+          description: "Ad referrals from inbound messages are recorded per contact. An opt-in ad account connection requests read-only access (ads_read). Thynk never creates ads, changes budgets or changes delivery. Real users can connect only after Meta approves ads_read.",
+          status: "Available foundation",
+          href: "/growth/ads/connect",
+          linkLabel: "Review and connect",
         },
         {
           title: "Revenue reporting",
-          description: "Planned: reconcile attributed conversations, orders and verified payments before reporting return on ad spend.",
-          status: "Planned",
+          description: "Reconciles click-to-WhatsApp referrals, checkout orders and verified payments per source. Only verified payments count as revenue. Ad spend is not synced, so return on ad spend is not shown.",
+          status: "Available foundation",
+          href: "/growth/revenue",
+          linkLabel: "View revenue report",
         },
       ]}
     />
