@@ -28,6 +28,14 @@ async function describeMetaError(res: Response): Promise<string> {
   return `HTTP ${res.status}`;
 }
 
+/** Meta answered a send request with an error. `code` is Meta's error code when it gave one. */
+export class MetaSendError extends Error {
+  constructor(message: string, public readonly httpStatus: number, public readonly code: number | null) {
+    super(message);
+    this.name = "MetaSendError";
+  }
+}
+
 export interface MetaTokenState {
   isValid: boolean;
   expiresAt: Date | null;
@@ -241,13 +249,65 @@ export class MetaGraphClient {
     });
 
     if (!res.ok) {
-      const error = await res.json();
-      throw new Error(
-        `Meta Cloud API send message error: ${error?.error?.message || JSON.stringify(error)}`
+      const error = await res.json().catch(() => null);
+      throw new MetaSendError(
+        `Meta Cloud API send message error: ${error?.error?.message || JSON.stringify(error)}`,
+        res.status,
+        Number.isFinite(Number(error?.error?.code)) ? Number(error.error.code) : null
       );
     }
 
     return (await res.json()) as MetaSendMessageResponse;
+  }
+
+  /**
+   * Uploads a media file to the sender number's media store and returns Meta's media ID.
+   * The ID is what a later image/video/document send references; it stays valid for 30 days.
+   */
+  public async uploadMedia(
+    phoneNumberId: string,
+    file: { bytes: Blob; mimeType: string; filename: string }
+  ): Promise<{ id: string }> {
+    if (!this.accessToken) throw new Error("A live Meta access token is required");
+    const form = new FormData();
+    form.append("messaging_product", "whatsapp");
+    form.append("type", file.mimeType);
+    form.append("file", file.bytes, file.filename);
+    const res = await fetch(`${GRAPH_API_BASE_URL}/${phoneNumberId}/media`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${this.accessToken}` },
+      body: form,
+    });
+    if (!res.ok) throw new Error(`Meta could not accept the file: ${await describeMetaError(res)}`);
+    const payload = (await res.json()) as { id?: unknown };
+    if (typeof payload.id !== "string" || !/^\d{5,30}$/.test(payload.id)) {
+      throw new Error("Meta did not return a media ID");
+    }
+    return { id: payload.id };
+  }
+
+  /**
+   * Streams a media file stored by Meta. Meta issues a short-lived download URL for the media ID;
+   * the bytes themselves also require the access token.
+   */
+  public async fetchMedia(mediaId: string): Promise<{ body: ReadableStream<Uint8Array>; mimeType: string; contentLength: number | null }> {
+    if (!this.accessToken) throw new Error("A live Meta access token is required");
+    if (!/^\d{5,30}$/.test(mediaId)) throw new Error("Invalid media ID");
+    const headers = { Authorization: `Bearer ${this.accessToken}` };
+    const lookup = await fetch(`${GRAPH_API_BASE_URL}/${mediaId}`, { headers });
+    if (!lookup.ok) throw new Error(`Meta could not locate the media: ${await describeMetaError(lookup)}`);
+    const meta = (await lookup.json()) as { url?: unknown; mime_type?: unknown };
+    if (typeof meta.url !== "string" || !meta.url.startsWith("https://")) {
+      throw new Error("Meta returned no download URL for this media");
+    }
+    const download = await fetch(meta.url, { headers });
+    if (!download.ok || !download.body) throw new Error(`Meta could not download the media (HTTP ${download.status})`);
+    const length = Number(download.headers.get("content-length"));
+    return {
+      body: download.body,
+      mimeType: typeof meta.mime_type === "string" ? meta.mime_type : "application/octet-stream",
+      contentLength: Number.isFinite(length) && length > 0 ? length : null,
+    };
   }
 
   /**

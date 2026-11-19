@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireApiSession, createSessionToken, SESSION_COOKIE_NAME } from "@/lib/auth/session";
+import { neonAuth } from "@/lib/auth/neon";
 import { acceptWorkspaceInvitation } from "@/lib/workspaces/team";
 
 export async function POST(request: NextRequest) {
@@ -9,11 +10,21 @@ export async function POST(request: NextRequest) {
   if (!/^[A-Za-z0-9_-]{43}$/.test(String(token || ""))) {
     return NextResponse.json({ error: "A valid invitation token is required" }, { status: 400 });
   }
-  const membership = await acceptWorkspaceInvitation({
-    token: String(token),
-    authUserId: auth.session.userId,
-    email: auth.session.email,
-  });
+  const { data } = await neonAuth.getSession();
+  let membership;
+  try {
+    membership = await acceptWorkspaceInvitation({
+      token: String(token),
+      authUserId: auth.session.userId,
+      email: auth.session.email,
+      emailVerified: data?.user?.emailVerified === true,
+    });
+  } catch (error) {
+    if (error instanceof Error && error.message === "EMAIL_NOT_VERIFIED") {
+      return NextResponse.json({ error: "Verify your email address before accepting this invitation" }, { status: 403 });
+    }
+    throw error;
+  }
   if (!membership) {
     return NextResponse.json({ error: "This invitation is invalid, expired, or belongs to another email" }, { status: 400 });
   }

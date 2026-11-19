@@ -29,12 +29,17 @@ export interface MetaSendMessagePayload {
   messaging_product: "whatsapp";
   recipient_type?: "individual";
   to: string; // E.164 without +, e.g. "16505551234"
-  type: "text" | "template" | "image" | "document" | "interactive";
+  type: "text" | "template" | "image" | "video" | "document" | "interactive";
   text?: {
     preview_url?: boolean;
     body: string;
   };
   image?: {
+    link?: string;
+    id?: string;
+    caption?: string;
+  };
+  video?: {
     link?: string;
     id?: string;
     caption?: string;

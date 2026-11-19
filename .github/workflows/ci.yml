@@ -62,7 +62,14 @@ jobs:
             -f db/migrations/0011_automation_routing.sql \
             -f db/migrations/0012_meta_token_expiry.sql \
             -f db/migrations/0013_billing_checkout_orders.sql \
-            -f db/migrations/0014_workspace_crm_choice.sql
+            -f db/migrations/0014_gst_invoices_credit_notes.sql \
+            -f db/migrations/0014_workspace_crm_choice.sql \
+            -f db/migrations/0015_campaign_sending.sql \
+            -f db/migrations/0016_inbox_agent_tools.sql \
+            -f db/migrations/0017_auto_reply_chat_settings.sql \
+            -f db/migrations/0018_contact_crm.sql \
+            -f db/migrations/0019_developer_api_webhooks.sql \
+            -f db/migrations/0020_lead_capture.sql
           psql -v ON_ERROR_STOP=1 -f db/verify_schema.sql
           psql -v ON_ERROR_STOP=1 -f db/tests/automation_routing.sql
 
