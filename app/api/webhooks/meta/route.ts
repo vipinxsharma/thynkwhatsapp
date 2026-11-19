@@ -9,6 +9,7 @@ import { applyDeliveryReceipt, recordOptOutByWaId } from "@/lib/campaigns/store"
 import { isOptOutMessage } from "@/lib/campaigns/template";
 import { handleInboundAutomation } from "@/lib/automations/inbound";
 import { captureLeadFromInbound } from "@/lib/leads/capture";
+import { maybeAutoReply } from "@/lib/ai/chat-auto-reply";
 
 // account_update events after which the stored business token no longer works for the WABA.
 const ACCOUNT_DISCONNECT_EVENTS = new Set(["PARTNER_REMOVED", "PARTNER_APP_UNINSTALLED", "ACCOUNT_DELETED"]);
@@ -206,6 +207,16 @@ async function processWebhookEntries(entries: MetaWebhookPayload["entry"]) {
               }
               if (isDurableInboxEnabled()) {
                 await captureLeadFromInbound(tenantId, String(matchedConv.contact.id), msg);
+              }
+              if (isDurableInboxEnabled() && msg.type === "text") {
+                try {
+                  await maybeAutoReply({
+                    workspaceId: tenantId, conversationId: String(matchedConv.id), wamId: msg.id,
+                    waId: msg.from, phoneNumberId: connection.phoneNumberId, messageType: msg.type, text: bodyText,
+                  });
+                } catch (error) {
+                  console.error("[Webhook AI Chat Error]", error);
+                }
               }
               emitNewInboundMessage(tenantId, matchedConv.id, recorded);
               console.log(
