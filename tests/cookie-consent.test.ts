@@ -105,6 +105,14 @@ describe("tracking cookie expiry", () => {
     ]);
   });
 
+  it("writes clean names for cookies whose names carry the leading space from document.cookie", () => {
+    expect(expiryCookieStrings("xeccel.com", [" _ga", " xeccel-theme"])).toEqual([
+      "_ga=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT",
+      "_ga=; Domain=xeccel.com; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT",
+      "_ga=; Domain=.xeccel.com; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT",
+    ]);
+  });
+
   it("never expires the theme preference cookie", () => {
     expect(expiryCookieStrings("xeccel.com", ["xeccel-theme"])).toEqual([]);
   });

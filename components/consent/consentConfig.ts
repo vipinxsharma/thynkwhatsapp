@@ -59,7 +59,8 @@ export function expiryCookieString(name: string, domain: string | null): string 
 
 /** Every expiry string needed for a hostname, given the cookie names currently present. */
 export function expiryCookieStrings(hostname: string, cookieNames: readonly string[]): string[] {
-  const names = cookieNames.filter(isTrackingCookieName);
+  // document.cookie names carry a leading space after ";", so trim before matching and writing.
+  const names = cookieNames.map((name) => name.trim()).filter(isTrackingCookieName);
   const domains = cookieDomainsForHost(hostname);
   const out: string[] = [];
   for (const name of names) {
