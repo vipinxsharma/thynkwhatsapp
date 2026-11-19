@@ -7,6 +7,7 @@ import { getMetaConnectionForWaba, markWabaDisconnected } from "@/lib/meta/conne
 import { getConversationForSender } from "@/lib/inbox/store";
 import { handleInboundAutomation } from "@/lib/automations/inbound";
 import { captureLeadFromInbound } from "@/lib/leads/capture";
+import { maybeAutoReply } from "@/lib/ai/chat-auto-reply";
 import { applyDeliveryReceipt, recordOptOutByWaId } from "@/lib/campaigns/store";
 import { isOptOutMessage } from "@/lib/campaigns/template";
 
@@ -206,6 +207,16 @@ async function processWebhookEntries(entries: MetaWebhookPayload["entry"]) {
               }
               if (isDurableInboxEnabled()) {
                 await captureLeadFromInbound(tenantId, String(matchedConv.contact.id), msg);
+              }
+              if (isDurableInboxEnabled() && msg.type === "text") {
+                try {
+                  await maybeAutoReply({
+                    workspaceId: tenantId, conversationId: String(matchedConv.id), wamId: msg.id,
+                    waId: msg.from, phoneNumberId: connection.phoneNumberId, messageType: msg.type, text: bodyText,
+                  });
+                } catch (error) {
+                  console.error("[Webhook AI Chat Error]", error);
+                }
               }
               emitNewInboundMessage(tenantId, matchedConv.id, recorded);
               console.log(
