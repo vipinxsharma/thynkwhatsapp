@@ -1,4 +1,5 @@
 // Pure lead rules: no database or network access, so they can be unit tested directly.
+import type { AdReferralLike } from "../ads/referral";
 
 export type LeadSource = "interactive_button" | "template_button";
 
@@ -20,6 +21,7 @@ export type InboundMessageLike = {
   context?: { id?: string };
   interactive?: { type?: string; button_reply?: { id?: string; title?: string } };
   button?: { text?: string; payload?: string };
+  referral?: AdReferralLike;
 };
 
 export const DEFAULT_STAGE_NAME = "New";
