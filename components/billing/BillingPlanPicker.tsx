@@ -85,8 +85,11 @@ export function BillingPlanPicker({
 
   return (
     <div className="mx-auto max-w-5xl space-y-6 p-8">
-      <div>
+      <div className="flex items-center justify-between gap-4">
         <p className="text-sm font-semibold uppercase tracking-wider text-[var(--muted)]">Plan</p>
+        <Link href="/dashboard" className="text-sm font-semibold text-[var(--muted)] underline">Back to dashboard</Link>
+      </div>
+      <div>
         <h1 className="mt-2 text-2xl font-bold">{welcome ? "Welcome. Choose your plan" : "Choose your plan"}</h1>
         <p className="mt-2 text-sm text-[var(--muted)]">
           Prices exclude GST. GST is added at checkout and shown before you pay. You can skip this step and come back later from the menu.
@@ -180,7 +183,10 @@ export function BillingPlanPicker({
         })}
       </div>
 
-      <Link href="/dashboard" className="inline-block text-sm text-[var(--muted)] underline">Skip for now</Link>
+      <div className="flex flex-wrap items-center gap-4">
+        <Link href="/dashboard" className="inline-block text-sm text-[var(--muted)] underline">Skip for now</Link>
+        <Link href="/inbox" className="inline-block text-sm text-[var(--muted)] underline">Go to inbox</Link>
+      </div>
     </div>
   );
 }
