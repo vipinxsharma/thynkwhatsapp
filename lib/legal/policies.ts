@@ -82,9 +82,9 @@ export const policies: Policy[] = [
     title: "Cookie Policy",
     summary: "The site and account cookies Xeccel uses, and your available controls.",
     sections: [
-      { heading: "What cookies are for", paragraphs: ["Cookies and similar browser storage help the site remember a choice or keep a signed-in workspace secure. Xeccel currently uses a theme preference cookie and, for signed-in users, authentication/session cookies. Hosting and security infrastructure may also set essential technical cookies."] },
-      { heading: "Optional tracking", paragraphs: ["The current Xeccel site does not rely on advertising cookies to show its public pages. If optional analytics or marketing technologies are introduced, this policy and any required choice controls will be updated before they are used. Third-party links lead to sites with their own policies."] },
-      { heading: "Your controls", paragraphs: ["You can clear or block cookies in your browser. Blocking essential cookies may stop sign-in or prevent a saved theme preference. You can change the light/dark theme using the site control. For questions, contact partner@thynkwise.co.in."] },
+      { heading: "What cookies are for", paragraphs: ["Cookies and similar browser storage help the site remember a choice or keep a signed-in workspace secure. Xeccel currently uses a theme preference cookie and, for signed-in users, authentication/session cookies. Hosting and security infrastructure may also set essential technical cookies. A small browser setting, stored under the key xeccel_cookie_consent, remembers your cookie choice."] },
+      { heading: "Optional tracking", paragraphs: ["Xeccel shows a cookie banner on first visit. Optional analytics cookies are not loaded unless you accept them. Rejecting the banner loads no optional tracking and expires any optional analytics cookies already set for xeccel.com. The current Xeccel site does not use advertising or retargeting cookies. If we add those technologies, this policy will be updated before they are used. Third-party links lead to sites with their own policies."] },
+      { heading: "Your controls", paragraphs: ["Use Cookie settings in the site footer to reopen the banner and change your choice at any time. You can also clear or block cookies in your browser. Blocking essential cookies may stop sign-in or prevent a saved theme preference. You can change the light/dark theme using the site control. For questions, contact partner@thynkwise.co.in."] },
     ],
   },
   {
