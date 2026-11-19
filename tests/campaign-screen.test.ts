@@ -141,7 +141,7 @@ describe("templates and variables", () => {
 describe("batch summary and ids", () => {
   it("describes a batch and says when the campaign was paused", () => {
     const lines = batchSummaryLines({
-      status: "sending", claimed: 10, sent: 8, failed: 1, skipped: 1, uncertain: 0, released: 0, pausedReason: "Rate limit reached",
+      status: "sending", claimed: 10, sent: 8, failed: 1, skipped: 1, uncertain: 0, released: 0, pausedReason: "Rate limit reached", capReason: null,
     });
     expect(lines).toContain("8 sent");
     expect(lines).toContain("Campaign paused: Rate limit reached");
