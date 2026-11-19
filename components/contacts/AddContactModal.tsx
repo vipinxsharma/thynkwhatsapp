@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { X, UserPlus, Phone, Building, Tag, FileText, Loader2, Sparkles } from "lucide-react";
+import { X, UserPlus, Phone, Building, Tag, FileText, Loader2, Sparkles, Users } from "lucide-react";
+import { CustomFieldInputs, GroupCheckboxes } from "./CustomFieldInputs";
+import { formValuesToAttributes, useContactMeta } from "./contact-meta";
 
 interface AddContactModalProps {
   isOpen: boolean;
@@ -15,10 +17,19 @@ export function AddContactModal({ isOpen, onClose, onContactAdded }: AddContactM
   const [company, setCompany] = useState("");
   const [tagsInput, setTagsInput] = useState("Lead: High Intent, Enterprise");
   const [notes, setNotes] = useState("");
+  const [groupIds, setGroupIds] = useState<string[]>([]);
+  const [fieldValues, setFieldValues] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const { groups, fields, metaError } = useContactMeta(isOpen);
 
   if (!isOpen) return null;
+
+  const toggleGroup = (groupId: string) => {
+    setGroupIds((current) =>
+      current.includes(groupId) ? current.filter((id) => id !== groupId) : [...current, groupId]
+    );
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,7 +55,11 @@ export function AddContactModal({ isOpen, onClose, onContactAdded }: AddContactM
           phoneNumber: phoneNumber.trim(),
           company: company.trim(),
           tags,
-          customAttributes: notes ? { internalNotes: notes.trim() } : {},
+          groupIds,
+          customAttributes: {
+            ...(notes ? { internalNotes: notes.trim() } : {}),
+            ...formValuesToAttributes(fields, fieldValues),
+          },
         }),
       });
 
@@ -61,6 +76,8 @@ export function AddContactModal({ isOpen, onClose, onContactAdded }: AddContactM
       setCompany("");
       setTagsInput("Lead: High Intent, Enterprise");
       setNotes("");
+      setGroupIds([]);
+      setFieldValues({});
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -92,9 +109,9 @@ export function AddContactModal({ isOpen, onClose, onContactAdded }: AddContactM
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4 text-xs">
-          {error && (
+          {(error || metaError) && (
             <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400">
-              {error}
+              {error || metaError}
             </div>
           )}
 
@@ -159,6 +176,25 @@ export function AddContactModal({ isOpen, onClose, onContactAdded }: AddContactM
               />
             </div>
           </div>
+
+          <div>
+            <label className="flex items-center gap-1.5 text-gray-300 font-semibold mb-1">
+              <Users className="w-3.5 h-3.5 text-gray-400" />
+              Groups
+            </label>
+            <GroupCheckboxes groups={groups} selected={groupIds} onToggle={toggleGroup} />
+          </div>
+
+          {fields.length > 0 && (
+            <div className="pt-1 border-t border-white/5">
+              <p className="text-gray-300 font-semibold mb-3">Custom fields</p>
+              <CustomFieldInputs
+                fields={fields}
+                values={fieldValues}
+                onChange={(key, value) => setFieldValues((current) => ({ ...current, [key]: value }))}
+              />
+            </div>
+          )}
 
           <div>
             <label className="block text-gray-300 font-semibold mb-1">Internal Notes</label>

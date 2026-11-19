@@ -1,3 +1,5 @@
+import { existsSync } from "node:fs";
+import { join } from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 
@@ -43,6 +45,13 @@ describe("CRM options", () => {
     const supercrm = findCrmOption("supercrm");
     expect(supercrm?.signupUrl).toBe("https://thynkwise.co.in/supercrm#start-trial");
     expect(supercrm?.included).toContain("SuperCRM basic plan");
+  });
+
+  it("gives each CRM option a logo file that exists in /public", () => {
+    for (const option of crmOptions) {
+      expect(option.logoSrc).toMatch(/^\/crm\/[a-z]+\.png$/);
+      expect(existsSync(join(process.cwd(), "public", option.logoSrc))).toBe(true);
+    }
   });
 
   it("lists the CRM offer on every plan", () => {

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { XeccelLogo } from "@/components/brand/XeccelLogo";
+import CookieSettingsButton from "@/components/consent/CookieSettingsButton";
 import { legalContact, policies } from "@/lib/legal/policies";
 
 export default function LegalLayout({ children }: Readonly<{ children: React.ReactNode }>) {
@@ -31,6 +32,7 @@ export default function LegalLayout({ children }: Readonly<{ children: React.Rea
             <p className="font-semibold text-[var(--heading)]">Policies</p>
             <nav aria-label="All Xeccel policies" className="mt-3 grid gap-x-6 gap-y-2 sm:grid-cols-2">
               {policies.map((policy) => <Link key={policy.slug} href={`/legal/${policy.slug}`} className="hover:text-[var(--heading)]">{policy.title}</Link>)}
+              <CookieSettingsButton />
             </nav>
             <div className="mt-6"><XeccelLogo size="footer" /></div>
           </div>

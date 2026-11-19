@@ -129,3 +129,50 @@ export async function listPlatformWorkspaceSummaries(): Promise<PlatformWorkspac
      ORDER BY w.created_at DESC`
   )) as PlatformWorkspaceSummary[];
 }
+
+export interface PlatformTenantHealth {
+  workspaceId: string;
+  enabledChannels: number;
+  conversations: number;
+  outbound7d: number;
+  failed7d: number;
+  lastInboundAt: string | null;
+  lastOutboundAt: string | null;
+}
+
+export type PlatformTenantHealthStatus = "No channel" | "Send failures" | "Active" | "Idle";
+
+export function platformTenantHealthStatus(
+  health: PlatformTenantHealth | undefined,
+  now: Date = new Date()
+): PlatformTenantHealthStatus {
+  if (!health || health.enabledChannels === 0) return "No channel";
+  if (health.failed7d > 0) return "Send failures";
+  const recent = [health.lastInboundAt, health.lastOutboundAt]
+    .filter((value): value is string => Boolean(value))
+    .some((value) => now.getTime() - new Date(value).getTime() <= 7 * 24 * 60 * 60 * 1000);
+  return recent ? "Active" : "Idle";
+}
+
+export async function listPlatformTenantHealth(): Promise<PlatformTenantHealth[]> {
+  const databaseUrl = process.env.DATABASE_URL;
+  if (!databaseUrl) throw new Error("DATABASE_URL is not configured");
+  return (await neon(databaseUrl).query(
+    `SELECT w.id AS "workspaceId",
+            (SELECT COUNT(*)::int FROM app_whatsapp_channels c
+              WHERE c.workspace_id = w.id AND c.enabled) AS "enabledChannels",
+            (SELECT COUNT(*)::int FROM app_inbox_conversations cv
+              WHERE cv.workspace_id = w.id) AS "conversations",
+            (SELECT COUNT(*)::int FROM app_inbox_messages m
+              WHERE m.workspace_id = w.id AND m.direction = 'outbound'
+                AND m.timestamp > now() - interval '7 days') AS "outbound7d",
+            (SELECT COUNT(*)::int FROM app_inbox_messages m
+              WHERE m.workspace_id = w.id AND m.direction = 'outbound'
+                AND m.status = 'failed' AND m.timestamp > now() - interval '7 days') AS "failed7d",
+            (SELECT MAX(m.timestamp) FROM app_inbox_messages m
+              WHERE m.workspace_id = w.id AND m.direction = 'inbound') AS "lastInboundAt",
+            (SELECT MAX(m.timestamp) FROM app_inbox_messages m
+              WHERE m.workspace_id = w.id AND m.direction = 'outbound') AS "lastOutboundAt"
+     FROM app_workspaces w`
+  )) as PlatformTenantHealth[];
+}

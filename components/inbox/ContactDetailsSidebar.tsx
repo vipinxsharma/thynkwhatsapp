@@ -16,12 +16,17 @@ import {
 } from "lucide-react";
 import { formatPhoneNumber } from "@/lib/utils";
 
+export type AssigneeOption = { authUserId: string; label: string };
+
 interface ContactDetailsSidebarProps {
   conversation: Conversation;
   saving?: boolean;
   error?: string;
   onUpdateTags: (tags: string[]) => void;
   onUpdateStatus: (status: Conversation["status"]) => void;
+  assignees?: AssigneeOption[];
+  onAssign?: (authUserId: string | null) => void;
+  notes?: React.ReactNode;
 }
 
 export function ContactDetailsSidebar({
@@ -30,6 +35,9 @@ export function ContactDetailsSidebar({
   error,
   onUpdateTags,
   onUpdateStatus,
+  assignees = [],
+  onAssign,
+  notes,
 }: ContactDetailsSidebarProps) {
   const [newTag, setNewTag] = useState("");
   const [copied, setCopied] = useState(false);
@@ -79,6 +87,23 @@ export function ContactDetailsSidebar({
           )}
         </button>
       </div>
+
+      {/* Assignment */}
+      {onAssign && (
+        <div className="space-y-2">
+          <label htmlFor="inbox-assignee" className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">Assigned to</label>
+          <select id="inbox-assignee" value={conversation.assignedAuthUserId || ""} disabled={saving}
+            onChange={(e) => onAssign(e.target.value || null)}
+            className="w-full rounded-lg border border-[var(--border)] bg-transparent p-2 text-sm">
+            <option value="">Unassigned</option>
+            {assignees.map((member) => (
+              <option key={member.authUserId} value={member.authUserId}>{member.label}</option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      {notes}
 
       {/* Conversation Status */}
       <div className="space-y-2">
