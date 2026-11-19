@@ -49,6 +49,7 @@ const navigation = [
   { name: "Campaigns", href: "/campaigns", icon: Send },
   { name: "Leads", href: "/leads", icon: Target },
   { name: "Message templates", href: "/templates", icon: FileText },
+  { name: "Catalog", href: "/catalog", icon: ShoppingBag },
   { name: "Analytics", href: "/analytics", icon: BarChart3 },
   { name: "Channels", href: "/settings/waba", icon: Settings },
   { name: "Partner solutions", href: "/partner-solutions", icon: Network, partnerOnly: true },
