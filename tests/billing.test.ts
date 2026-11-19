@@ -5,9 +5,12 @@ import { quoteMonthly } from "../lib/billing/quote";
 import { verifyCashfreeSignature } from "../lib/billing/webhook";
 
 describe("billingConfig", () => {
-  it("defaults to ₹699 per number in paise, sandbox, monthly", () => {
-    expect(billingConfig({})).toEqual({
-      currency: "INR", pricePerNumberPaise: 69900, interval: "monthly", cashfreeEnv: "sandbox",
+  it("throws when the per-number price is not set (no hidden default)", () => {
+    expect(() => billingConfig({})).toThrow("BILLING_PRICE_PER_NUMBER_PAISE is not set");
+  });
+  it("defaults to sandbox and monthly once a price is set", () => {
+    expect(billingConfig({ BILLING_PRICE_PER_NUMBER_PAISE: "10000" })).toEqual({
+      currency: "INR", pricePerNumberPaise: 10000, interval: "monthly", cashfreeEnv: "sandbox",
     });
   });
   it("reads price and environment from env", () => {
@@ -21,9 +24,9 @@ describe("billingConfig", () => {
 });
 
 describe("quoteMonthly", () => {
-  const cfg = billingConfig({});
-  it("charges ₹699 per active number", () => {
-    expect(quoteMonthly(3, cfg)).toEqual({ billableNumbers: 3, amountPaise: 209700, currency: "INR", interval: "monthly" });
+  const cfg = billingConfig({ BILLING_PRICE_PER_NUMBER_PAISE: "10000" });
+  it("multiplies the configured price by active numbers", () => {
+    expect(quoteMonthly(3, cfg)).toEqual({ billableNumbers: 3, amountPaise: 30000, currency: "INR", interval: "monthly" });
   });
   it("is zero with no numbers", () => {
     expect(quoteMonthly(0, cfg).amountPaise).toBe(0);

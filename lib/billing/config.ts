@@ -10,7 +10,12 @@ export interface BillingConfig {
 type EnvLike = Record<string, string | undefined>;
 
 export function billingConfig(env: EnvLike = process.env): BillingConfig {
-  const price = Number(env.BILLING_PRICE_PER_NUMBER_PAISE ?? "69900");
+  // No default price: the per-number amount must be set explicitly, so nothing silently bills a stale figure.
+  const raw = env.BILLING_PRICE_PER_NUMBER_PAISE;
+  if (raw === undefined || raw.trim() === "") {
+    throw new Error("BILLING_PRICE_PER_NUMBER_PAISE is not set");
+  }
+  const price = Number(raw);
   if (!Number.isInteger(price) || price < 0) {
     throw new Error("BILLING_PRICE_PER_NUMBER_PAISE must be a non-negative integer");
   }
