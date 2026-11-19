@@ -84,7 +84,7 @@ export function BillingPlanPicker({
   }
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6 p-8">
+    <div className="mx-auto h-full min-h-0 max-w-5xl flex-1 space-y-6 overflow-y-auto p-8">
       <div className="flex items-center justify-between gap-4">
         <p className="text-sm font-semibold uppercase tracking-wider text-[var(--muted)]">Plan</p>
         <Link href="/dashboard" className="text-sm font-semibold text-[var(--muted)] underline">Back to dashboard</Link>
