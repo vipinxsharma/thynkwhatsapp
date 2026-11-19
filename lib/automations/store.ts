@@ -27,7 +27,7 @@ export async function listRoutingRuns(workspaceId: string) {
 export async function saveRoutingRule(workspaceId: string, userId: string, input: RoutingInput, id?: string) {
   const sql = db();
   if (input.channelId) {
-    const channel = await sql.query(`SELECT id FROM app_whatsapp_channels WHERE workspace_id=$1::uuid AND phone_number_id=$2 AND enabled`, [workspaceId, input.channelId]);
+    const channel = await sql.query(`SELECT phone_number_id FROM app_whatsapp_channels WHERE workspace_id=$1::uuid AND phone_number_id=$2 AND enabled`, [workspaceId, input.channelId]);
     if (!channel.length) throw new Error("Selected channel is not connected to this workspace");
   }
   const values = [workspaceId, input.name, input.channelId, input.matchType, JSON.stringify(input.keywords), JSON.stringify(input.tags), input.conversationStatus, input.priority, input.enabled,
