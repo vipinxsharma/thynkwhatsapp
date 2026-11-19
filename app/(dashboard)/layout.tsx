@@ -1,6 +1,8 @@
 import { DashboardShell } from "@/components/layout/DashboardShell";
+import { BillingBanner } from "@/components/billing/BillingBanner";
 import { requirePageSession } from "@/lib/auth/session";
 import { isPlatformSuperadmin } from "@/lib/auth/platform-admin";
+import { workspaceHasSubscription } from "@/lib/billing/subscription";
 import { partnerAccessApproved } from "@/lib/partner/access";
 import { listWorkspaceMemberships } from "@/lib/workspaces/store";
 
@@ -9,8 +11,11 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const memberships = await listWorkspaceMemberships(session.userId);
   const platformSuperadmin = await isPlatformSuperadmin(session);
   const partnerEnabled = await partnerAccessApproved(session.tenantId);
+  const canPay = session.role === "owner" || session.role === "admin";
+  const showBillingBanner = canPay && !(await workspaceHasSubscription(session.tenantId));
   return (
     <DashboardShell session={session} memberships={memberships} platformSuperadmin={platformSuperadmin} partnerEnabled={partnerEnabled}>
+      {showBillingBanner && <BillingBanner />}
       {children}
     </DashboardShell>
   );
