@@ -67,6 +67,8 @@ export interface WebhookMessage {
   text?: {
     body: string;
   };
+  /** Catalogue checkout payload (type "order"). Parsed by lib/catalog/orders.ts. */
+  order?: unknown;
   image?: WebhookMedia;
   audio?: WebhookMedia;
   video?: WebhookMedia;

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireApiSession } from "@/lib/auth/session";
-import { catalogLiveEnabled, planWorkspaceCatalog, syncWorkspaceCatalog } from "@/lib/meta/catalog-sync";
+import { catalogLiveEnabled, connectWorkspaceCatalog, planWorkspaceCatalog, syncWorkspaceCatalog } from "@/lib/meta/catalog-sync";
 
 const noStore = { "Cache-Control": "no-store" };
 
@@ -30,8 +30,8 @@ export async function GET(request: NextRequest) {
 }
 
 /**
- * `plan` returns what a sync would do (never calls Meta). `sync` writes to Meta and is refused
- * unless META_CATALOG_LIVE is "true".
+ * `plan` returns what a sync would do (never calls Meta). `connect` saves a customer-owned catalogue ID
+ * as pending (no Meta call). `sync` writes to Meta and is refused unless META_CATALOG_LIVE is "true".
  */
 export async function POST(request: NextRequest) {
   try {
@@ -40,10 +40,16 @@ export async function POST(request: NextRequest) {
       auth.response.headers.set("Cache-Control", "no-store");
       return auth.response;
     }
-    const body = (await request.json().catch(() => null)) as { action?: unknown } | null;
+    const body = (await request.json().catch(() => null)) as { action?: unknown; catalogId?: unknown } | null;
     const action = body?.action;
+    if (action === "connect") {
+      const result = await connectWorkspaceCatalog(auth.session.tenantId, String(body?.catalogId ?? "").trim());
+      if (!result.ok) return json({ error: result.error }, result.status);
+      const plan = await planWorkspaceCatalog(auth.session.tenantId);
+      return json({ mode: "dry-run", connected: result, plan });
+    }
     if (action !== "plan" && action !== "sync") {
-      return json({ error: 'action must be "plan" or "sync"' }, 400);
+      return json({ error: 'action must be "plan", "sync" or "connect"' }, 400);
     }
 
     if (action === "plan") {

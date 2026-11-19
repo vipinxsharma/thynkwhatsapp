@@ -25,6 +25,34 @@ export interface MetaDebugTokenResponse {
   };
 }
 
+export interface MetaInteractiveButtonMessage {
+  type: "button";
+  body: {
+    text: string;
+  };
+  action: {
+    buttons: Array<{
+      type: "reply";
+      reply: {
+        id: string;
+        title: string;
+      };
+    }>;
+  };
+}
+
+/** Single-product message from a linked catalogue. */
+export interface MetaInteractiveProductMessage {
+  type: "product";
+  body: {
+    text: string;
+  };
+  action: {
+    catalog_id: string;
+    product_retailer_id: string;
+  };
+}
+
 export interface MetaSendMessagePayload {
   messaging_product: "whatsapp";
   recipient_type?: "individual";
@@ -50,21 +78,7 @@ export interface MetaSendMessagePayload {
     caption?: string;
     filename?: string;
   };
-  interactive?: {
-    type: "button";
-    body: {
-      text: string;
-    };
-    action: {
-      buttons: Array<{
-        type: "reply";
-        reply: {
-          id: string;
-          title: string;
-        };
-      }>;
-    };
-  };
+  interactive?: MetaInteractiveButtonMessage | MetaInteractiveProductMessage;
   template?: {
     name: string;
     language: {

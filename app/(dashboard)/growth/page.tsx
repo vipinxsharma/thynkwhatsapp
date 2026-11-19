@@ -6,12 +6,12 @@ export default function GrowthPage() {
       eyebrow="Commerce and acquisition"
       title="Growth channels"
       description="Catalog, shopping and click-to-WhatsApp acquisition are distinct from core messaging and require their own connections and measurement."
-      notice="Commerce and ads are roadmap sections, not connected services. No catalog, ad account, checkout or revenue attribution is active in this workspace."
+      notice="Commerce and ads are roadmap sections, not connected services. The WhatsApp catalog foundation stays off until Meta catalog sync is enabled. No checkout, ad account or revenue attribution is active in this workspace."
       capabilities={[
         {
           title: "WhatsApp catalog",
-          description: "Planned: customer-owned catalog connection, product sync, catalog message eligibility and order-event handling.",
-          status: "Planned",
+          description: "Built, not live by default: attach a catalog you own, sync products to Meta when live sync is enabled, send product messages only for in-stock products that are synced, and store inbound catalog orders as conversation events.",
+          status: "Available foundation",
         },
         {
           title: "Checkout and payments",

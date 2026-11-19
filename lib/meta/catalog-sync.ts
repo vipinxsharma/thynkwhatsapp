@@ -256,3 +256,29 @@ export async function syncWorkspaceCatalog(workspaceId: string): Promise<SyncRes
   });
   return { mode: "live", plan, sent, failed, batches, catalogCreated, error: firstError };
 }
+
+export type ConnectCatalogResult =
+  | { ok: true; catalogId: string; changed: boolean }
+  | { ok: false; status: 400 | 409; error: string };
+
+/**
+ * Attaches a catalogue the customer already owns in Commerce Manager. Saves it as pending and makes
+ * no Meta call; the next live sync links it to the WABA. Refuses to swap an existing catalogue,
+ * because the sync records are keyed to the one already in use.
+ */
+export async function connectWorkspaceCatalog(workspaceId: string, catalogId: string): Promise<ConnectCatalogResult> {
+  if (!/^\d{5,30}$/.test(catalogId)) return { ok: false, status: 400, error: "Catalogue ID must be the numeric ID from Commerce Manager" };
+  const link = await getCatalogLink(workspaceId);
+  if (link?.metaCatalogId === catalogId) return { ok: true, catalogId, changed: false };
+  if (link?.metaCatalogId) {
+    return { ok: false, status: 409, error: "A different catalogue is already connected. Switching catalogues is not supported yet." };
+  }
+  let wabaId: string;
+  try {
+    wabaId = (await getMetaConnectionForWorkspace(workspaceId)).wabaId;
+  } catch {
+    return { ok: false, status: 409, error: "Connect a WhatsApp Business Account before attaching a catalogue" };
+  }
+  await upsertCatalogLink({ workspaceId, metaCatalogId: catalogId, wabaId, status: "pending", lastError: null });
+  return { ok: true, catalogId, changed: true };
+}
