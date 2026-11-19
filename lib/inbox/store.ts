@@ -181,6 +181,34 @@ export async function getMessageMedia(
   };
 }
 
+/** Records a file stored with Meta for this workspace's sender number, so only uploads made here can be sent. */
+export async function recordMediaUpload(input: {
+  workspaceId: string;
+  mediaId: string;
+  phoneNumberId: string;
+  authUserId: string;
+}): Promise<void> {
+  await database().query(
+    `INSERT INTO app_inbox_media_uploads (workspace_id, media_id, phone_number_id, uploaded_by_auth_user_id)
+     VALUES ($1::uuid, $2, $3, $4)
+     ON CONFLICT (workspace_id, media_id) DO NOTHING`,
+    [input.workspaceId, input.mediaId, input.phoneNumberId, input.authUserId]
+  );
+}
+
+/** The sender number a media ID was uploaded under in this workspace, or null when it was not uploaded here. */
+export async function getUploadedMediaSender(workspaceId: string, mediaId: string): Promise<string | null> {
+  const rows = await database().query(
+    `SELECT phone_number_id AS "phoneNumberId"
+     FROM app_inbox_media_uploads
+     WHERE workspace_id = $1::uuid AND media_id = $2
+     LIMIT 1`,
+    [workspaceId, mediaId]
+  );
+  const row = rows[0] as { phoneNumberId: string } | undefined;
+  return row?.phoneNumberId ?? null;
+}
+
 export async function ensureContactConversation(input: {
   workspaceId: string;
   name: string;

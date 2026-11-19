@@ -12,6 +12,8 @@ const mocks = vi.hoisted(() => ({
   messageMedia: vi.fn(),
   connectionForNumber: vi.fn(),
   connectionForWorkspace: vi.fn(),
+  recordUpload: vi.fn(),
+  uploadedSender: vi.fn(),
 }));
 
 const workspaceId = "11111111-1111-4111-8111-111111111111";
@@ -34,6 +36,8 @@ vi.mock("@/lib/strapi/client", () => ({
 vi.mock("@/lib/inbox/store", () => ({
   getConversation: mocks.conversation,
   getMessageMedia: mocks.messageMedia,
+  recordMediaUpload: mocks.recordUpload,
+  getUploadedMediaSender: mocks.uploadedSender,
 }));
 vi.mock("@/lib/meta/connections", () => ({
   getMetaConnectionForWorkspace: mocks.connectionForWorkspace,
@@ -98,6 +102,8 @@ beforeEach(() => {
     type: "image", body: "", rawPayload: {}, status: "sent", timestamp: new Date().toISOString(), conversationId,
   }));
   mocks.upload.mockResolvedValue({ id: mediaId });
+  mocks.recordUpload.mockResolvedValue(undefined);
+  mocks.uploadedSender.mockResolvedValue(phoneNumberId);
 });
 
 describe("sending a stored file", () => {
@@ -141,6 +147,29 @@ describe("sending a stored file", () => {
     expect(mocks.send).not.toHaveBeenCalled();
   });
 
+  it("accepts a null caption as no caption", async () => {
+    const response = await sendPost(sendRequest({ messageType: "image", mediaId, caption: null }));
+    expect(response.status).toBe(200);
+    expect(mocks.send).toHaveBeenCalledWith(phoneNumberId, expect.objectContaining({
+      type: "image", image: { id: mediaId, caption: undefined },
+    }));
+  });
+
+  it("refuses a media ID that was uploaded under a different sender number", async () => {
+    mocks.uploadedSender.mockResolvedValueOnce("9999999999");
+    const response = await sendPost(sendRequest({ messageType: "image", mediaId }));
+    expect(response.status).toBe(403);
+    expect(mocks.send).not.toHaveBeenCalled();
+    expect(mocks.begin).not.toHaveBeenCalled();
+  });
+
+  it("refuses a media ID this workspace never uploaded", async () => {
+    mocks.uploadedSender.mockResolvedValueOnce(null);
+    const response = await sendPost(sendRequest({ messageType: "document", mediaId }));
+    expect(response.status).toBe(403);
+    expect(mocks.send).not.toHaveBeenCalled();
+  });
+
   it("rejects an overlong caption", async () => {
     const response = await sendPost(sendRequest({ messageType: "image", mediaId, caption: "x".repeat(1025) }));
     expect(response.status).toBe(400);
@@ -163,6 +192,15 @@ describe("uploading a file", () => {
       mimeType: "image/png", filename: "photo.png",
     }));
     expect((await response.json()).data).toEqual(expect.objectContaining({ mediaId, messageType: "image" }));
+  });
+
+  it("records the upload against the workspace and sender number before returning it", async () => {
+    const file = new File([new Uint8Array([1, 2, 3])], "photo.png", { type: "image/png" });
+    const response = await uploadPost(uploadRequest({ messageType: "image", file }));
+    expect(response.status).toBe(200);
+    expect(mocks.recordUpload).toHaveBeenCalledWith({
+      workspaceId, mediaId, phoneNumberId, authUserId: "test-user",
+    });
   });
 
   it("refuses a file above the upload limit without calling Meta", async () => {

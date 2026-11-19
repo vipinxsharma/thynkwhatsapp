@@ -3,7 +3,7 @@ import { MetaGraphClient } from "@/lib/meta/client";
 import { isDurableInboxEnabled } from "@/lib/strapi/client";
 import { requireApiSession } from "@/lib/auth/session";
 import { getMetaConnectionForNumber } from "@/lib/meta/connections";
-import { getConversation } from "@/lib/inbox/store";
+import { getConversation, recordMediaUpload } from "@/lib/inbox/store";
 import { isMediaMessageType, safeMediaFilename, validateMediaFile } from "@/lib/inbox/media";
 import { evaluateEntitlement, getEntitlementSnapshot } from "@/lib/billing/entitlements";
 
@@ -81,6 +81,13 @@ export async function POST(request: NextRequest) {
       bytes: file,
       mimeType: file.type,
       filename,
+    });
+    // Recorded before the ID is returned, so every send of this ID can be matched to this workspace and number.
+    await recordMediaUpload({
+      workspaceId: auth.session.tenantId,
+      mediaId: uploaded.id,
+      phoneNumberId,
+      authUserId: auth.session.userId,
     });
     return NextResponse.json({
       success: true,

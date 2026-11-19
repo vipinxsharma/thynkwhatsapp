@@ -4,6 +4,7 @@ import { MetaSendMessagePayload } from "@/types/meta-api";
 import { getMetaConnectionForWorkspace, getMetaConnectionForNumber } from "@/lib/meta/connections";
 import { getConversation } from "@/lib/inbox/store";
 import { MAX_MEDIA_CAPTION_LENGTH, isMediaMessageType, safeMediaFilename } from "@/lib/inbox/media";
+import { getUploadedMediaSender } from "@/lib/inbox/store";
 import { evaluateEntitlement, getEntitlementSnapshot } from "@/lib/billing/entitlements";
 import {
   acceptOutboundRequest,
@@ -85,7 +86,7 @@ export async function sendWorkspaceMessage(input: SendMessageInput): Promise<Sen
     return { status: 400, body: { error: "Template name is required" } };
   }
   const isMedia = isMediaMessageType(messageType);
-  if (isMedia && caption !== undefined && (typeof caption !== "string" || caption.length > MAX_MEDIA_CAPTION_LENGTH)) {
+  if (isMedia && caption != null && (typeof caption !== "string" || caption.length > MAX_MEDIA_CAPTION_LENGTH)) {
     return { status: 400, body: { error: `Captions must be text of ${MAX_MEDIA_CAPTION_LENGTH} characters or fewer` } };
   }
   if (isMedia && durable && (typeof mediaId !== "string" || !/^\d{5,30}$/.test(mediaId))) {
@@ -236,6 +237,12 @@ export async function sendWorkspaceMessage(input: SendMessageInput): Promise<Sen
   if (durable && conversation.phoneNumber.phoneNumberId &&
       conversation.phoneNumber.phoneNumberId !== connection.phoneNumberId) {
     return { status: 403, body: { error: "Conversation belongs to another WhatsApp number" } };
+  }
+  if (durable && isMedia) {
+    const uploadedFrom = await getUploadedMediaSender(workspaceId, String(mediaId));
+    if (uploadedFrom !== connection.phoneNumberId) {
+      return { status: 403, body: { error: "This file was not uploaded for this conversation's sender number. Upload it again." } };
+    }
   }
   if (durable && messageType === "template") {
     const approved = (await metaClient.getTemplates(connection.wabaId)).some(
