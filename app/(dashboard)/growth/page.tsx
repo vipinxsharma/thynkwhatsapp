@@ -6,7 +6,7 @@ export default function GrowthPage() {
       eyebrow="Commerce and acquisition"
       title="Growth channels"
       description="Catalog, shopping and click-to-WhatsApp acquisition are distinct from core messaging and require their own connections and measurement."
-      notice="Commerce and ads are roadmap sections, not connected services. No catalog, ad account, checkout or revenue attribution is active in this workspace."
+      notice="Commerce and ads are roadmap sections, not connected services. No catalog, checkout or revenue attribution is active in this workspace. No ad account is connected unless a workspace owner or admin completes the read-only connection."
       capabilities={[
         {
           title: "WhatsApp catalog",
@@ -20,8 +20,10 @@ export default function GrowthPage() {
         },
         {
           title: "Click-to-WhatsApp ads",
-          description: "Planned: opt-in ad account connection, lead source capture and campaign attribution without implying ad delivery or spend control.",
-          status: "Planned",
+          description: "Ad referrals from inbound messages are recorded per contact. An opt-in ad account connection requests read-only access (ads_read). Thynk never creates ads, changes budgets or changes delivery. Real users can connect only after Meta approves ads_read.",
+          status: "Available foundation",
+          href: "/growth/ads/connect",
+          linkLabel: "Review and connect",
         },
         {
           title: "Revenue reporting",
