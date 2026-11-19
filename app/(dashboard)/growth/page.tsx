@@ -10,8 +10,8 @@ export default function GrowthPage() {
       capabilities={[
         {
           title: "WhatsApp catalog",
-          description: "Planned: customer-owned catalog connection, product sync, catalog message eligibility and order-event handling.",
-          status: "Planned",
+          description: "Built, not live by default: attach a catalog you own, sync products to Meta when live sync is enabled, send product messages only for in-stock products that are synced, and store inbound catalog orders as conversation events.",
+          status: "Available foundation",
         },
         {
           title: "Checkout and payments",

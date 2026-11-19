@@ -5,6 +5,7 @@ import { getMetaConnectionForWorkspace, getMetaConnectionForNumber } from "@/lib
 import { getConversation } from "@/lib/inbox/store";
 import { MAX_MEDIA_CAPTION_LENGTH, isMediaMessageType, safeMediaFilename } from "@/lib/inbox/media";
 import { evaluateEntitlement, getEntitlementSnapshot } from "@/lib/billing/entitlements";
+import { checkProductMessageEligibility, type EligibleProduct } from "@/lib/catalog/eligibility";
 import {
   acceptOutboundRequest,
   beginOutboundRequest,
@@ -70,12 +71,13 @@ export async function sendWorkspaceMessage(input: SendMessageInput): Promise<Sen
     caption,
     filename,
     interactiveButtons = [],
+    productId,
   } = body;
 
   if (!conversationId || !recipientPhone) {
     return { status: 400, body: { error: "Missing required fields: conversationId, recipientPhone" } };
   }
-  if (durable && !["text", "template", "image", "video", "document"].includes(messageType)) {
+  if (durable && !["text", "template", "image", "video", "document", "product"].includes(messageType)) {
     return { status: 501, body: { error: "This message type is not yet available for live delivery" } };
   }
   if (messageType === "text" && (typeof text !== "string" || !text.trim())) {
@@ -121,6 +123,20 @@ export async function sendWorkspaceMessage(input: SendMessageInput): Promise<Sen
   if (normalizedPhone !== conversation.contact.waId.replace(/\D/g, "")) {
     return { status: 403, body: { error: "Recipient does not match the selected tenant conversation" } };
   }
+  // Product messages are checked against the catalogue sync state before any payload is built.
+  let productEligibility: EligibleProduct | null = null;
+  if (messageType === "product") {
+    if (!durable) return { status: 501, body: { error: "Catalogue messages need the durable outbound path" } };
+    if (typeof text === "string" && text.length > 1024) {
+      return { status: 400, body: { error: "Catalogue message text must be 1024 characters or fewer" } };
+    }
+    const eligibility = await checkProductMessageEligibility(workspaceId, String(productId ?? ""));
+    if (!eligibility.eligible) {
+      return { status: 409, body: { error: eligibility.message, code: eligibility.reason } };
+    }
+    productEligibility = eligibility;
+  }
+
   let metaPayload: MetaSendMessagePayload;
   let savedBody = text || "";
 
@@ -182,6 +198,22 @@ export async function sendWorkspaceMessage(input: SendMessageInput): Promise<Sen
         caption: caption || undefined,
       },
     };
+  } else if (productEligibility) {
+    const productText = typeof text === "string" && text.trim() ? text.trim() : productEligibility.productName;
+    savedBody = productText;
+    metaPayload = {
+      messaging_product: "whatsapp",
+      to: normalizedPhone,
+      type: "interactive",
+      interactive: {
+        type: "product",
+        body: { text: productText },
+        action: {
+          catalog_id: productEligibility.catalogId,
+          product_retailer_id: productEligibility.retailerId,
+        },
+      },
+    };
   } else if (messageType === "interactive") {
     savedBody = text || "Choose an option:";
     metaPayload = {
@@ -236,6 +268,13 @@ export async function sendWorkspaceMessage(input: SendMessageInput): Promise<Sen
   if (durable && conversation.phoneNumber.phoneNumberId &&
       conversation.phoneNumber.phoneNumberId !== connection.phoneNumberId) {
     return { status: 403, body: { error: "Conversation belongs to another WhatsApp number" } };
+  }
+  // The catalogue must be linked to the WABA that is sending. Checked before the provider call.
+  if (productEligibility && productEligibility.linkedWabaId !== connection.wabaId) {
+    return {
+      status: 409,
+      body: { error: "This catalogue is linked to a different WhatsApp account than the sender", code: "catalog_waba_mismatch" },
+    };
   }
   if (durable && messageType === "template") {
     const approved = (await metaClient.getTemplates(connection.wabaId)).some(

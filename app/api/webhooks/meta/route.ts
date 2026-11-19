@@ -10,6 +10,7 @@ import { isOptOutMessage } from "@/lib/campaigns/template";
 import { handleInboundAutomation } from "@/lib/automations/inbound";
 import { captureLeadFromInbound } from "@/lib/leads/capture";
 import { maybeAutoReply } from "@/lib/ai/chat-auto-reply";
+import { parseCatalogOrder, summarizeCatalogOrder } from "@/lib/catalog/orders";
 
 // account_update events after which the stored business token no longer works for the WABA.
 const ACCOUNT_DISCONNECT_EVENTS = new Set(["PARTNER_REMOVED", "PARTNER_APP_UNINSTALLED", "ACCOUNT_DELETED"]);
@@ -149,6 +150,10 @@ async function processWebhookEntries(entries: MetaWebhookPayload["entry"]) {
                 msg.interactive.button_reply?.title ||
                 msg.interactive.list_reply?.title ||
                 "[Interactive Response]";
+            } else if (msg.type === "order") {
+              // Shopper checked out from a catalogue. The summary is the timeline text; raw_payload keeps the full order.
+              const order = parseCatalogOrder(msg.order);
+              bodyText = order ? summarizeCatalogOrder(order) : "[Catalogue order: details unavailable]";
             } else if (["image", "video", "audio", "document"].includes(msg.type)) {
               bodyText = (msg as any)[msg.type]?.caption || `[Attachment: ${msg.type}]`;
             } else {
