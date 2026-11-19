@@ -15,8 +15,8 @@ export default function GrowthPage() {
         },
         {
           title: "Checkout and payments",
-          description: "Planned: order-to-payment lifecycle with a supported provider and verified payment events. This is separate from Xeccel subscription billing.",
-          status: "Planned",
+          description: "Orders raised from a conversation, Cashfree payment links, and paid status set only from a verified Cashfree payment. Separate from Xeccel subscription billing.",
+          status: "Available foundation",
         },
         {
           title: "Click-to-WhatsApp ads",
