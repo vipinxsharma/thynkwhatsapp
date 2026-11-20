@@ -69,7 +69,8 @@ jobs:
             -f db/migrations/0017_auto_reply_chat_settings.sql \
             -f db/migrations/0018_contact_crm.sql \
             -f db/migrations/0019_developer_api_webhooks.sql \
-            -f db/migrations/0020_lead_capture.sql
+            -f db/migrations/0020_lead_capture.sql \
+            -f db/migrations/0028_inbox_media_uploads.sql
           psql -v ON_ERROR_STOP=1 -f db/verify_schema.sql
           psql -v ON_ERROR_STOP=1 -f db/tests/automation_routing.sql
 
