@@ -9,8 +9,31 @@ import {
   expiryCookieString,
   expiryCookieStrings,
   isTrackingCookieName,
+  metaPixelBaseCode,
+  metaPixelId,
   parseStoredChoice,
 } from "../components/consent/consentConfig";
+
+describe("Meta Pixel ID", () => {
+  it("accepts only numeric IDs and treats unset or malformed values as no pixel", () => {
+    expect(metaPixelId("123456789012345")).toBe("123456789012345");
+    expect(metaPixelId(" 123456789012345 ")).toBe("123456789012345");
+    expect(metaPixelId("")).toBeNull();
+    expect(metaPixelId("PASTE_PIXEL_ID")).toBeNull();
+    expect(metaPixelId("12345")).toBeNull();
+    expect(metaPixelId("1234567890'); alert(1);//")).toBeNull();
+    expect(metaPixelId(undefined)).toBeNull();
+  });
+
+  it("base code loads fbevents.js, inits the ID, and tracks PageView, with no noscript fallback", () => {
+    const code = metaPixelBaseCode("123456789012345");
+    expect(code).toContain("https://connect.facebook.net/en_US/fbevents.js");
+    expect(code).toContain("fbq('init',\"123456789012345\")");
+    expect(code).toContain("fbq('track','PageView')");
+    expect(code.indexOf("fbq('init'")).toBeGreaterThan(code.indexOf("fbevents.js"));
+    expect(code).not.toContain("noscript");
+  });
+});
 
 describe("cookie consent storage", () => {
   it("uses one localStorage key and only accepts the two known choices", () => {

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Script from "next/script";
 import { useEffect, useRef, useState } from "react";
 import {
   ATTRIBUTION_STORAGE_KEYS,
@@ -9,6 +10,8 @@ import {
   COOKIE_SETTINGS_EVENT,
   consentPayload,
   expiryCookieStrings,
+  metaPixelBaseCode,
+  metaPixelId,
   parseStoredChoice,
   type ConsentChoice,
 } from "./consentConfig";
@@ -21,14 +24,16 @@ declare global {
 }
 
 /**
- * Gated tags. Nothing loads today: GA4, GTM and any other tag are added here, behind
- * the Accept branch only, once their IDs exist (NEXT_PUBLIC_GA_ID / NEXT_PUBLIC_GTM_ID).
- * Meta Pixel and Google Ads belong here too, behind the same accepted check.
+ * Meta Pixel ID, read at build time. NEXT_PUBLIC_* values are inlined during the build,
+ * so changing NEXT_PUBLIC_META_PIXEL_ID in Vercel needs a redeploy to take effect.
+ * Unset or malformed means nothing is rendered.
+ * It loads only after Accept (see `consented` below).
+ * GA4, GTM and Google Ads are still not installed. Add them here, behind the same check.
+ * Google Ads is prepared as commented-out code below the Meta Pixel (search for TODO(google-ads)).
  */
-function loadOptionalTags(): boolean {
-  return false;
-}
+const META_PIXEL_ID = metaPixelId(process.env.NEXT_PUBLIC_META_PIXEL_ID);
 
+/** True once a gated script has been rendered in this tab, so Reject knows to reload. */
 let optionalTagsLoaded = false;
 
 function readStoredChoice(): ConsentChoice | null {
@@ -75,11 +80,18 @@ function updateGoogleConsent(granted: boolean) {
 export default function CookieConsent() {
   const [ready, setReady] = useState(false);
   const [open, setOpen] = useState(false);
+  // Gated scripts render only when this is true, i.e. after Accept in this page load.
+  const [consented, setConsented] = useState(false);
   const bannerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setReady(true);
-    if (readStoredChoice() === null) setOpen(true);
+    const stored = readStoredChoice();
+    if (stored === null) setOpen(true);
+    if (stored === "accepted") {
+      setConsented(true);
+      if (META_PIXEL_ID) optionalTagsLoaded = true;
+    }
 
     const openSettings = () => setOpen(true);
     window.addEventListener(COOKIE_SETTINGS_EVENT, openSettings);
@@ -111,7 +123,8 @@ export default function CookieConsent() {
   function accept() {
     writeStoredChoice("accepted");
     updateGoogleConsent(true);
-    if (loadOptionalTags()) optionalTagsLoaded = true;
+    if (META_PIXEL_ID) optionalTagsLoaded = true;
+    setConsented(true);                // renders the gated scripts, once, after Accept
     setOpen(false);
   }
 
@@ -121,15 +134,16 @@ export default function CookieConsent() {
     updateGoogleConsent(false);        // 1. deny Google consent first
     expireTrackingCookies();           // 2. expire tracking cookies for the host and parent domains
     clearAttribution();                // 3. clear attribution storage
+    setConsented(false);
     setOpen(false);
     if (optionalTagsLoaded) {          // 4. reload last, only if a gated script already ran in this tab
       window.location.reload();
     }
   }
 
-  if (!ready || !open) return null;
+  if (!ready) return null;
 
-  return (
+  const banner = open ? (
     <div
       ref={bannerRef}
       id="xc-cookie-banner"
@@ -165,5 +179,34 @@ export default function CookieConsent() {
         </div>
       </div>
     </div>
+  ) : null;
+
+  return (
+    <>
+      {consented && META_PIXEL_ID ? (
+        <Script id="meta-pixel" strategy="afterInteractive">
+          {metaPixelBaseCode(META_PIXEL_ID)}
+        </Script>
+      ) : null}
+      {/*
+        TODO(google-ads): Google Ads is not installed. To enable it:
+        1. Set NEXT_PUBLIC_GOOGLE_ADS_ID (format AW-XXXXXXXXX) in Vercel.
+        2. Uncomment the two Scripts below and the GOOGLE_ADS_ID constant at the top of this file.
+        Both Scripts render only after Accept, the same as the Meta Pixel. Google Ads uses
+        Consent Mode, so the Accept gtag consent update already grants its signals.
+
+        // const GOOGLE_ADS_ID = process.env.NEXT_PUBLIC_GOOGLE_ADS_ID;
+        // {consented && GOOGLE_ADS_ID ? (
+        //   <>
+        //     <Script id="google-ads-lib" strategy="afterInteractive"
+        //       src={`https://www.googletagmanager.com/gtag/js?id=${GOOGLE_ADS_ID}`} />
+        //     <Script id="google-ads-config" strategy="afterInteractive">
+        //       {`gtag('config','${GOOGLE_ADS_ID}');`}
+        //     </Script>
+        //   </>
+        // ) : null}
+      */}
+      {banner}
+    </>
   );
 }
