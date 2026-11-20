@@ -24,7 +24,9 @@ declare global {
 }
 
 /**
- * Meta Pixel ID, read at build time. Unset or malformed means nothing is rendered.
+ * Meta Pixel ID, read at build time. NEXT_PUBLIC_* values are inlined during the build,
+ * so changing NEXT_PUBLIC_META_PIXEL_ID in Vercel needs a redeploy to take effect.
+ * Unset or malformed means nothing is rendered.
  * It loads only after Accept (see `consented` below).
  * GA4, GTM and Google Ads are still not installed. Add them here, behind the same check.
  */
