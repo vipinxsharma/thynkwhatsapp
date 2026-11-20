@@ -29,6 +29,7 @@ declare global {
  * Unset or malformed means nothing is rendered.
  * It loads only after Accept (see `consented` below).
  * GA4, GTM and Google Ads are still not installed. Add them here, behind the same check.
+ * Google Ads is prepared as commented-out code below the Meta Pixel (search for TODO(google-ads)).
  */
 const META_PIXEL_ID = metaPixelId(process.env.NEXT_PUBLIC_META_PIXEL_ID);
 
@@ -187,6 +188,24 @@ export default function CookieConsent() {
           {metaPixelBaseCode(META_PIXEL_ID)}
         </Script>
       ) : null}
+      {/*
+        TODO(google-ads): Google Ads is not installed. To enable it:
+        1. Set NEXT_PUBLIC_GOOGLE_ADS_ID (format AW-XXXXXXXXX) in Vercel.
+        2. Uncomment the two Scripts below and the GOOGLE_ADS_ID constant at the top of this file.
+        Both Scripts render only after Accept, the same as the Meta Pixel. Google Ads uses
+        Consent Mode, so the Accept gtag consent update already grants its signals.
+
+        // const GOOGLE_ADS_ID = process.env.NEXT_PUBLIC_GOOGLE_ADS_ID;
+        // {consented && GOOGLE_ADS_ID ? (
+        //   <>
+        //     <Script id="google-ads-lib" strategy="afterInteractive"
+        //       src={`https://www.googletagmanager.com/gtag/js?id=${GOOGLE_ADS_ID}`} />
+        //     <Script id="google-ads-config" strategy="afterInteractive">
+        //       {`gtag('config','${GOOGLE_ADS_ID}');`}
+        //     </Script>
+        //   </>
+        // ) : null}
+      */}
       {banner}
     </>
   );
