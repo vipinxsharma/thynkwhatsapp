@@ -93,6 +93,33 @@ export const REJECT_STEPS = [
 ] as const;
 
 /**
+ * Meta Pixel ID from NEXT_PUBLIC_META_PIXEL_ID. Returns null when unset or malformed,
+ * so no pixel code is ever rendered. Pixel IDs are numeric; anything else is rejected
+ * before it can reach the inline script.
+ */
+export function metaPixelId(raw: string | null | undefined): string | null {
+  const trimmed = (raw ?? "").trim();
+  return /^\d{6,20}$/.test(trimmed) ? trimmed : null;
+}
+
+/**
+ * Meta's standard base code with a PageView. Rendered only after Accept, through
+ * next/script with afterInteractive. The noscript fallback is deliberately omitted:
+ * it would send a request before consent.
+ */
+export function metaPixelBaseCode(pixelId: string): string {
+  const id = JSON.stringify(pixelId);
+  return [
+    "!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?",
+    "n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;",
+    "n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;",
+    "t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}",
+    "(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');",
+    `fbq('init',${id});fbq('track','PageView');`,
+  ].join("");
+}
+
+/**
  * Inline script that runs before any tag (beforeInteractive). It defines the
  * consent defaults as denied, then grants them only if the visitor already accepted.
  */
