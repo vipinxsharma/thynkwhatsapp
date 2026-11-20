@@ -8,7 +8,7 @@ export default function CookieSettingsButton() {
     <button
       type="button"
       onClick={() => window.dispatchEvent(new Event(COOKIE_SETTINGS_EVENT))}
-      className="text-left hover:text-[var(--heading)]"
+      className="block self-start text-left leading-[inherit] hover:text-[var(--heading)]"
     >
       Cookie settings
     </button>
