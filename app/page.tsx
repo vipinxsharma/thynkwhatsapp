@@ -340,7 +340,7 @@ export default function HomePage() {
             <a href="/legal/cookies" className="hover:text-[var(--heading)]">Cookie Policy</a>
             <CookieSettingsButton />
             <a href="/legal/messaging-use" className="hover:text-[var(--heading)]">Messaging Use</a>
-            <a href="/legal" className="font-semibold text-[var(--accent-text)] hover:underline">Legal & Support Center</a>
+            <a href="/legal" className="hover:text-[var(--heading)]">Legal & Support Center</a>
             <a href="mailto:partner@thynkwise.co.in" className="hover:text-[var(--heading)]">Contact support</a>
           </nav>
         </footer>
