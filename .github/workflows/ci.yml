@@ -69,7 +69,17 @@ jobs:
             -f db/migrations/0017_auto_reply_chat_settings.sql \
             -f db/migrations/0018_contact_crm.sql \
             -f db/migrations/0019_developer_api_webhooks.sql \
-            -f db/migrations/0020_lead_capture.sql
+            -f db/migrations/0020_lead_capture.sql \
+            -f db/migrations/0021_workspace_partner_access.sql \
+            -f db/migrations/0022_campaign_send_attempts.sql \
+            -f db/migrations/0023_campaign_usage.sql \
+            -f db/migrations/0024_catalog_products.sql \
+            -f db/migrations/0025_ai_chat_settings.sql \
+            -f db/migrations/0026_meta_catalog_sync.sql \
+            -f db/migrations/0027_tenant_owner_invitations.sql \
+            -f db/migrations/0028_inbox_media_uploads.sql \
+            -f db/migrations/0029_checkout_orders.sql \
+            -f db/migrations/0030_ads_attribution.sql
           psql -v ON_ERROR_STOP=1 -f db/verify_schema.sql
           psql -v ON_ERROR_STOP=1 -f db/tests/automation_routing.sql
 
